@@ -1,0 +1,209 @@
+# -*- coding: utf8 -*-
+
+import discord
+import random
+import json
+import string
+import os
+import sys
+
+from data import *
+
+DISCORD_TOKEN = os.environ.get('DISCORD_TOKEN', None)
+
+if DISCORD_TOKEN is None:
+    print('Config var DISCORD_TOKEN is not defined.')
+    sys.exit()
+
+VTM_SERVER_ID = os.environ.get('VTM_SERVER_ID', None)
+
+if VTM_SERVER_ID is None:
+    print('Config var VTM_SERVER_ID is not defined.')
+    sys.exit()
+    
+WELCOME_CHANNEL_ID = os.environ.get('WELCOME_CHANNEL_ID', None)
+
+if WELCOME_CHANNEL_ID is None:
+    print('Config var WELCOME_CHANNEL_ID is not defined.')
+    sys.exit()
+
+client = discord.Client()
+
+msgChannel = {}
+torpor = set()
+serverMembers = {}
+
+creatorId = '203539589284102144'
+princeId = '109004244689907712'
+
+superusers = {
+    '119762429969301504',  # Rainfall
+    '95525404592316416',   # Манф
+    creatorId,
+    princeId
+}
+
+beckettName = 'беккет'
+
+# with open('torpor.json', 'r', encoding='utf-8') as torporFile:
+#    torporData = json.load(torporFile)
+
+
+@client.event
+async def on_member_join(member):
+    welcomeChannel = discord.Object(WELCOME_CHANNEL_ID)
+    fmt = random.choice(welcomeMsgList)
+    await client.send_message(welcomeChannel, fmt.format(member))
+
+
+@client.event
+async def on_ready():
+    print('Logged in as')
+    print(client.user.name)
+    print(client.user.id)
+    print('------')
+
+    server = client.get_server(VTM_SERVER_ID)
+
+    for member in server.members:
+        serverMembers[member.id] = member
+
+
+@client.event
+async def on_message(message):
+    if message.author == client.user:
+        return
+
+    msg = message.content.lower()
+    for ch in string.punctuation:
+        msg = msg.replace(ch, ' ')
+    args = msg.split()
+
+    print('Message from {0.author}: {0.content}'.format(message))
+    # print(args)
+
+    """
+    for word in filterData:
+        if word.lower() in [x.lower() for x in args]:
+            userid = message.author.id
+
+            with open(warndb, 'r') as warnFile:
+                warnData = json.load(warnFile)
+
+            if userid in warnData:
+                warnData[userid] += 1
+            else:
+                warnData[userid] = 1
+
+            if warnData[userid] < 4:
+                msg = message.author.name + random.choice([
+                    ', мои здешние агенты докладывают, что в ночном воздухе носится нечно странное, похожее на угрозу или напряжение....\n',
+                    ', не то чтобы я против брани, но здешнее руководство не одобряет.',
+                    ', на твоем месте, неонат, я бы выбирал другие выражения.'
+                ])
+            else:
+                msg = message.author.name + ', доброй ночи, дитя. Встречай свою Окончательную Cмерть.\n'
+
+            await client.send_message(message.channel, msg)
+
+            with open(warndb, 'w') as warnFile:
+                json.dump(warnData, warnFile)
+
+            if warnData[userid] > 3:
+                warnData[userid] = 0
+                with open(warndb, 'w') as warnFile:
+                    json.dump(warnData, warnFile)
+                await client.kick(message.author)
+
+            await client.delete_message(message)
+            break"""
+
+    # Process commands
+    if message.content.startswith('!channel'):
+        global msgChannel
+
+        if message.author.id not in superusers:
+            await client.delete_message(message)
+            return
+
+        msgChannel[message.author.id] = args[1]
+    elif message.content.startswith('!say'):
+        if message.author.id not in superusers:
+            await client.delete_message(message)
+            return
+
+        try:
+            await client.send_message(discord.Object(msgChannel[message.author.id]), message.content.lstrip('!say '))
+        except:
+            await client.send_message(message.channel, 'Unknown channel.')
+    elif message.content.startswith('!roll'):
+        for x in args:
+            if 'd' in x:
+                rollrange = x.split('d')
+                if len(rollrange) == 2:
+                    msg = ''
+                    for z in range(0, int(rollrange[0])):
+                        msg = msg + str(random.randrange(1, int(rollrange[1]) + 1)) + '\n'
+                    await client.send_message(message.channel, msg)
+    elif message.content.startswith('!deny'):
+        global torpor
+
+        if message.author.id not in superusers:
+            await client.delete_message(message)
+            return
+
+        if 1 < len(args) and args[1] not in superusers and args[1] != client.user.id and args[1] != message.author.id:
+            torpor.add(args[1])
+            if args[1] in serverMembers:
+                await client.send_message(message.channel,
+                                          "Сородич " + serverMembers[args[1]].mention
+                                          + " отправлен в торпор по поручению Князя."
+                                          + " Отныне он не произнесет ни слова.")
+    elif message.content.startswith('!undeny'):
+        if message.author.id not in superusers:
+            await client.delete_message(message)
+            return
+
+        if 1 < len(args) and args[1] in torpor:
+                torpor.remove(args[1])
+                await client.send_message(message.channel,
+                                          "Сородич " + serverMembers[args[1]].mention
+                                          + " пробужден. Теперь он может говорить.")
+
+    # Process plain messages
+    if message.author.id in torpor:
+        await client.delete_message(message)
+        return
+
+    found_key = ''
+    for key in args:
+        if key == beckettName:
+            continue
+        if key in responsesData:
+            found_key = key
+            break
+
+    if found_key == '' and beckettName in args:
+        if message.author.id == princeId:
+            await client.send_message(message.channel, random.choice(specialGreetings))
+        else:
+            await client.send_message(message.channel, random.choice(responsesData[beckettName]))
+        return
+
+    if found_key:
+        response = False
+        prob = random.random()
+
+        if prob < 0.2:
+            response = True
+
+        if beckettName in args and prob < 0.9:
+            response = True
+
+        if message.author.id == princeId:
+            response = True
+
+        if response:
+            await client.send_message(message.channel, random.choice(responsesData[found_key]))
+
+client.run(DISCORD_TOKEN)
