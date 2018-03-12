@@ -39,6 +39,7 @@ princeId = '109004244689907712'
 superusers = {
     '119762429969301504',  # Rainfall
     '95525404592316416',   # Манф
+    '414384012568690688',  # Kuro // just for testing, really 
     creatorId,
     princeId
 }
