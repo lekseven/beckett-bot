@@ -142,7 +142,7 @@ async def on_message(message):
             await client.delete_message(message)
             return
         try:
-            if len(args>2):
+            if len(args)>2:
                 def check_user(m):
                      return m.author.id == args[2]
                     
