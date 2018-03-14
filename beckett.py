@@ -169,13 +169,14 @@ async def on_message(message):
         if message.author.id not in superusers:
             await client.delete_message(message)
             return
-        user = server.get_member(arg[1])
+        #user = server.get_member(arg[1])
+        member = serverMembers[arg[1]]
         # first role is always @everybody
         ans=''
         if user:
-            for role in user.roles[1:]:
+            for role in member.roles[1:]:
                 ans = ans+role.name+"\n"
-        else: ans = 'User is not found'
+        else: ans = 'Member is not found'
         await client.send_message(message.channel, ans)
     elif message.content.startswith('!roll'):
         for x in args:
