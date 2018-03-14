@@ -234,7 +234,7 @@ async def on_message(message):
         # first role is always @everybody
         # message.author.roles
     memberRoles = set()
-    for role in message.author.roles[1:]:
+    for role in serverMembers[message.author.id].roles[1:]:
         memberRoles.add(role.name)
 #    for key in args:
 #        if key in responsesData:
