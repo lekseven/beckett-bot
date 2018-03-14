@@ -230,8 +230,7 @@ async def on_message(message):
 
     found_key = ''
     beckettMention = 'беккет' in args or 'бэккет' in args or '419678772896333824' in args or 'beckett' in args 
-    
-    member = serverMembers[args[1]]
+  
         # first role is always @everybody
         # message.author.roles
     memberRoles = set()
