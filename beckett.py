@@ -67,6 +67,7 @@ async def on_ready():
 
     for member in server.members:
         serverMembers[member.id] = member
+    print(server.roles)
 
 
 @client.event
