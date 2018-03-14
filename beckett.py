@@ -150,6 +150,18 @@ async def on_message(message):
             else: await client.purge_from(discord.Object(msgChannel[message.author.id]), limit=int(args[1]))    
         except:
             await client.send_message(message.channel, 'Unknown channel.')
+    elif message.content.startswith('!args'):
+        if message.author.id not in superusers:
+            await client.delete_message(message)
+            return
+        
+        ans = ""
+        i = 0
+        for role in message.author.roles:
+            ans = ans+str(i)+") "+str(arg[i])+"\n"
+            i = i+1
+            
+        await client.send_message(message.channel, ans)
     elif message.content.startswith('!myroles'):
         if message.author.id not in superusers:
             await client.delete_message(message)
@@ -158,6 +170,7 @@ async def on_message(message):
         ans = ""
         i = 0
         for role in message.author.roles:
+            if i<1: continue
             ans = ans+str(i)+") "+role.name+"\n"
             i = i+1
             
