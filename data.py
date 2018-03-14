@@ -304,7 +304,7 @@ dataKeys = {
     'jeanette':     {'жанетт','jeanette'},
     'therese':      {'терез','therese'},
     'ghost':        {'призрак', 'привидени', 'привидень', 'ghost'},
-    'werewolf':     {'оборотн', 'вервульф','оборотень', 'перевертыш','werewolf','werewolves'},
+    'werewolf':     {'оборотн', 'вервульф', 'вервольф', 'ликантроп', 'волколак', 'оборотень', 'перевертыш','werewolf','werewolves', 'wolfman','wolfmen'},
     'anarch':       {'анарх', 'anarch'},
     'elder':        {'старейшин','elder'},
     'bloodhunt':    {'охот', 'bloodhunt', 'hunt'},
