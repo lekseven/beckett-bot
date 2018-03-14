@@ -175,7 +175,7 @@ async def on_message(message):
         return
 
     found_key = ''
-    beckettMention = 'беккет' in args or 'бэккет' in args or '<@419678772896333824>' in args
+    beckettMention = 'беккет' in args or 'бэккет' in args or '<@419678772896333824>' in args or 'beckett' in args 
     
     for key in args:
         if key in responsesData:
