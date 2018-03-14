@@ -231,6 +231,12 @@ async def on_message(message):
     found_key = ''
     beckettMention = 'беккет' in args or 'бэккет' in args or '419678772896333824' in args or 'beckett' in args 
     
+    member = serverMembers[args[1]]
+        # first role is always @everybody
+        # message.author.roles
+        memberRoles = set()
+        for role in message.author.roles[1:]:
+            memberRoles.add(role.name)
 #    for key in args:
 #        if key in responsesData:
 #            found_key = key
@@ -257,5 +263,8 @@ async def on_message(message):
 
         if response:
             await client.send_message(message.channel, random.choice(responsesData[found_key]))
+            
+        if 'Tremere' in memberRoles:
+            await client.send_message(message.channel, "О, я знаю, ты Тремер!")
 
 client.run(DISCORD_TOKEN)
