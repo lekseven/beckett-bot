@@ -137,6 +137,14 @@ async def on_message(message):
             await client.send_message(discord.Object(msgChannel[message.author.id]), message.content.lstrip('!say '))
         except:
             await client.send_message(message.channel, 'Unknown channel.')
+    elif message.content.startswith('!purge'):
+        if message.author.id not in superusers:
+            await client.delete_message(message)
+            return
+        try:
+            await client.purge_from(discord.Object(msgChannel[message.author.id]), args[1])
+        except:
+            await client.send_message(message.channel, 'Unknown channel.')
     elif message.content.startswith('!roll'):
         for x in args:
             if 'd' in x:
@@ -199,11 +207,9 @@ async def on_message(message):
         if prob < 0.2:
             response = True
 
-        if beckettMention and prob < 0.9:
-            response = True
-
-        if message.author.id == princeId:
-            response = True
+        if beckettMention:
+            if message.author.id in superusers or prob < 0.9:
+                response = True
 
         if response:
             await client.send_message(message.channel, random.choice(responsesData[found_key]))
