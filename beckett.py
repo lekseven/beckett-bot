@@ -6,6 +6,7 @@ import json
 import string
 import os
 import sys
+import checkPhrase
 
 from data import *
 
@@ -176,18 +177,19 @@ async def on_message(message):
         return
 
     found_key = ''
-    beckettMention = 'беккет' in args or 'бэккет' in args or '<@419678772896333824>' in args or 'beckett' in args 
+    beckettMention = 'беккет' in args or 'бэккет' in args or '419678772896333824' in args or 'beckett' in args 
     
-    for key in args:
-        if key in responsesData:
-            found_key = key
-            break
+#    for key in args:
+#        if key in responsesData:
+#            found_key = key
+#            break
+    found_key = checkPhrase.checkArgs(args)
 
-    if found_key == '' and beckettMention:
+    if not found_key and beckettMention:
         if message.author.id == princeId:
             await client.send_message(message.channel, random.choice(specialGreetings))
         else:
-            await client.send_message(message.channel, random.choice(responsesData['беккет']))
+            await client.send_message(message.channel, random.choice(responsesData['beckett']))
         return
 
     if found_key:
