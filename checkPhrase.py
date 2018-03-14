@@ -19,5 +19,6 @@ def checkArgs(args):
 	for word in args:
 		found_key = findKey(word)
 		if found_key: return found_key
+	return False
     
     
