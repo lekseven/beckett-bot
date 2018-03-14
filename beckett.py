@@ -44,8 +44,6 @@ superusers = {
     princeId
 }
 
-beckettName = 'беккет'
-
 # with open('torpor.json', 'r', encoding='utf-8') as torporFile:
 #    torporData = json.load(torporFile)
 
@@ -177,18 +175,18 @@ async def on_message(message):
         return
 
     found_key = ''
+    beckettMention = 'беккет' in args or 'бэккет' in args or '<@419678772896333824>' in args
+    
     for key in args:
-        if key == beckettName:
-            continue
         if key in responsesData:
             found_key = key
             break
 
-    if found_key == '' and beckettName in args:
+    if found_key == '' and beckettMention:
         if message.author.id == princeId:
             await client.send_message(message.channel, random.choice(specialGreetings))
         else:
-            await client.send_message(message.channel, random.choice(responsesData[beckettName]))
+            await client.send_message(message.channel, random.choice(responsesData['беккет']))
         return
 
     if found_key:
@@ -198,7 +196,7 @@ async def on_message(message):
         if prob < 0.2:
             response = True
 
-        if beckettName in args and prob < 0.9:
+        if beckettMention and prob < 0.9:
             response = True
 
         if message.author.id == princeId:
