@@ -142,7 +142,7 @@ async def on_message(message):
             await client.delete_message(message)
             return
         try:
-            await client.purge_from(discord.Object(msgChannel[message.author.id]), limit=1)
+            await client.purge_from(discord.Object(msgChannel[message.author.id]), limit=args[1])
         except:
             await client.send_message(message.channel, 'Unknown channel.')
     elif message.content.startswith('!roll'):
