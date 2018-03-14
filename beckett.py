@@ -142,10 +142,15 @@ async def on_message(message):
             await client.delete_message(message)
             return
         try:
-            await client.purge_from(discord.Object(msgChannel[message.author.id]), limit=int(args[1]))
+            if len(args>2):
+                def check_user(m):
+                     return m.author.id == args[2]
+                    
+                await client.purge_from(discord.Object(msgChannel[message.author.id]), limit=int(args[1]),check=check_user)
+            else: await client.purge_from(discord.Object(msgChannel[message.author.id]), limit=int(args[1]))    
         except:
             await client.send_message(message.channel, 'Unknown channel.')
-    elif message.content.startswith('!test'):
+    elif message.content.startswith('!myroles'):
         if message.author.id not in superusers:
             await client.delete_message(message)
             return
