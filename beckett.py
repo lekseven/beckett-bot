@@ -169,8 +169,8 @@ async def on_message(message):
         if message.author.id not in superusers:
             await client.delete_message(message)
             return
-        #user = server.get_member(arg[1])
-        member = serverMembers[arg[1]]
+        #user = server.get_member(args[1])
+        member = serverMembers[args[1]]
         # first role is always @everybody
         ans=''
         if user:
