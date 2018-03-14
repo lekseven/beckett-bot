@@ -18,7 +18,7 @@ def findKey(word):
 def checkArgs(args):
 	for word in args:
 		found_key = findKey(word)
-		if found_key: return found_key
+		if found_key and found_key in data.responsesData: return found_key
 	return False
     
     
