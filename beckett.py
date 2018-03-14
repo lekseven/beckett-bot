@@ -263,7 +263,7 @@ async def on_message(message):
         if response:
             await client.send_message(message.channel, random.choice(responsesData[found_key]))
             
-    if 'Tremere' in memberRoles:
-        await client.send_message(message.channel, "О, я знаю, ты Тремер!")
+#    if 'Tremere' in memberRoles:
+#        await client.send_message(message.channel, "О, я знаю, ты Тремер!")
 
 client.run(DISCORD_TOKEN)
