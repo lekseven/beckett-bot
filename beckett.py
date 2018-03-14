@@ -68,10 +68,15 @@ async def on_ready():
     for member in server.members:
         serverMembers[member.id] = member
       
-    serverRoles = []
-    for role in server.roles:
-        serverRoles.append(role.name)
-    print(serverRoles)
+#    serverRoles = []
+#    for role in server.roles:
+#        serverRoles.append(role.name)
+#    print(serverRoles)
+#   ['Prince', 'Sheriff', 
+#    'Seneschal', 'Tzimisce', 'Malkavian', 'Lasombra', 'Toreador', 'Brujah', 'Ravnos', 'Ventrue', 'Nosferatu', 
+#    'Gangrel', 'Tremere', 'Beckett', 'Followers of Set', 'Assamite', 'Giovanni', 'Noble Pander', 
+#    'Primogens and Emissary', 'Harpy', 'Beckett', 'New World Order', 'Lasombra Antitribu', 'Scourge', 
+#    'Cappadocian', 'Sabbat', 'Anarch']
     
 
 
