@@ -157,8 +157,8 @@ async def on_message(message):
         
         ans = ""
         i = 0
-        for role in message.author.roles:
-            ans = ans+str(i)+") "+str(arg[i])+"\n"
+        for arg in args:
+            ans = ans+str(i)+") "+str(arg)+"\n"
             i = i+1
             
         await client.send_message(message.channel, ans)
