@@ -74,6 +74,7 @@ async def on_message(message):
         return
 
     msg = message.content.lower()
+    msg = msg.replace('ё', 'е')
     for ch in string.punctuation:
         msg = msg.replace(ch, ' ')
     args = msg.split()
