@@ -138,6 +138,8 @@ async def on_message(message):
         except:
             await client.send_message(message.channel, 'Unknown channel.')
     elif message.content.startswith('!purge'):
+        # !purge N - delete N last messages in chosen chanell (from !channel)
+        # !purge N ID - delete all messages by ID from in N last messages in chosen chanell (from !channel)
         if message.author.id not in superusers:
             await client.delete_message(message)
             return
@@ -150,7 +152,8 @@ async def on_message(message):
             else: await client.purge_from(discord.Object(msgChannel[message.author.id]), limit=int(args[1]))    
         except:
             await client.send_message(message.channel, 'Unknown channel.')
-    elif message.content.startswith('!args'):
+    elif message.content.startswith('!test'):
+        # just test
         if message.author.id not in superusers:
             await client.delete_message(message)
             return
@@ -162,17 +165,14 @@ async def on_message(message):
             i = i+1
             
         await client.send_message(message.channel, ans)
-    elif message.content.startswith('!myroles'):
+    elif message.content.startswith('!roles'):
         if message.author.id not in superusers:
             await client.delete_message(message)
             return
-        
-        ans = ""
-        i = 0
-        for role in message.author.roles:
-            if i<1: continue
-            ans = ans+str(i)+") "+role.name+"\n"
-            i = i+1
+        user = await get_user_info(arg[1])
+        # first role is always @everybody
+        for role in user.roles[1:]:
+            ans = ans+role.name+"\n"
             
         await client.send_message(message.channel, ans)
     elif message.content.startswith('!roll'):
