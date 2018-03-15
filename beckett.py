@@ -237,6 +237,7 @@ async def on_message(message):
     for name in beckettNames:
         if name in args:
             beckettMention = True
+            break 
 
     # first role is always @everybody
     # message.author.roles
