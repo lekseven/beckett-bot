@@ -1,30 +1,30 @@
 # -*- coding: utf8 -*-
 
-import discord
-import random
-import json
-import string
 import os
+import random
+import string
 import sys
-import checkPhrase
 
+import discord
+
+import checkPhrase
 from data import *
 
-DISCORD_TOKEN = os.environ.get('DISCORD_TOKEN', None)
+DISCORD_TOKEN = os.environ.get('DISCORD_TOKEN')
 
-if DISCORD_TOKEN is None:
+if not DISCORD_TOKEN:
     print('Config var DISCORD_TOKEN is not defined.')
     sys.exit()
 
-VTM_SERVER_ID = os.environ.get('VTM_SERVER_ID', None)
+VTM_SERVER_ID = os.environ.get('VTM_SERVER_ID')
 
-if VTM_SERVER_ID is None:
+if not VTM_SERVER_ID:
     print('Config var VTM_SERVER_ID is not defined.')
     sys.exit()
-    
-WELCOME_CHANNEL_ID = os.environ.get('WELCOME_CHANNEL_ID', None)
 
-if WELCOME_CHANNEL_ID is None:
+WELCOME_CHANNEL_ID = os.environ.get('WELCOME_CHANNEL_ID')
+
+if not WELCOME_CHANNEL_ID:
     print('Config var WELCOME_CHANNEL_ID is not defined.')
     sys.exit()
 
@@ -40,9 +40,16 @@ princeId = '109004244689907712'
 superusers = {
     '119762429969301504',  # Rainfall
     '95525404592316416',   # Манф
-    '414384012568690688',  # Kuro // just for testing, really 
+    '414384012568690688',  # Kuro // just for testing, really
     creatorId,
     princeId
+}
+
+beckettNames = {
+    'беккет',
+    'бэккет',
+    '419678772896333824',
+    'beckett'
 }
 
 # with open('torpor.json', 'r', encoding='utf-8') as torporFile:
@@ -67,7 +74,8 @@ async def on_ready():
 
     for member in server.members:
         serverMembers[member.id] = member
-      
+
+
 #    serverRoles = []
 #    for role in server.roles:
 #        serverRoles.append(role.name)
@@ -77,7 +85,6 @@ async def on_ready():
 #    'Gangrel', 'Tremere', 'Beckett', 'Followers of Set', 'Assamite', 'Giovanni', 'Noble Pander', 
 #    'Primogens and Emissary', 'Harpy', 'Beckett', 'New World Order', 'Lasombra Antitribu', 'Scourge', 
 #    'Cappadocian', 'Sabbat', 'Anarch']
-    
 
 
 @client.event
@@ -155,12 +162,14 @@ async def on_message(message):
             await client.delete_message(message)
             return
         try:
-            if len(args)>2:
+            if len(args) > 2:
                 def check_user(m):
-                     return m.author.id == args[2]
-                    
-                await client.purge_from(discord.Object(msgChannel[message.author.id]), limit=int(args[1]),check=check_user)
-            else: await client.purge_from(discord.Object(msgChannel[message.author.id]), limit=int(args[1]))    
+                    return m.author.id == args[2]
+
+                await client.purge_from(discord.Object(msgChannel[message.author.id]), limit=int(args[1]),
+                                        check=check_user)
+            else:
+                await client.purge_from(discord.Object(msgChannel[message.author.id]), limit=int(args[1]))
         except:
             await client.send_message(message.channel, 'Unknown channel.')
     elif message.content.startswith('!test'):
@@ -168,20 +177,22 @@ async def on_message(message):
         if message.author.id not in superusers:
             await client.delete_message(message)
             return
-        ch = client.get_channel(msgChannel[message.author.id])  #discord.Object(msgChannel[message.author.id])
-        await client.edit_channel(ch,**{'name':args[1],'topic':ch.topic,'user_limit':ch.user_limit,'bitrate':ch.bitrate})
+        ch = client.get_channel(msgChannel[message.author.id])  # discord.Object(msgChannel[message.author.id])
+        await client.edit_channel(ch, **{'name': args[1], 'topic': ch.topic, 'user_limit': ch.user_limit,
+                                         'bitrate': ch.bitrate})
     elif message.content.startswith('!roles'):
         if message.author.id not in superusers:
             await client.delete_message(message)
             return
-        #member = server.get_member(args[1])
+        # member = server.get_member(args[1])
         member = serverMembers[args[1]]
         # first role is always @everybody
-        ans=''
+        ans = ''
         if member:
             for role in member.roles[1:]:
-                ans = ans+role.name+"\n"
-        else: ans = 'Member is not found'
+                ans = ans + role.name + "\n"
+        else:
+            ans = 'Member is not found'
         await client.send_message(message.channel, ans)
     elif message.content.startswith('!roll'):
         for x in args:
@@ -212,28 +223,27 @@ async def on_message(message):
             return
 
         if 1 < len(args) and args[1] in torpor:
-                torpor.remove(args[1])
-                await client.send_message(message.channel,
-                                          "Сородич " + serverMembers[args[1]].mention
-                                          + " пробужден. Теперь он может говорить.")
+            torpor.remove(args[1])
+            await client.send_message(message.channel,
+                                      "Сородич " + serverMembers[args[1]].mention
+                                      + " пробужден. Теперь он может говорить.")
 
     # Process plain messages
     if message.author.id in torpor:
         await client.delete_message(message)
         return
 
-    found_key = ''
-    beckettMention = 'беккет' in args or 'бэккет' in args or '419678772896333824' in args or 'beckett' in args 
-  
-        # first role is always @everybody
-        # message.author.roles
+    beckettMention = False
+    for name in beckettNames:
+        if name in args:
+            beckettMention = True
+
+    # first role is always @everybody
+    # message.author.roles
     memberRoles = set()
     for role in serverMembers[message.author.id].roles[1:]:
         memberRoles.add(role.name)
-#    for key in args:
-#        if key in responsesData:
-#            found_key = key
-#            break
+
     found_key = checkPhrase.checkArgs(args)
 
     if not found_key and beckettMention:
@@ -256,7 +266,8 @@ async def on_message(message):
 
         if response:
             await client.send_message(message.channel, random.choice(responsesData[found_key]))
-            
+
+
 #    if 'Tremere' in memberRoles:
 #        await client.send_message(message.channel, "О, я знаю, ты Тремер!")
 
