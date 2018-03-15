@@ -168,8 +168,8 @@ async def on_message(message):
         if message.author.id not in superusers:
             await client.delete_message(message)
             return
-        ch = discord.Object(msgChannel[message.author.id])
-        await client.edit_channel(ch,**{'name':args[1],'topic':ch.topic,'user_limit':ch.user_limit,'bitrate':ch.bitrate})
+        ch = client.get_channel(msgChannel[message.author.id])  #discord.Object(msgChannel[message.author.id])
+        await client.edit_channel(discord.Object(msgChannel[message.author.id]),**{'name':args[1],'topic':ch.topic,'user_limit':ch.user_limit,'bitrate':ch.bitrate})
     elif message.content.startswith('!roles'):
         if message.author.id not in superusers:
             await client.delete_message(message)
