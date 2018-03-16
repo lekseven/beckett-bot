@@ -73,6 +73,8 @@ async def on_ready():
 
 @client.event
 async def on_message(message):
+    print('Message from {0.author}: {0.content}'.format(message))
+
     if message.author == client.user:
         return
 
@@ -82,12 +84,9 @@ async def on_message(message):
     if message.author.id not in superusers:
         if any(link in msg for link in forbiddenLinks):
             await client.delete_message(message)
-                return
+            return
 
     args = msg.translate(punct2space).split()
-
-    print('Message from {0.author}: {0.content}'.format(message))
-    # print(args)
 
     """
     for word in filterData:
