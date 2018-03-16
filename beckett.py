@@ -221,9 +221,12 @@ async def on_message(message):
         if 1 < len(args) and args[1] not in superusers and args[1] != client.user.id and args[1] != message.author.id:
             torpor.add(args[1])
             if args[1] in serverMembers:
-                await client.send_message(message.channel,
+                channel = message.channel
+                if message.author.id in msgChannel:
+                    channel = discord.Object(msgChannel[message.author.id])
+                await client.send_message(channel,
                                           "Сородич " + serverMembers[args[1]].mention
-                                          + " отправлен в торпор по поручению Князя."
+                                          + " отправлен в торпор."
                                           + " Отныне он не произнесет ни слова.")
     elif message.content.startswith('!undeny'):
         if message.author.id not in superusers:
@@ -232,9 +235,12 @@ async def on_message(message):
 
         if 1 < len(args) and args[1] in torpor:
             torpor.remove(args[1])
-            await client.send_message(message.channel,
+            channel = message.channel
+            if message.author.id in msgChannel:
+                channel = discord.Object(msgChannel[message.author.id])
+            await client.send_message(channel,
                                       "Сородич " + serverMembers[args[1]].mention
-                                      + " пробужден. Теперь ему позволено говорить.")
+                                      + " пробужден. Ему позволено говорить.")
 
     # Process plain messages
     if message.author.id in torpor:
