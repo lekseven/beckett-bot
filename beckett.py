@@ -32,16 +32,14 @@ client = discord.Client()
 
 msgChannel = {}
 torpor = set()
-serverMembers = {}
 
-creatorId = '203539589284102144'
 princeId = '109004244689907712'
 
 superusers = {
     '119762429969301504',  # Rainfall
     '95525404592316416',   # Манф
     '414384012568690688',  # Kuro // just for testing, really
-    creatorId,
+    '203539589284102144',  # Magdavius
     princeId
 }
 
@@ -69,22 +67,6 @@ async def on_ready():
     print(client.user.name)
     print(client.user.id)
     print('------')
-
-    server = client.get_server(VTM_SERVER_ID)
-
-    for member in server.members:
-        serverMembers[member.id] = member
-
-
-#    serverRoles = []
-#    for role in server.roles:
-#        serverRoles.append(role.name)
-#    print(serverRoles)
-#   ['Prince', 'Sheriff', 
-#    'Seneschal', 'Tzimisce', 'Malkavian', 'Lasombra', 'Toreador', 'Brujah', 'Ravnos', 'Ventrue', 'Nosferatu', 
-#    'Gangrel', 'Tremere', 'Beckett', 'Followers of Set', 'Assamite', 'Giovanni', 'Noble Pander', 
-#    'Primogens and Emissary', 'Harpy', 'Beckett', 'New World Order', 'Lasombra Antitribu', 'Scourge', 
-#    'Cappadocian', 'Sabbat', 'Anarch']
 
 
 @client.event
@@ -145,6 +127,8 @@ async def on_message(message):
             await client.delete_message(message)
             break"""
 
+    server = client.get_server(VTM_SERVER_ID)
+
     # Process commands
     if message.content.startswith('!channel'):
         global msgChannel
@@ -164,8 +148,8 @@ async def on_message(message):
         except:
             await client.send_message(message.channel, 'Unknown channel.')
     elif message.content.startswith('!purge'):
-        # !purge N - delete N last messages in chosen chanell (from !channel)
-        # !purge N ID - delete all messages by ID from in N last messages in chosen chanell (from !channel)
+        # !purge N - delete N last messages in chosen channel (from !channel)
+        # !purge N ID - delete all messages by ID from in N last messages in chosen channel (from !channel)
         if message.author.id not in superusers:
             await client.delete_message(message)
             return
@@ -193,7 +177,7 @@ async def on_message(message):
             await client.delete_message(message)
             return
         # member = server.get_member(args[1])
-        member = serverMembers[args[1]]
+        member = server.get_member(args[1])
         # first role is always @everybody
         ans = ''
         if member:
@@ -220,13 +204,12 @@ async def on_message(message):
 
         if 1 < len(args) and args[1] not in superusers and args[1] != client.user.id and args[1] != message.author.id:
             torpor.add(args[1])
-            if args[1] in serverMembers:
+            member = server.get_member(args[1])
+            if member:
                 channel = message.channel
                 if message.author.id in msgChannel:
                     channel = discord.Object(msgChannel[message.author.id])
-                await client.send_message(channel,
-                                          "Сородич " + serverMembers[args[1]].mention
-                                          + " отправлен в торпор."
+                await client.send_message(channel, "Сородич " + member.mention + " отправлен в торпор."
                                           + " Отныне он не произнесет ни слова.")
     elif message.content.startswith('!undeny'):
         if message.author.id not in superusers:
@@ -235,32 +218,32 @@ async def on_message(message):
 
         if 1 < len(args) and args[1] in torpor:
             torpor.remove(args[1])
-            channel = message.channel
-            if message.author.id in msgChannel:
-                channel = discord.Object(msgChannel[message.author.id])
-            await client.send_message(channel,
-                                      "Сородич " + serverMembers[args[1]].mention
-                                      + " пробужден. Ему позволено говорить.")
+            member = server.get_member(args[1])
+            if member:
+                channel = message.channel
+                if message.author.id in msgChannel:
+                    channel = discord.Object(msgChannel[message.author.id])
+                await client.send_message(channel, "Сородич " + member.mention + " пробужден. Ему позволено говорить.")
 
     # Process plain messages
     if message.author.id in torpor:
         await client.delete_message(message)
         return
 
-    beckettMention = False
+    beckett_mention = False
     for name in beckettNames:
         if name in args:
-            beckettMention = True
+            beckett_mention = True
 
     # first role is always @everybody
     # message.author.roles
-    memberRoles = set()
-    for role in serverMembers[message.author.id].roles[1:]:
-        memberRoles.add(role.name)
+    member_roles = set()
+    for role in server.get_member(message.author.id).roles[1:]:
+        member_roles.add(role.name)
 
     found_key = checkPhrase.checkArgs(args)
 
-    if not found_key and beckettMention:
+    if not found_key and beckett_mention:
         if message.author.id == princeId:
             await client.send_message(message.channel, random.choice(specialGreetings))
         else:
@@ -274,7 +257,7 @@ async def on_message(message):
         if prob < 0.2:
             response = True
 
-        if beckettMention:
+        if beckett_mention:
             if message.author.id in superusers or prob < 0.9:
                 response = True
 
