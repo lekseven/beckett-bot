@@ -531,3 +531,8 @@ dataKeys = {
     'uncommon':     {'горгуль', 'gargoyles', 'аримейн', 'ahrimane', 'каэсиды', 'kiasyd', 'брать', 'brothers', 'предвестник', 'черепов', 'harbingers', 'skulls', 'каппадокийц', 'cappadocian', 'салюбр', 'salubri', 'баали', 'baali', 'какофонии', 'cacophony', 'нагарадж', 'nagaraja', 'самеди', 'samedi'}
 
 }
+
+forbiddenLinks = {
+    'wod.su',
+    'sabbat.su',
+}

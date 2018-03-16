@@ -92,8 +92,16 @@ async def on_message(message):
     if message.author == client.user:
         return
 
-    msg = message.content.lower()
-    msg = msg.replace('ё', 'е')
+    msg = message.content.lower().replace('ё', 'е')
+
+    # delete messages containing forbidden links
+    if message.author.id not in superusers:
+        for word in msg.split():
+            for link in forbiddenLinks:
+                if word.find(link) != -1:
+                    await client.delete_message(message)
+                    return
+
     for ch in string.punctuation:
         msg = msg.replace(ch, ' ')
     args = msg.split()
@@ -226,7 +234,7 @@ async def on_message(message):
             torpor.remove(args[1])
             await client.send_message(message.channel,
                                       "Сородич " + serverMembers[args[1]].mention
-                                      + " пробужден. Теперь он может говорить.")
+                                      + " пробужден. Теперь ему позволено говорить.")
 
     # Process plain messages
     if message.author.id in torpor:
