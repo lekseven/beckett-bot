@@ -535,4 +535,5 @@ dataKeys = {
 forbiddenLinks = {
     'wod.su',
     'sabbat.su',
+    'вот.су',
 }
