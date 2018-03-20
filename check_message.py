@@ -73,7 +73,7 @@ async def reaction(message):
         return
 
     # delete messages containing forbidden links
-    if not msg.super or True:
+    if not msg.super:
         if any(link in msg.text for link in data.forbiddenLinks):
             await msg.delete()
             return
