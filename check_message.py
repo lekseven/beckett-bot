@@ -112,7 +112,7 @@ async def reaction(message):
     if found_key:
         response = False
 
-        if prob < 0.2 or (beckett_mention and prob < 0.9 or msg.author in C.superusers):
+        if prob < 0.2 or (beckett_mention and (prob < 0.9 or msg.author in C.superusers)):
             response = True
 
         if response:
