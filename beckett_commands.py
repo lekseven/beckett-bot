@@ -3,12 +3,13 @@ import discord
 import sys
 import re
 import random
+import other
 import constants as C
 import local_memory as ram
 
 """ 
     here only functions as bot-commands (!cmd) with obj of Msg as arg:
-        def cmd(msg)
+        async def cmd(msg)
 """
 
     # region Interaction commands
@@ -26,38 +27,34 @@ async def help(msg):    # TODO rewrite help, may be?
         cmds.intersection_update(C.free_cmds)
 
     if len(msg.args) > 1:
-        cmds.intersection_update(set(msg.args[1:]))
+        cmds.intersection_update(set(msg.text.split()[1:]))
 
     if cmds:
         docs = [getattr(module, cmd).__doc__ for cmd in cmds]
-        lens = []
-        docs2 = []
-        for doc in docs:
-            if doc:
-                new_doc = doc.split('\n')
-                docs2 += new_doc
-                for doc2 in new_doc:
-                    lens.append(len(re.match('.*?[:]', doc2).group(0)))
-
-        m = max(lens)
-        docs = []
-        for doc in docs2:
-            docs.append(doc.replace(':', ':'+(' '*(m-lens.pop(0)))+'\t'))
-
-        docs.sort()
-        print('len(docs)=', len(docs))
-        docs_len = len(docs)
-        count_helps = int(docs_len / 21) + 1 # 20 lines for one message
-        step = int(docs_len / count_helps - 0.001) + 1
-        helps = [docs[i:i + step] for i in range(0, len(docs), step)]
-        texts = []
-        for h in helps:
-            texts.append(('```css\n' + '\n'.join(h) + '```').replace('    !', '!'))
+        texts = other.comfortable_help(docs)
     else:
-        texts = ['Увы, с этим ничем не могу помочь :sweat:']
+        texts = 'Увы, с этим ничем не могу помочь :sweat:'
 
-    for text in texts:
-        await msg.answer(text)
+    await msg.answer(texts)
+
+
+'''
+async def song(msg):
+    await C.client.send_message(C.channels['FM'], "+np")
+
+    def check(m):
+        return m.embeds and 'Now Playing ♪' in m.embeds[0]['author']['name']
+
+    message = await C.client.wait_for_message(timeout=5, channel=C.channels['FM'], check=check)
+    if not message: # None
+        await msg.answer('Не играет нынче ничего в данном домене.')
+    else:
+        embed = message.embeds[0]
+        em = C.discord.Embed(**embed)
+        em.set_thumbnail(url=embed['thumbnail']['url'])
+        em.set_author(name=embed['author']['name'], url=embed['author']['url'], icon_url=embed['author']['icon_url'])
+        await msg.answer(emb=em)
+'''
 
 
 async def channel(msg):
@@ -119,9 +116,9 @@ async def say(msg):
 
 async def purge(msg):
     """\
-    !purge: стереть последнее сообщение в каналах из !channels
-    !purge N: стереть N последних сообщений в каналах из !channels (в каждом по N)
-    !purge N id1 id2 ... : стереть сообщения этих юзеров из последних N сообщений в !channels \
+    !purge: del последнее сообщение в каналах из !channels
+    !purge N: del N последних сообщений в каналах из !channels (в каждом по N)
+    !purge N id1 id2 ... : del сообщения этих юзеров из последних N сообщений в !channels \
     """
     channels = msg.cmd_ch or {msg.channel.id}
     count = msg.args[1] if len(msg.args) > 1 else 1
@@ -138,17 +135,130 @@ async def purge(msg):
         await msg.purge(C.client.get_channel(ch), count, check=check)
 
 
-async def delete(msg):
+async def purge_aft(msg):
     """\
-    !delete ch_id mess_id1 mess_id2: стереть сообщения (по id) в указанном канале \
+    !purge_aft ch_id msg_id: del миллион сообщений после msg в ch
+    !purge_aft ch_id msg_id N: del N сообщений после mess в ch
+    !purge_aft ch_id msg_id N id1 ... : del сообщения юзеров из N сообщений после msg в ch \
     """
-    if len(msg.args) < 3:
-        await msg.answer("```css\n" + str(delete.__doc__) + "```")
+    err = len(msg.args)<3
+
+    ch = {}
+    if not err:
+        ch = C.client.get_channel(msg.args[1])
+        err = not ch
+
+    mess={}
+    if not err:
+        mess = await C.client.get_message(ch, msg.args[2])
+        err = not mess
+
+    if err:
+        await msg.answer(other.comfortable_help([str(purge_aft.__doc__)]))
         return
 
-    ch = C.client.get_channel(msg.args[1])
-    if not ch:
-        await msg.answer("```css\n" + str(delete.__doc__) + "```")
+    count = msg.args[3] if len(msg.args) > 3 else 1000000
+    check = None
+
+    if len(msg.args) > 4:
+        def check_user(m):
+            check_set = set(msg.args[4:])
+            return m.author.id in check_set
+
+        check = check_user
+
+    await msg.purge(ch, count, check=check, aft=mess)
+
+
+async def purge_ere(msg):
+    """\
+    !purge_ere ch_id msg_id: del одно сообщение перед msg в ch
+    !purge_ere ch_id msg_id N: del N сообщений перед mess в ch
+    !purge_ere ch_id msg_id N id1 ... : del сообщения юзеров из N сообщений перед msg в ch \
+    """
+    err = len(msg.args)<3
+
+    ch = {}
+    if not err:
+        ch = C.client.get_channel(msg.args[1])
+        err = not ch
+
+    mess={}
+    if not err:
+        mess = await C.client.get_message(ch, msg.args[2])
+        err = not mess
+
+    if err:
+        await msg.answer(other.comfortable_help([str(purge_ere.__doc__)]))
+        return
+
+    count = msg.args[3] if len(msg.args) > 3 else 1
+    check = None
+
+    if len(msg.args) > 4:
+        def check_user(m):
+            check_set = set(msg.args[4:])
+            return m.author.id in check_set
+
+        check = check_user
+
+    await msg.purge(ch, count, check=check, bef=mess)
+
+
+async def purge_bet(msg):
+    """\
+    !purge_bet ch_id msg_id1 msg_id2: del сообщения между msg1 и msg2 в ch
+    !purge_bet ch_id msg_id1 msg_id2 id1 ... : del сообщения юзеров между msg1 и msg2 в ch \
+    """
+    err = len(msg.args)<4
+
+    ch = {}
+    if not err:
+        ch = C.client.get_channel(msg.args[1])
+        err = not ch
+
+    msg1 = {}
+    if not err:
+        msg1 = await C.client.get_message(ch, msg.args[2])
+        err = not msg1
+
+    msg2 = {}
+    if not err:
+        msg2 = await C.client.get_message(ch, msg.args[3])
+        err = not msg2
+
+    if err:
+        await msg.answer(other.comfortable_help([str(purge_bet.__doc__)]))
+        return
+
+    check = None
+
+    if len(msg.args) > 4:
+        def check_user(m):
+            check_set = set(msg.args[4:])
+            return m.author.id in check_set
+
+        check = check_user
+
+    await msg.purge(ch, 1000000, check=check, aft=msg1, bef=msg2)
+
+
+async def delete(msg):
+    """\
+    !delete ch_id mess_id1 mess_id2: del сообщения (по id) в указанном канале \
+    """
+
+    #await msg.answer(other.comfortable_help([str(purge_after.__doc__)]))
+    # await msg.answer("```css\n" + str(delete.__doc__) + "```")
+    #return
+    err = len(msg.args) < 3
+
+    if not err:
+        ch = C.client.get_channel(msg.args[1])
+        err = not ch
+
+    if err:
+        msg.answer(other.comfortable_help([str(delete.__doc__)]))
         return
 
     done = False
@@ -263,8 +373,8 @@ async def undeny(msg):
 
 async def mute(msg):
     """\
-    !mute: выключить комменты Беккета по ключевым словам во всех каналах
-    !mute id1 id2 ... : выключить комменты Беккета по ключевым словам в указанных каналах \
+    !mute: выключить комменты Беккета во всех каналах
+    !mute id1 id2 ... : выключить комменты Беккета в указанных каналах \
     """
     if len(msg.args) < 2:
         ram.mute_channels = {'All'}
@@ -274,8 +384,8 @@ async def mute(msg):
 
 async def unmute(msg):
     """\
-    !unmute: включить комменты Беккета по ключевым словам во всех каналах
-    !unmute id1 id2 ... : включить комменты Беккета по ключевым словам в указанных каналах \
+    !unmute: включить комменты Беккета во всех каналах
+    !unmute id1 id2 ... : включить комменты Беккета в указанных каналах \
     """
     if len(msg.args) < 2:
         ram.mute_channels = set()
@@ -292,7 +402,17 @@ async def mute_list(msg):
 
 
 async def test(msg):
-    await msg.answer('test!')
+    #await msg.answer('test!')
+    # ch = C.client.get_channel('419968987112275979')
+    # mess = await C.client.get_message(ch, msg.args[1])
+    # await C.client.purge_from(channel=ch, limit=5, after=mess)
+
+    if len(msg.args)>1:
+        N = int(msg.args[1])
+    else:
+        N = 10
+    for i in range(0,N):
+        await msg.answer('Тест ' + str(i+1))
 
 
 async def roles(msg):

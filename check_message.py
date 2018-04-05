@@ -31,8 +31,9 @@ class Msg:
         self.cmd_ch = ram.cmd_channels.get(self.author, set())
         self.rep_ch = ram.rep_channels.get(self.author, set())
 
-    def prepare(self):
-        self.args = self.text.translate(C.punct2space).split()
+    def prepare(self, fun=''):
+        text = self.text.replace(fun,'')
+        self.args = ([fun] or []) + text.translate(C.punct2space).split()
         self.words = set(self.args)
 
     async def delete(self):
@@ -52,15 +53,19 @@ class Msg:
         if self.channel.id not in self.rep_ch:
             await C.client.send_message(self.channel, text)
 
-    async def answer(self, text):
-        await C.client.send_message(self.channel, text)
+    async def answer(self, text=None, emb=None):
+        if type(text) == type([]):
+            for s in text:
+                await C.client.send_message(self.channel, content=s, embed=emb)
+        else:
+            await C.client.send_message(self.channel, content=text, embed=emb)
 
     async def say(self, channel, text):
         await C.client.send_message(channel, text)
 
-    async def purge(self, channel, check_count=1, check=None):
+    async def purge(self, channel, check_count=1, check=None, aft=None, bef=None):
         try:
-            await C.client.purge_from(channel, limit=int(check_count), check=check)
+            await C.client.purge_from(channel, limit=int(check_count), check=check, after=aft, before=bef)
         except discord.Forbidden:
             print("Bot haven't permissions here.")
 
@@ -90,11 +95,12 @@ async def reaction(message):
         if fun and hasattr(cmd, fun):
             command = getattr(cmd, fun)
             if callable(command) and (fun in C.free_cmds or msg.super):
-                msg.prepare()
+                msg.prepare(fun)
                 await command(msg)
                 return
 
-    if ram.mute_channels.intersection({msg.channel.id, 'All'}) or msg.author in ram.ignore_users:
+    if (ram.mute_channels.intersection({msg.channel.id, 'All'}) or
+            msg.author in ram.ignore_users or msg.channel.id in C.ignore_channels):
         return
 
     msg.prepare()

@@ -29,11 +29,15 @@ beckett_id = '419678772896333824'
 
 superusers = {'119762429969301504',  # Rainfall
               '95525404592316416',  # Манф
-              '414384012568690688',  # Kuro // just for testing, really
+              '414384012568690688',  # Kuro
               '203539589284102144',  # Magdavius
               prince_id}
 
 beckett_names = {'беккет', 'бэккет', '419678772896333824', 'beckett'}
+channels = {}
+silent_channels = {}
+ignore_channels = {}
+
 
 punct2space = str.maketrans(string.punctuation, ' ' * len(string.punctuation))  # for translate
 free_cmds = {'roll','help','ignore'}
