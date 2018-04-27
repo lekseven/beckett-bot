@@ -516,7 +516,7 @@ dataKeys = {
     'anarch':       {'анарх', 'anarch'},
 ####    People    ####
     'prince':       {'княз', 'княз', 'prince', 'наталь', 'натал', 'natali'},
-    'sheriff':      {'шериф', 'sheriff', 'манф', 'манфред', 'manfred', 'manf'},
+#    'sheriff':      {'шериф', 'sheriff', 'манф', 'манфред', 'manfred', 'manf'},
 ####    Personalities    ####
     'cain':         {'каин', 'первоубийца', 'cain'},
     'theo':         {'тео', 'бел', 'белл', 'колокольчик', 'theo', 'bell'},
