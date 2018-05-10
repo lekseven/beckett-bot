@@ -486,7 +486,7 @@ async def embrace(msg):
         await msg.report(text)
 
     else:
-        msg.answer("Не могу найти такого пользователя.")
+        await msg.answer("Не могу найти такого пользователя.")
 
 
 async def clear_clans(msg):
