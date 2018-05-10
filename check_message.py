@@ -23,9 +23,10 @@ class Msg:
         self.args = []
         self.words = set()
         self.channel = message.channel
-        self.roles = [role.name for role in server.get_member(self.author).roles[1:]]
+        self.roles = [role.id for role in server.get_member(self.author).roles[1:]]
         self.prince = self.author == C.prince_id
-        self.super = self.author in C.superusers or self.prince
+        self.super = self.author in C.superusers or (self.prince or
+            C.roles['Sheriff'] in self.roles or C.roles['Scourge'] in self.roles)
         self.torpor = (not self.prince and self.author in ram.torpor_users and
                        (self.channel.id in ram.torpor_users[self.author] or 'All' in ram.torpor_users[self.author]))
         self.cmd_ch = ram.cmd_channels.get(self.author, set())

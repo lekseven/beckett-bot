@@ -6,6 +6,8 @@ import constants as C
 import check_message
 import other
 
+import local_memory as ram
+
 
 # with open('torpor.json', 'r', encoding='utf-8') as torporFile:
 #    torporData = json.load(torporFile)
@@ -26,6 +28,9 @@ async def on_ready():
     print(C.client.user.id)
     print('------')
 
+    C.server = C.client.get_server(C.VTM_SERVER_ID)
+    # pass
+
 
 @C.client.event
 async def on_message(message):
@@ -42,21 +47,21 @@ async def on_message(message):
         i = 1
         for emb in message.embeds:
             embed = ['\tEmb_'+str(i)+':']
-            embed += other.str_keys(emb, ['title', 'url', 'description'], '\t\t')
+            embed += [other.str_keys(emb, ['title', 'url', 'description'], '\t\t')]
             if 'author' in emb:
                 embed += ['\t\t[author]:']
-                embed += other.str_keys(emb['author'], ['name', 'icon_url'], '\t\t\t')
+                embed += [other.str_keys(emb['author'], ['name', 'icon_url'], '\t\t\t')]
 
-            if emb.fields:
+            if 'fields' in emb:
                 j = 1
-                for field in emb.fields:
+                for field in emb['fields']:
                     embed += ['\t\t[field_' + str(j) + ']:']
-                    embed += other.str_keys(field, ['name', 'value'], '\t\t\t')
+                    embed += [other.str_keys(field, ['name', 'value'], '\t\t\t')]
                     j += 1
 
             if 'footer' in emb:
                 embed += ['\t\t[footer]:']
-                embed += other.str_keys(emb['footer'], ['icon_url', 'text'], '\t\t\t')
+                embed += [other.str_keys(emb['footer'], ['icon_url', 'text'], '\t\t\t')]
 
             i += 1
             embeds.append('\n'.join(embed))
@@ -67,9 +72,17 @@ async def on_message(message):
     if message.author == C.client.user or message.channel.id in C.ignore_channels:
         return
 
-    # if message.author.id == '414384012568690688': # Kuro
-    #     await C.client.send_file(message.channel, 'Beckett.jpg')
-    #     return
+#    if message.author.id == '414384012568690688' and ram.letter: # Kuro
+#     if message.author.id == '109004244689907712' and ram.letter:  # Natali
+#         emb = discord.Embed(title="Передай пожалуйста Натали лично в руки.", color=0x206694)
+#         emb.set_author(name="Kuro",
+#                          icon_url = "https://cdn.discordapp.com/avatars/414384012568690688/f263f8762379c0ee4d5362127857fdab.png")
+#         emb.set_image(url='https://cdn.discordapp.com/attachments/420056219068399617/432063393826996224/letter.jpg')
+#         emb.set_footer(text='Суббота, 7 апреля 2018')
+#         await C.client.send_message(message.channel,content='Мой <@&398223824514056202>, меня просили передать лично вам :love_letter:',embed=emb)
+#         #await C.client.send_file(message.channel, 'Beckett.jpg')
+#         ram.letter = False
+#         return
 
     await check_message.reaction(message)
 

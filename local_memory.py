@@ -6,3 +6,5 @@ torpor_users = {}
 
 mute_channels = set()
 ignore_users = set()
+
+# letter = True

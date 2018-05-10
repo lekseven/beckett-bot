@@ -1,4 +1,5 @@
 import re
+import constants as C
 
 def str_keys(dict,keys,pre=''):
     ans=[]
@@ -34,3 +35,7 @@ def comfortable_help(docs):
         texts.append(('```css\n' + '\n'.join(h) + '```').replace('    !', '!'))
 
     return texts
+
+
+def get_user(i): # i must be id, server nickname, true nickname or full nickname (SomeName#1234)
+    return C.server.get_member(i) or C.server.get_member_named(i)

@@ -6,6 +6,7 @@ import random
 import other
 import constants as C
 import local_memory as ram
+import data
 
 """ 
     here only functions as bot-commands (!cmd) with obj of Msg as arg:
@@ -258,7 +259,7 @@ async def delete(msg):
         err = not ch
 
     if err:
-        msg.answer(other.comfortable_help([str(delete.__doc__)]))
+        await msg.answer(other.comfortable_help([str(delete.__doc__)]))
         return
 
     done = False
@@ -416,7 +417,8 @@ async def test(msg):
 
 
 async def roles(msg):
-    await msg.answer(', '.join(msg.roles))
+    #await msg.answer(', '.join(msg.roles))
+    return
 
 
 async def roll(msg):
@@ -438,3 +440,68 @@ async def roll(msg):
         await msg.answer("```" + ''.join(dices) + "```")
     else:
         await msg.answer("```css\n"+str(roll.__doc__)+"```")
+
+
+async def embrace(msg):
+    """\
+    !embrace usr: где usr - никнейм (любой), id или упоминание\
+    """
+    if len(msg.args) < 2:
+        # get help
+        return
+
+    if len(msg.args) < 3:
+        name = msg.args[1]
+    else:
+        name = msg.original.lstrip('!embrace ')
+    user = other.get_user(name)
+    if user:
+        clan = random.choice(list(C.clan_names))
+        roles = [C.discord.utils.get(C.server.roles, id=C.roles[clan])]
+        pander = False
+        if clan in C.sabbat_clans:
+            roles.append(C.discord.utils.get(C.server.roles, id=C.roles['Sabbat']))
+            pander = (clan == 'Noble Pander')
+        try:
+            await C.client.add_roles(user, *roles)
+        except C.discord.Forbidden:
+            print("Bot can't change roles.")
+        except:
+            print("Other error in changing roles")
+        # omg
+        clan_users=[]
+        text = ''
+        if not pander:
+            for mem in C.client.get_all_members():
+                if C.discord.utils.get(mem.roles, id=C.roles[clan]):
+                    clan_users.append(mem.id)
+            sir = random.choice(clan_users)
+            text = random.choice(data.embrace_msg).format(sir='<@'+sir+'>',child='<@'+user.id+'>')
+        else:
+            text = random.choice(data.embrace_pander).format(child='<@' + user.id + '>')
+
+        if clan in C.sabbat_clans and not pander:
+            text += "\n" + random.choice(data.embrace_sabbat)
+
+        await msg.report(text)
+
+    else:
+        msg.answer("Не могу найти такого пользователя.")
+
+
+async def clear_clans(msg):
+    if len(msg.args) < 2:
+        # get help
+        return
+
+    user= other.get_user(msg.original.lstrip('!embrace '))
+    if user:
+        #C.clan_names
+        roles = []
+        for clan in C.clan_names:
+            roles.append(C.discord.utils.get(C.server.roles, id=C.roles[clan]))
+        roles.append(C.discord.utils.get(C.server.roles, id=C.roles['Sabbat']))
+        await C.client.add_roles(user,*roles)
+
+    else:
+        msg.answer("Не могу найти такого пользователя.")
