@@ -63,11 +63,11 @@ async def channel(msg):
     !channel id1 id2 ... : сохраняет список каналов для !mute, !deny, !purge
     !channel: выводит список сохранённых каналов \
     """
-    if len(msg.args) < 2:
-        await msg.answer(('<#' + '>, <#'.join(msg.cmd_ch) + '>') if msg.cmd_ch else 'All')
-    else:
+    if len(msg.args) > 1:
         ram.cmd_channels.setdefault(msg.author, set()).update(set(msg.args[1:]))
         msg.cmd_ch = ram.cmd_channels.get(msg.author, set())
+
+    await msg.answer(('<#' + '>, <#'.join(msg.cmd_ch) + '>') if msg.cmd_ch else 'All')
 
 
 async def unchannel(msg):
@@ -81,6 +81,7 @@ async def unchannel(msg):
         ram.cmd_channels.setdefault(msg.author, set()).difference_update(set(msg.args[1:]))
 
     msg.cmd_ch = ram.cmd_channels.get(msg.author, set())
+    await msg.answer(('<#' + '>, <#'.join(msg.cmd_ch) + '>') if msg.cmd_ch else 'All')
 
 
 async def report(msg):
@@ -88,11 +89,12 @@ async def report(msg):
     !report id1 id2 ... : сохраняет список каналов для вывода сообщений (!say, инф от !deny)
     !report: выводит список сохранённых каналов \
     """
-    if len(msg.args) < 2:
-        await msg.answer(('<#' + '>, <#'.join(msg.rep_ch) + '>') if msg.rep_ch else 'None')
-    else:
+    if len(msg.args) > 1:
         ram.rep_channels.setdefault(msg.author, set()).update(set(msg.args[1:]))
         msg.rep_ch = ram.rep_channels.get(msg.author, set())
+
+    await msg.answer(('<#' + '>, <#'.join(msg.rep_ch) + '>') if msg.rep_ch else 'None')
+
 
 
 async def unreport(msg):
@@ -106,6 +108,7 @@ async def unreport(msg):
         ram.rep_channels.setdefault(msg.author, set()).difference_update(set(msg.args[1:]))
 
     msg.rep_ch = ram.rep_channels.get(msg.author, set())
+    await msg.answer(('<#' + '>, <#'.join(msg.rep_ch) + '>') if msg.rep_ch else 'None')
 
 
 async def say(msg):
@@ -382,6 +385,8 @@ async def mute(msg):
     else:
         ram.mute_channels.update(set(msg.args[1:]))
 
+    await mute_list(msg)
+
 
 async def unmute(msg):
     """\
@@ -392,6 +397,8 @@ async def unmute(msg):
         ram.mute_channels = set()
     else:
         ram.mute_channels.difference_update(set(msg.args[1:]))
+
+    await mute_list(msg)
 
 
 async def mute_list(msg):

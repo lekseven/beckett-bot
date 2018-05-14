@@ -22,6 +22,8 @@ if not WELCOME_CHANNEL_ID:
     print('Config var WELCOME_CHANNEL_ID is not defined.')
     sys.exit()
 
+DATABASE_URL = os.environ.get('DATABASE_URL')
+
 client = discord.Client()
 server = {} #server
 

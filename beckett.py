@@ -5,6 +5,10 @@ import discord
 import constants as C
 import check_message
 import other
+import psycopg2
+import psycopg2.extras
+import sys
+import ast
 
 import local_memory as ram
 
@@ -26,10 +30,10 @@ async def on_ready():
     print('Logged in as')
     print(C.client.user.name)
     print(C.client.user.id)
-    print('------')
-
+    load_mem()
     C.server = C.client.get_server(C.VTM_SERVER_ID)
-    # pass
+    print('------')
+#    pass
 
 
 @C.client.event
@@ -86,5 +90,72 @@ async def on_message(message):
 
     await check_message.reaction(message)
 
+def load_mem():
+    print('check memory in DB')
+    module = sys.modules[ram.__name__]
+    module_attrs = dir(module)
+    variables = set(key for key in module_attrs if key[0] != '_' and not callable(getattr(module, key)))
+    conn = None
+    try:
+        conn = psycopg2.connect(C.DATABASE_URL, sslmode='require')
+        cur = conn.cursor(cursor_factory=psycopg2.extras.DictCursor)
+        cur.execute("SELECT * FROM memory")
+        rows = cur.fetchall()
+        for row in rows:
+            #print("%s %s %s" % (row["id"], row["var"], row["val"]))
+            if row['var'] in variables:
+                try:
+                    if row['val'] == 'set()':
+                        v = set()
+                    else:
+                        v = ast.literal_eval(row['val'])
+                except:
+                    print("ast.literal_eval can't eval [%s] = '%s'"%(row['var'], row['val']))
+                else:
+                    setattr(module, row['var'], v)
+    except psycopg2.DatabaseError as e:
+        print('DatabaseError %s' % e)
+        sys.exit(1)
+    else:
+        print('Memory loaded successfully')
+    finally:
+        if conn:
+            conn.close()
 
-C.client.run(C.DISCORD_TOKEN)
+def save_mem():
+    print('save memory in DB')
+    module = sys.modules[ram.__name__]
+    module_attrs = dir(module)
+    variables = {key: getattr(module, key)
+                 for key in module_attrs if key[0] != '_' and not callable(getattr(module, key))}
+    conn = None
+    rows = []
+    for var,val in variables.items():
+        rows.append((var, repr(val),))
+    try:
+        conn = psycopg2.connect(C.DATABASE_URL, sslmode='require')
+        cur = conn.cursor(cursor_factory=psycopg2.extras.DictCursor)
+        cur.execute("TRUNCATE TABLE memory RESTART IDENTITY")
+        query = "INSERT INTO memory (var, val) VALUES (%s, %s)"
+        cur.executemany(query, rows)
+        conn.commit()
+    except psycopg2.DatabaseError as e:
+        print('DatabaseError %s' % e)
+        sys.exit(1)
+    else:
+        print('Memory saved successfully')
+    finally:
+        if conn:
+            conn.close()
+
+try:
+    print("Start ClientRun.")
+    C.client.run(C.DISCORD_TOKEN)
+except:
+    print("[ClientRun] Unexpected error:", sys.exc_info()[0])
+else:
+    print("ClientRun is completed without errors.")
+finally:
+    save_mem()
+    print('finally exit')
+
