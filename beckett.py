@@ -7,6 +7,7 @@ import sys
 import ast
 import asyncio
 import signal
+import functools
 import discord
 import constants as C
 import check_message
@@ -153,29 +154,33 @@ def save_mem():
             conn.close()
 
 
-def on_exit():
-    print("on_exit")
-    print("logout")
-    C.client.logout()
-    print("loop.close")
-    C.client.loop.close()
-    print("close")
-    C.client.close()
+def on_exit(signum):
+    print("Call on_exit by signal %s"%signum)
+    #print("loop.stop")
+    C.client.loop.stop()
+
 
 def main_loop():
     #loop = asyncio.get_event_loop()
     #C.client.loop
-    signal.signal(signal.SIGTERM, on_exit)
-    signal.signal(signal.SIGINT, on_exit)
+    for signame in ('SIGINT', 'SIGTERM'):
+        C.client.loop.add_signal_handler(getattr(signal, signame), functools.partial(on_exit, signame))
+    #signal.signal(signal.SIGINT, on_exit)
+    #signal.signal(signal.SIGTERM, on_exit)
     try:
         print("Start ClientRun.")
         C.client.run(C.DISCORD_TOKEN)
     except:
-        print("[ClientRun] Unexpected error:", sys.exc_info()[0])
+        ei = sys.exc_info()
+        print("[ClientRun] Unexpected error:", ei[0], ei[1])
     else:
         print("ClientRun is completed without errors.")
     finally:
+        # C.client.loop.run_until_complete(C.client.logout())
+        # print('loop.is_running: %s'% C.client.loop.is_running())
+        # print('loop.is_closed: %s' % C.client.loop.is_closed())
+        # print('client.is_logged_in: %s' % C.client.is_logged_in)
+        # print('client.is_closed: %s' % C.client.is_closed)
         save_mem()
         print('finally exit')
-
 main_loop()
