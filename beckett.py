@@ -1,14 +1,16 @@
 # -*- coding: utf8 -*-
 import random
 import data
-import discord
-import constants as C
-import check_message
-import other
 import psycopg2
 import psycopg2.extras
 import sys
 import ast
+import asyncio
+import signal
+import discord
+import constants as C
+import check_message
+import other
 
 import local_memory as ram
 
@@ -90,6 +92,7 @@ async def on_message(message):
 
     await check_message.reaction(message)
 
+
 def load_mem():
     print('check memory in DB')
     module = sys.modules[ram.__name__]
@@ -122,6 +125,7 @@ def load_mem():
         if conn:
             conn.close()
 
+
 def save_mem():
     print('save memory in DB')
     module = sys.modules[ram.__name__]
@@ -148,14 +152,30 @@ def save_mem():
         if conn:
             conn.close()
 
-try:
-    print("Start ClientRun.")
-    C.client.run(C.DISCORD_TOKEN)
-except:
-    print("[ClientRun] Unexpected error:", sys.exc_info()[0])
-else:
-    print("ClientRun is completed without errors.")
-finally:
-    save_mem()
-    print('finally exit')
 
+def on_exit():
+    print("on_exit")
+    print("logout")
+    C.client.logout()
+    print("loop.close")
+    C.client.loop.close()
+    print("close")
+    C.client.close()
+
+def main_loop():
+    #loop = asyncio.get_event_loop()
+    #C.client.loop
+    signal.signal(signal.SIGTERM, on_exit)
+    signal.signal(signal.SIGINT, on_exit)
+    try:
+        print("Start ClientRun.")
+        C.client.run(C.DISCORD_TOKEN)
+    except:
+        print("[ClientRun] Unexpected error:", sys.exc_info()[0])
+    else:
+        print("ClientRun is completed without errors.")
+    finally:
+        save_mem()
+        print('finally exit')
+
+main_loop()
