@@ -1,7 +1,6 @@
 # -*- coding: utf8 -*-
 
 import discord
-#import asyncio
 import re
 import random
 import data
@@ -9,12 +8,13 @@ import check_phrase
 import local_memory as ram
 import beckett_commands as cmd
 import constants as C
+import emj
 
 
 class Msg:
 
     def __init__(self, message):
-        server = C.client.get_server(C.VTM_SERVER_ID)
+        server = C.server
 
         self.author = message.author.id
         self.message = message
@@ -24,16 +24,16 @@ class Msg:
         self.words = set()
         self.channel = message.channel
         self.roles = [role.id for role in server.get_member(self.author).roles[1:]]
-        self.prince = self.author == C.prince_id
-        self.super = self.author in C.superusers or (self.prince or
-            C.roles['Sheriff'] in self.roles or C.roles['Scourge'] in self.roles)
-        self.torpor = (not self.prince and self.author in ram.torpor_users and
-                       (self.channel.id in ram.torpor_users[self.author] or 'All' in ram.torpor_users[self.author]))
+        self.prince = self.author == C.users['Natali']
+        self.super = self.author in C.superusers or (
+                    self.prince or C.roles['Sheriff'] in self.roles or C.roles['Scourge'] in self.roles)
+        self.torpor = (not self.prince and self.author in ram.torpor_users and (
+                    self.channel.id in ram.torpor_users[self.author] or 'All' in ram.torpor_users[self.author]))
         self.cmd_ch = ram.cmd_channels.get(self.author, set())
         self.rep_ch = ram.rep_channels.get(self.author, set())
 
     def prepare(self, fun=''):
-        text = self.text.replace(fun,'')
+        text = self.text.replace(fun, '')
         self.args = ([fun] or []) + text.translate(C.punct2space).split()
         self.words = set(self.args)
 
@@ -43,26 +43,51 @@ class Msg:
         except discord.Forbidden:
             print("Bot haven't permissions here.")
 
-    async def edit(self, new_msg): #not permissions
+    async def edit(self, new_msg):  #not permissions
         await C.client.edit_message(self.message, new_msg)
+
+    async def type2sent(self, ch, text=None, emb=None, extra=0):
+        if text is None:
+            await C.client.send_message(ch, content=text, embed=emb)
+            return 0
+
+        t = min(1500,len(text))/15+extra
+        await C.client.send_typing(ch)
+        for i in range(1, int(t/10)+1):
+            C.loop.call_later(i * 10, lambda: C.loop.create_task(C.client.send_typing(ch)))
+        C.loop.call_later(t, lambda: C.loop.create_task(C.client.send_message(ch, content=text, embed=emb)))
+        return t
 
     async def report(self, text):
         for ch_id in self.rep_ch:
             ch = C.client.get_channel(ch_id)
             if ch:
-                await C.client.send_message(ch, text)
+                #await C.client.send_message(ch, text)
+                await self.type2sent(ch, text)
         if self.channel.id not in self.rep_ch:
-            await C.client.send_message(self.channel, text)
+            #await C.client.send_message(self.channel, text)
+            await self.type2sent(self.channel, text)
 
     async def answer(self, text=None, emb=None):
-        if type(text) == type([]):
+        if isinstance(text,list):
+            t=0
             for s in text:
-                await C.client.send_message(self.channel, content=s, embed=emb)
+                #await C.client.send_message(self.channel, content=s, embed=emb)
+                t+= await self.type2sent(self.channel, text=s, emb=emb, extra=t)
         else:
-            await C.client.send_message(self.channel, content=text, embed=emb)
+            #await C.client.send_message(self.channel, content=text, embed=emb)
+            await self.type2sent(self.channel, text=text, emb=emb)
+
+    async def qanswer(self, text):
+        if isinstance(text,list):
+            for s in text:
+                await C.client.send_message(self.channel, s)
+        else:
+            await C.client.send_message(self.channel, text)
 
     async def say(self, channel, text):
-        await C.client.send_message(channel, text)
+        #await C.client.send_message(channel, text)
+        await self.type2sent(channel, text)
 
     async def purge(self, channel, check_count=1, check=None, aft=None, bef=None):
         try:
@@ -100,17 +125,18 @@ async def reaction(message):
                 await command(msg)
                 return
 
-    if (ram.mute_channels.intersection({msg.channel.id, 'All'}) or
-            msg.author in ram.ignore_users or msg.channel.id in C.ignore_channels):
+    if (ram.mute_channels.intersection(
+            {msg.channel.id, 'All'}) or msg.author in ram.ignore_users or msg.channel.id in C.ignore_channels):
         return
 
     msg.prepare()
-    beckett_mention = C.beckett_names.intersection(msg.words) #any(name in msg.args for name in C.beckett_names)
+    beckett_mention = C.beckett_names.intersection(msg.words)  #any(name in msg.args for name in C.beckett_names)
     found_key = check_phrase.check_args(msg.words)
     prob = random.random()
+    await emj.on_message(message,beckett_mention)
 
     if not found_key and beckett_mention:
-        if msg.author == C.prince_id and prob < 0.4:
+        if msg.author == C.users['Natali'] and prob < 0.4:
             await msg.answer(random.choice(data.specialGreetings))
         else:
             await msg.answer(random.choice(data.responsesData['beckett']))
@@ -124,6 +150,3 @@ async def reaction(message):
 
         if response:
             await msg.answer(random.choice(data.responsesData[found_key]))
-
-#    if 'Tremere' in memberRoles:
-#        await client.send_message(message.channel, "О, я знаю, ты Тремер!")

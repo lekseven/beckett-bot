@@ -1,12 +1,6 @@
 import re
 import constants as C
-
-def str_keys(dict,keys,pre=''):
-    ans=[]
-    for key in keys:
-        if key in dict:
-            ans.append(pre + '[' + key + '] = ' + dict[key])
-    return '\n'.join(ans) if ans else []
+import datetime
 
 
 def comfortable_help(docs):
@@ -37,5 +31,55 @@ def comfortable_help(docs):
     return texts
 
 
+def str_keys(dict,keys,pre=''):
+    ans=[]
+    for key in keys:
+        if key in dict:
+            ans.append(pre + '[' + key + '] = ' + dict[key])
+    return '\n'.join(ans) if ans else []
+
+
+def mess_plus(message):
+    if message.attachments:
+        attachments = []
+        for att in message.attachments:
+            attachments.append('\t\t' + att['url'])
+        print('\n'.join(attachments))
+    if message.embeds: # TODO Check and debug this block
+        embeds = []
+        i = 1
+        for emb in message.embeds:
+            embed = ['\tEmb_'+str(i)+':']
+            embed += [str_keys(emb, ['title', 'url', 'description'], '\t\t')]
+            if 'author' in emb:
+                embed += ['\t\t[author]:']
+                embed += [str_keys(emb['author'], ['name', 'icon_url'], '\t\t\t')]
+
+            if 'fields' in emb:
+                j = 1
+                for field in emb['fields']:
+                    embed += ['\t\t[field_' + str(j) + ']:']
+                    embed += [str_keys(field, ['name', 'value'], '\t\t\t')]
+                    j += 1
+
+            if 'footer' in emb:
+                embed += ['\t\t[footer]:']
+                embed += [str_keys(emb['footer'], ['icon_url', 'text'], '\t\t\t')]
+
+            i += 1
+            embeds.append('\n'.join(embed))
+
+        print('\n'.join(embeds))
+
+
+def t2s(timedata=None, frm="%H:%M:%S"):
+    timedata = timedata or datetime.datetime.utcnow()
+    timedata = timedata.replace(tzinfo=timedata.tzinfo or datetime.timezone.utc)
+    return timedata.astimezone(datetime.timezone(datetime.timedelta(hours=3))).strftime(frm)
+
+
 def get_user(i): # i must be id, server nickname, true nickname or full nickname (SomeName#1234)
     return C.server.get_member(i) or C.server.get_member_named(i)
+
+#fl = discord.utils.get(cl.get_all_channels(),name='flood')
+

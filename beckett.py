@@ -5,13 +5,13 @@ import psycopg2
 import psycopg2.extras
 import sys
 import ast
-import asyncio
 import signal
 import functools
 import discord
 import constants as C
 import check_message
 import other
+import emj
 
 import local_memory as ram
 
@@ -29,51 +29,62 @@ async def on_member_join(member):
 
 @C.client.event
 async def on_ready():
-    #C.channels['FM'] = C.client.get_channel('428784241656987669')
     print('Logged in as')
     print(C.client.user.name)
     print(C.client.user.id)
     load_mem()
     C.server = C.client.get_server(C.VTM_SERVER_ID)
+    emj.save_em() # TODO refresh when emojis were updated
     print('------')
-#    pass
+    #pass
+
+
+@C.client.event
+async def on_reaction_add(reaction, user):
+    message = reaction.message
+    emoji = reaction.emoji
+    print('[{0}]{{on_reaction_add}} {1}: {2}'.format(
+        other.t2s(), user,
+        hasattr(emoji,'id') and ('[{0.id}]({0.name})'.format(emoji)) or emoji ))
+    print('{{To message}}(by {1})<#{0.channel.name}> {0.author}: {0.content}'.format(
+        message, other.t2s(message.timestamp)))
+    other.mess_plus(message)
+    await emj.on_reaction_add(reaction, user)
+
+
+@C.client.event
+async def on_reaction_remove(reaction, user):
+    message = reaction.message
+    emoji = reaction.emoji
+    print('[{0}]{{on_reaction_remove}} {1}: {2}'.format(
+        other.t2s(), user,
+        hasattr(emoji,'id') and ('[{0.id}]({0.name})'.format(emoji)) or emoji ))
+    print('{{From message}}(by {1})<#{0.channel.name}> {0.author}: {0.content}'.format(
+        message, other.t2s(message.timestamp)))
+    other.mess_plus(message)
+    await emj.on_reaction_remove(reaction, user)
+
+
+@C.client.event
+async def on_message_edit(before, after):
+    print('[{0}]{{on_edit}}(from {2})<#{1.channel.name}> {1.author}: {1.content}'.format(
+        other.t2s(), after, other.t2s(before.timestamp)))
+    other.mess_plus(after)
+
+
+@C.client.event
+async def on_message_delete(message):
+    print('[{0}]{{on_delete}}(from {2})<#{1.channel.name}> {1.author}: {1.content}'.format(
+        other.t2s(), message, other.t2s(message.timestamp)))
+    other.mess_plus(message)
 
 
 @C.client.event
 async def on_message(message):
     # Log
-    print('[{0}] <#{1.channel.name}> {1.author}: {1.content}'.
-          format(message.timestamp.strftime("%H:%M:%S"), message))
-    if message.attachments:
-        attachments = []
-        for att in message.attachments:
-            attachments.append('\t\t' + att['url'])
-        print('\n'.join(attachments))
-    if message.embeds: # TODO Check and debug this block
-        embeds = []
-        i = 1
-        for emb in message.embeds:
-            embed = ['\tEmb_'+str(i)+':']
-            embed += [other.str_keys(emb, ['title', 'url', 'description'], '\t\t')]
-            if 'author' in emb:
-                embed += ['\t\t[author]:']
-                embed += [other.str_keys(emb['author'], ['name', 'icon_url'], '\t\t\t')]
-
-            if 'fields' in emb:
-                j = 1
-                for field in emb['fields']:
-                    embed += ['\t\t[field_' + str(j) + ']:']
-                    embed += [other.str_keys(field, ['name', 'value'], '\t\t\t')]
-                    j += 1
-
-            if 'footer' in emb:
-                embed += ['\t\t[footer]:']
-                embed += [other.str_keys(emb['footer'], ['icon_url', 'text'], '\t\t\t')]
-
-            i += 1
-            embeds.append('\n'.join(embed))
-
-        print('\n'.join(embeds))
+    print('[{0}]{{on_message}}<#{1.channel.name}> {1.author}: {1.content}'.
+          format(other.t2s(message.timestamp), message))
+    other.mess_plus(message)
     # End log
 
     if message.author == C.client.user or message.channel.id in C.ignore_channels:
@@ -156,17 +167,13 @@ def save_mem():
 
 def on_exit(signum):
     print("Call on_exit by signal %s"%signum)
-    #print("loop.stop")
-    C.client.loop.stop()
+    C.loop.create_task(C.client.logout())
+    #C.loop.stop()
 
 
 def main_loop():
-    #loop = asyncio.get_event_loop()
-    #C.client.loop
     for signame in ('SIGINT', 'SIGTERM'):
-        C.client.loop.add_signal_handler(getattr(signal, signame), functools.partial(on_exit, signame))
-    #signal.signal(signal.SIGINT, on_exit)
-    #signal.signal(signal.SIGTERM, on_exit)
+        C.loop.add_signal_handler(getattr(signal, signame), functools.partial(on_exit, signame))
     try:
         print("Start ClientRun.")
         C.client.run(C.DISCORD_TOKEN)
@@ -176,11 +183,11 @@ def main_loop():
     else:
         print("ClientRun is completed without errors.")
     finally:
-        # C.client.loop.run_until_complete(C.client.logout())
-        # print('loop.is_running: %s'% C.client.loop.is_running())
-        # print('loop.is_closed: %s' % C.client.loop.is_closed())
-        # print('client.is_logged_in: %s' % C.client.is_logged_in)
-        # print('client.is_closed: %s' % C.client.is_closed)
         save_mem()
         print('finally exit')
+
+# main_loop[try] -> ERROR -> main_loop[except] -> main_loop[finally] -> sys.exit(0)
+# main_loop[try] -> SIG -> on_exit -> main_loop[else] -> main_loop[finally] -> sys.exit(0)
 main_loop()
+sys.exit(0)
+

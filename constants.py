@@ -25,16 +25,20 @@ if not WELCOME_CHANNEL_ID:
 DATABASE_URL = os.environ.get('DATABASE_URL')
 
 client = discord.Client()
+loop = client.loop
 server = {} #server
 
-prince_id = '109004244689907712'
-beckett_id = '419678772896333824'
+users = {
+    'Natali': '109004244689907712',
+    'Manf': '95525404592316416',
+    'Doriana': '347045128617197568',
+    'Tony': '377091220859518988',
+    'Kuro': '414384012568690688',
+    'Magdavius': '203539589284102144',
+    'bot': '419678772896333824'
+}
 
-superusers = {'414384012568690688',  # Kuro
-              '203539589284102144',  # Magdavius
-              #'119762429969301504',  # Rainfall
-              #'95525404592316416',  # Манф // check by role
-              prince_id}
+superusers = {users['Natali'], users['Kuro'], users['Magdavius'], } # Manf & Doriana checked by roles
 
 beckett_names = {'беккет', 'бэккет', '419678772896333824', 'beckett'}
 channels = {}

@@ -1,7 +1,6 @@
 # -*- coding: utf8 -*-
 import discord
 import sys
-import re
 import random
 import other
 import constants as C
@@ -36,7 +35,7 @@ async def help(msg):    # TODO rewrite help, may be?
     else:
         texts = 'Увы, с этим ничем не могу помочь :sweat:'
 
-    await msg.answer(texts)
+    await msg.qanswer(texts)
 
 
 '''
@@ -67,7 +66,7 @@ async def channel(msg):
         ram.cmd_channels.setdefault(msg.author, set()).update(set(msg.args[1:]))
         msg.cmd_ch = ram.cmd_channels.get(msg.author, set())
 
-    await msg.answer(('<#' + '>, <#'.join(msg.cmd_ch) + '>') if msg.cmd_ch else 'All')
+    await msg.qanswer(('<#' + '>, <#'.join(msg.cmd_ch) + '>') if msg.cmd_ch else 'All')
 
 
 async def unchannel(msg):
@@ -81,7 +80,7 @@ async def unchannel(msg):
         ram.cmd_channels.setdefault(msg.author, set()).difference_update(set(msg.args[1:]))
 
     msg.cmd_ch = ram.cmd_channels.get(msg.author, set())
-    await msg.answer(('<#' + '>, <#'.join(msg.cmd_ch) + '>') if msg.cmd_ch else 'All')
+    await msg.qanswer(('<#' + '>, <#'.join(msg.cmd_ch) + '>') if msg.cmd_ch else 'All')
 
 
 async def report(msg):
@@ -93,7 +92,7 @@ async def report(msg):
         ram.rep_channels.setdefault(msg.author, set()).update(set(msg.args[1:]))
         msg.rep_ch = ram.rep_channels.get(msg.author, set())
 
-    await msg.answer(('<#' + '>, <#'.join(msg.rep_ch) + '>') if msg.rep_ch else 'None')
+    await msg.qanswer(('<#' + '>, <#'.join(msg.rep_ch) + '>') if msg.rep_ch else 'None')
 
 
 
@@ -108,7 +107,7 @@ async def unreport(msg):
         ram.rep_channels.setdefault(msg.author, set()).difference_update(set(msg.args[1:]))
 
     msg.rep_ch = ram.rep_channels.get(msg.author, set())
-    await msg.answer(('<#' + '>, <#'.join(msg.rep_ch) + '>') if msg.rep_ch else 'None')
+    await msg.qanswer(('<#' + '>, <#'.join(msg.rep_ch) + '>') if msg.rep_ch else 'None')
 
 
 async def say(msg):
@@ -116,6 +115,18 @@ async def say(msg):
     !say some_text: сказать Беккетом some_text на каналах из !report \
     """
     await msg.report(msg.original.lstrip('!say '))
+
+
+async def emoji(msg):
+    """\
+    !emoji: вкл/выкл эмоджи Беккета за пользователя \
+    """
+    if msg.author in ram.emoji_users:
+        ram.emoji_users.discard(msg.author)
+        await msg.qanswer('Emoji mode off')
+    else:
+        ram.emoji_users.add(msg.author)
+        await msg.qanswer('Emoji mode on')
 
 
 async def purge(msg):
@@ -158,7 +169,7 @@ async def purge_aft(msg):
         err = not mess
 
     if err:
-        await msg.answer(other.comfortable_help([str(purge_aft.__doc__)]))
+        await msg.qanswer(other.comfortable_help([str(purge_aft.__doc__)]))
         return
 
     count = msg.args[3] if len(msg.args) > 3 else 1000000
@@ -193,7 +204,7 @@ async def purge_ere(msg):
         err = not mess
 
     if err:
-        await msg.answer(other.comfortable_help([str(purge_ere.__doc__)]))
+        await msg.qanswer(other.comfortable_help([str(purge_ere.__doc__)]))
         return
 
     count = msg.args[3] if len(msg.args) > 3 else 1
@@ -232,7 +243,7 @@ async def purge_bet(msg):
         err = not msg2
 
     if err:
-        await msg.answer(other.comfortable_help([str(purge_bet.__doc__)]))
+        await msg.qanswer(other.comfortable_help([str(purge_bet.__doc__)]))
         return
 
     check = None
@@ -256,13 +267,13 @@ async def delete(msg):
     # await msg.answer("```css\n" + str(delete.__doc__) + "```")
     #return
     err = len(msg.args) < 3
-
+    ch = None
     if not err:
         ch = C.client.get_channel(msg.args[1])
         err = not ch
 
     if err:
-        await msg.answer(other.comfortable_help([str(delete.__doc__)]))
+        await msg.qanswer(other.comfortable_help([str(delete.__doc__)]))
         return
 
     done = False
@@ -277,7 +288,7 @@ async def delete(msg):
             print("Bot can't find message.")
 
     if done:
-        await msg.answer(":ok_hand:")
+        await msg.qanswer(":ok_hand:")
 
 
 async def ignore(msg): # TODO more phrases here
@@ -290,6 +301,72 @@ async def ignore(msg): # TODO more phrases here
     else:
         ram.ignore_users.add(msg.author)
         await msg.answer("Не хочешь разговаривать, ну и не надо :confused:.")
+
+
+async def embrace(msg):
+    """\
+    !embrace usr: где usr - никнейм (любой), id или упоминание\
+    """
+    if len(msg.args) < 2:
+        # get help
+        return
+
+    if len(msg.args) < 3:
+        name = msg.args[1]
+    else:
+        name = msg.original.lstrip('!embrace ')
+    user = other.get_user(name)
+    if user:
+        clan = random.choice(list(C.clan_names))
+        roles = [C.discord.utils.get(C.server.roles, id=C.roles[clan])]
+        pander = False
+        if clan in C.sabbat_clans:
+            roles.append(C.discord.utils.get(C.server.roles, id=C.roles['Sabbat']))
+            pander = (clan == 'Noble Pander')
+        try:
+            await C.client.add_roles(user, *roles)
+        except C.discord.Forbidden:
+            print("Bot can't change roles.")
+        except:
+            print("Other error in changing roles")
+        # omg
+        clan_users=[]
+        text = ''
+        if not pander:
+            for mem in C.client.get_all_members():
+                if C.discord.utils.get(mem.roles, id=C.roles[clan]):
+                    clan_users.append(mem.id)
+            sir = random.choice(clan_users)
+            text = random.choice(data.embrace_msg).format(sir='<@'+sir+'>',child='<@'+user.id+'>')
+        else:
+            text = random.choice(data.embrace_pander).format(child='<@' + user.id + '>')
+
+        if clan in C.sabbat_clans and not pander:
+            text += "\n" + random.choice(data.embrace_sabbat)
+
+        await msg.report(text)
+
+    else:
+        await msg.qanswer("Не могу найти такого пользователя.")
+
+
+async def clear_clans(msg):
+    if len(msg.args) < 2:
+        # get help
+        return
+
+    user= other.get_user(msg.original.lstrip('!embrace '))
+    if user:
+        #C.clan_names
+        roles = []
+        for clan in C.clan_names:
+            roles.append(C.discord.utils.get(C.server.roles, id=C.roles[clan]))
+        roles.append(C.discord.utils.get(C.server.roles, id=C.roles['Sabbat']))
+        await C.client.add_roles(user,*roles)
+
+    else:
+        msg.qanswer("Не могу найти такого пользователя.")
+
 # endregion
 
     # region Deny commands
@@ -309,7 +386,7 @@ async def deny(msg):
                 '<@' + user + '>:\t<#' + '>, <#'.join(ram.torpor_users[user]) + '>' for user in ram.torpor_users))
 
     # else - deny by id (from args) in channels (from mem.cmd_channels)
-    nope = {C.prince_id, C.beckett_id, msg.author}
+    nope = {C.users['Natali'], C.users['bot'], msg.author}
     ch = msg.cmd_ch or {'All'}
     members = []
 
@@ -405,7 +482,7 @@ async def mute_list(msg):
     """\
     !mute_list: список каналов "выключенного" Беккета-комментатора \
     """
-    await msg.answer(('<#' + '>, <#'.join(ram.mute_channels) + '>') if ram.mute_channels else 'None')
+    await msg.qanswer(('<#' + '>, <#'.join(ram.mute_channels) + '>') if ram.mute_channels else 'None')
 # endregion
 
 
@@ -420,7 +497,7 @@ async def test(msg):
     else:
         N = 10
     for i in range(0,N):
-        await msg.answer('Тест ' + str(i+1))
+        await msg.qanswer('Тест ' + str(i+1))
 
 
 async def roles(msg):
@@ -444,71 +521,6 @@ async def roll(msg):
         dices = []
         for i in range(0, count):
             dices += ['{:02d}'.format(i + 1), 'd:\t', str(random.randint(1, dice)), '\n']
-        await msg.answer("```" + ''.join(dices) + "```")
+        await msg.qanswer("```" + ''.join(dices) + "```")
     else:
-        await msg.answer("```css\n"+str(roll.__doc__)+"```")
-
-
-async def embrace(msg):
-    """\
-    !embrace usr: где usr - никнейм (любой), id или упоминание\
-    """
-    if len(msg.args) < 2:
-        # get help
-        return
-
-    if len(msg.args) < 3:
-        name = msg.args[1]
-    else:
-        name = msg.original.lstrip('!embrace ')
-    user = other.get_user(name)
-    if user:
-        clan = random.choice(list(C.clan_names))
-        roles = [C.discord.utils.get(C.server.roles, id=C.roles[clan])]
-        pander = False
-        if clan in C.sabbat_clans:
-            roles.append(C.discord.utils.get(C.server.roles, id=C.roles['Sabbat']))
-            pander = (clan == 'Noble Pander')
-        try:
-            await C.client.add_roles(user, *roles)
-        except C.discord.Forbidden:
-            print("Bot can't change roles.")
-        except:
-            print("Other error in changing roles")
-        # omg
-        clan_users=[]
-        text = ''
-        if not pander:
-            for mem in C.client.get_all_members():
-                if C.discord.utils.get(mem.roles, id=C.roles[clan]):
-                    clan_users.append(mem.id)
-            sir = random.choice(clan_users)
-            text = random.choice(data.embrace_msg).format(sir='<@'+sir+'>',child='<@'+user.id+'>')
-        else:
-            text = random.choice(data.embrace_pander).format(child='<@' + user.id + '>')
-
-        if clan in C.sabbat_clans and not pander:
-            text += "\n" + random.choice(data.embrace_sabbat)
-
-        await msg.report(text)
-
-    else:
-        await msg.answer("Не могу найти такого пользователя.")
-
-
-async def clear_clans(msg):
-    if len(msg.args) < 2:
-        # get help
-        return
-
-    user= other.get_user(msg.original.lstrip('!embrace '))
-    if user:
-        #C.clan_names
-        roles = []
-        for clan in C.clan_names:
-            roles.append(C.discord.utils.get(C.server.roles, id=C.roles[clan]))
-        roles.append(C.discord.utils.get(C.server.roles, id=C.roles['Sabbat']))
-        await C.client.add_roles(user,*roles)
-
-    else:
-        msg.answer("Не могу найти такого пользователя.")
+        await msg.qanswer("```css\n"+str(roll.__doc__)+"```")
