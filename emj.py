@@ -92,8 +92,8 @@ async def on_reaction_add(reaction, user):
             await C.client.add_reaction(message, emoji)
         return
 
-    # if message.author == C.server.me or message.author == user:
-    #     return
+    if message.author == C.server.me or message.author == user:
+        return
 
     if user.id in name_em:
         # emoji[0] because it can be different colors
@@ -147,7 +147,7 @@ async def on_message(message, beckett_mention):
     if author == C.users['Natali']:
         if beckett_mention:
             print('Like Natali for Beckett')
-            await C.client.add_reaction(message, emojis['green_heart'])
+            await C.client.add_reaction(message, emojis['purple_heart']) #green_heart
         elif prob < 0.01:
             print('Like Natali chance 0.01')
             await C.client.add_reaction(message, emojis['purple_heart'])

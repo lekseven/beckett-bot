@@ -14,7 +14,7 @@ import other
 import emj
 
 import local_memory as ram
-
+#import Log
 
 # with open('torpor.json', 'r', encoding='utf-8') as torporFile:
 #    torporData = json.load(torporFile)
@@ -36,7 +36,7 @@ async def on_ready():
     C.server = C.client.get_server(C.VTM_SERVER_ID)
     emj.save_em() # TODO refresh when emojis were updated
     print('------')
-    #pass
+    pass
 
 
 @C.client.event
@@ -168,6 +168,7 @@ def save_mem():
 def on_exit(signum):
     print("Call on_exit by signal %s"%signum)
     C.loop.create_task(C.client.logout())
+    pass
     #C.loop.stop()
 
 
@@ -186,8 +187,11 @@ def main_loop():
         save_mem()
         print('finally exit')
 
+
 # main_loop[try] -> ERROR -> main_loop[except] -> main_loop[finally] -> sys.exit(0)
 # main_loop[try] -> SIG -> on_exit -> main_loop[else] -> main_loop[finally] -> sys.exit(0)
+#Log.log_fun(main_loop)
+#Log.send_log()
 main_loop()
 sys.exit(0)
 

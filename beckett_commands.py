@@ -302,7 +302,7 @@ async def ignore(msg): # TODO more phrases here
         ram.ignore_users.add(msg.author)
         await msg.answer("Не хочешь разговаривать, ну и не надо :confused:.")
 
-
+#TODO debug
 async def embrace(msg):
     """\
     !embrace usr: где usr - никнейм (любой), id или упоминание\
@@ -311,13 +311,24 @@ async def embrace(msg):
         # get help
         return
 
+    clan = None
     if len(msg.args) < 3:
         name = msg.args[1]
     else:
-        name = msg.original.lstrip('!embrace ')
+        role = (C.discord.utils.get(C.server.roles, id=msg.args[1]) or
+                C.discord.utils.get(C.server.roles, name=msg.args[1]))
+        if role:
+            clan = C.role_by_id.get(clan.id, None)
+            if clan in C.clan_names:
+                name = msg.original.lstrip('!embrace ' + msg.args[1])
+            else:
+                print("It's not clan role")
+                return
+        else:
+            name = msg.original.lstrip('!embrace ')
     user = other.get_user(name)
     if user:
-        clan = random.choice(list(C.clan_names))
+        clan = clan or random.choice(list(C.clan_names))
         roles = [C.discord.utils.get(C.server.roles, id=C.roles[clan])]
         pander = False
         if clan in C.sabbat_clans:

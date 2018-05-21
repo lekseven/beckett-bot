@@ -40,7 +40,7 @@ users = {
 
 superusers = {users['Natali'], users['Kuro'], users['Magdavius'], } # Manf & Doriana checked by roles
 
-beckett_names = {'беккет', 'бэккет', '419678772896333824', 'beckett'}
+beckett_names = {'беккет', 'бэккет', users['bot'], 'beckett', '419975091544391680', } # last - role_id
 channels = {}
 silent_channels = {}
 ignore_channels = {}
@@ -75,6 +75,8 @@ roles = {'Prince': '398223824514056202',
          'Sabbat': '422166674528272384',
          'Anarch': '423408828097363978',
 }
+
+role_by_id = {value: key for (key, value) in roles.items()}
 
 clan_names = {'Malkavian', 'Toreador', 'Brujah', 'Ventrue', 'Nosferatu', 'Gangrel', 'Tremere',
               'Ravnos', 'Followers of Set', 'Assamite', 'Giovanni',
