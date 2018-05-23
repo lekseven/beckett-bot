@@ -19,28 +19,31 @@ import local_memory as ram
 # with open('torpor.json', 'r', encoding='utf-8') as torporFile:
 #    torporData = json.load(torporFile)
 
-
-@C.client.event
-async def on_member_join(member):
-    welcomeChannel = discord.Object(C.WELCOME_CHANNEL_ID)
-    fmt = random.choice(data.welcomeMsgList)
-    await C.client.send_message(welcomeChannel, fmt.format(member))
-
-
 @C.client.event
 async def on_ready():
     print('Logged in as')
     print(C.client.user.name)
     print(C.client.user.id)
     load_mem()
+    await other.test_status(ram.game)
     C.server = C.client.get_server(C.VTM_SERVER_ID)
     emj.save_em() # TODO refresh when emojis were updated
     print('------')
+    C.Ready = True
     pass
 
 
 @C.client.event
+async def on_member_join(member):
+    await other.Ready()
+    welcomeChannel = discord.Object(C.WELCOME_CHANNEL_ID)
+    fmt = random.choice(data.welcomeMsgList)
+    await C.client.send_message(welcomeChannel, fmt.format(member))
+
+
+@C.client.event
 async def on_reaction_add(reaction, user):
+    await other.Ready()
     message = reaction.message
     emoji = reaction.emoji
     print('[{0}]{{on_reaction_add}} {1}: {2}'.format(
@@ -54,6 +57,7 @@ async def on_reaction_add(reaction, user):
 
 @C.client.event
 async def on_reaction_remove(reaction, user):
+    await other.Ready()
     message = reaction.message
     emoji = reaction.emoji
     print('[{0}]{{on_reaction_remove}} {1}: {2}'.format(
@@ -67,6 +71,7 @@ async def on_reaction_remove(reaction, user):
 
 @C.client.event
 async def on_message_edit(before, after):
+    await other.Ready()
     print('[{0}]{{on_edit}}(from {2})<#{1.channel.name}> {1.author}: {1.content}'.format(
         other.t2s(), after, other.t2s(before.timestamp)))
     other.mess_plus(after)
@@ -74,6 +79,7 @@ async def on_message_edit(before, after):
 
 @C.client.event
 async def on_message_delete(message):
+    await other.Ready()
     print('[{0}]{{on_delete}}(from {2})<#{1.channel.name}> {1.author}: {1.content}'.format(
         other.t2s(), message, other.t2s(message.timestamp)))
     other.mess_plus(message)
@@ -81,6 +87,7 @@ async def on_message_delete(message):
 
 @C.client.event
 async def on_message(message):
+    await other.Ready()
     # Log
     print('[{0}]{{on_message}}<#{1.channel.name}> {1.author}: {1.content}'.
           format(other.t2s(message.timestamp), message))
@@ -147,6 +154,8 @@ def save_mem():
     conn = None
     rows = []
     for var,val in variables.items():
+        if isinstance(val,dict):
+            val = {k: v for k,v in val.items() if v != set()}
         rows.append((var, repr(val),))
     try:
         conn = psycopg2.connect(C.DATABASE_URL, sslmode='require')

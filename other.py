@@ -1,6 +1,11 @@
 import re
+import time
 import constants as C
 import datetime
+import discord
+import random
+import data
+import local_memory as ram
 
 
 def comfortable_help(docs):
@@ -79,7 +84,66 @@ def t2s(timedata=None, frm="%H:%M:%S"):
 
 
 def get_user(i): # i must be id, server nickname, true nickname or full nickname (SomeName#1234)
-    return C.server.get_member(i) or C.server.get_member_named(i)
+    return (C.server.get_member(i) or C.server.get_member(i.translate(C.punct2space).replace(' ', '')) or
+            C.server.get_member_named(i.strip(' ')) or C.server.get_member_named(i))
 
 #fl = discord.utils.get(cl.get_all_channels(),name='flood')
 
+
+async def test_status(test):
+    if test:
+        game = discord.Game(name='«Тестирование идёт...»')
+        await C.client.change_presence(game=game, status=discord.Status.dnd, afk=False)
+    else:
+        await C.client.change_presence(game=None, status=discord.Status.online, afk=False)
+
+
+async def Ready():
+    while not C.Ready:
+        time.sleep(1)
+    return
+
+async def do_embrace(user, clan=None):
+    if user:
+        if not clan:
+            for r in user.roles:
+                if r.id in C.clan_ids:
+                    clan = C.role_by_id[r.id]
+                    break
+        clan = clan or random.choice(list(C.clan_names))
+        roles = [C.discord.utils.get(C.server.roles, id=C.roles[clan])]
+        pander = False
+        if clan in C.sabbat_clans:
+            roles.append(C.discord.utils.get(C.server.roles, id=C.roles['Sabbat']))
+            pander = (clan == 'Noble Pander')
+        try:
+            await C.client.add_roles(user, *roles)
+        except C.discord.Forbidden:
+            print("Bot can't change roles.")
+        except:
+            print("Other error in changing roles")
+        # omg
+        clan_users=set()
+        text = ''
+        if not pander:
+            for mem in C.client.get_all_members():
+                if C.discord.utils.get(mem.roles, id=C.roles[clan]) and mem.id != user.id:
+                    clan_users.add(mem.id)
+            clan_users.difference_update(C.not_sir)
+            sir = random.choice(list(clan_users))
+            text = random.choice(data.embrace_msg).format(sir='<@'+sir+'>',child='<@'+user.id+'>')
+        else:
+            text = random.choice(data.embrace_pander).format(child='<@' + user.id + '>')
+
+        if clan in C.sabbat_clans and not pander:
+            text += "\n" + random.choice(data.embrace_sabbat)
+
+        return text
+
+    else:
+        return False    #await msg.qanswer("Не могу найти такого пользователя.")
+
+async def do_embrace_and_say(msg, user, clan=None):
+    ch = C.client.get_channel('398645007944384513')  #flood
+    text = await do_embrace(user, clan=clan)
+    await msg.say(ch, text)

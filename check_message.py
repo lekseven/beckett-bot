@@ -9,12 +9,12 @@ import local_memory as ram
 import beckett_commands as cmd
 import constants as C
 import emj
+import other
 
 
 class Msg:
 
     def __init__(self, message):
-        server = C.server
 
         self.author = message.author.id
         self.message = message
@@ -23,7 +23,7 @@ class Msg:
         self.args = []
         self.words = set()
         self.channel = message.channel
-        self.roles = [role.id for role in server.get_member(self.author).roles[1:]]
+        self.roles = {role.id for role in C.server.get_member(self.author).roles[1:]}
         self.prince = self.author == C.users['Natali']
         self.super = self.author in C.superusers or (
                     self.prince or C.roles['Sheriff'] in self.roles or C.roles['Scourge'] in self.roles)
@@ -51,7 +51,7 @@ class Msg:
             await C.client.send_message(ch, content=text, embed=emb)
             return 0
 
-        t = min(1500,len(text))/15+extra
+        t = min(1500,len(text))/20+extra
         await C.client.send_typing(ch)
         for i in range(1, int(t/10)+1):
             C.loop.call_later(i * 10, lambda: C.loop.create_task(C.client.send_typing(ch)))
@@ -95,7 +95,6 @@ class Msg:
         except discord.Forbidden:
             print("Bot haven't permissions here.")
 
-
 async def reaction(message):
     msg = Msg(message)
 
@@ -125,14 +124,25 @@ async def reaction(message):
                 await command(msg)
                 return
 
+    maybe_embrace = False
     if (ram.mute_channels.intersection(
             {msg.channel.id, 'All'}) or msg.author in ram.ignore_users or msg.channel.id in C.ignore_channels):
-        return
+        if msg.channel.id == '398728556424986624':
+            maybe_embrace = True
+        else:
+            return
 
     msg.prepare()
     beckett_mention = C.beckett_names.intersection(msg.words)  #any(name in msg.args for name in C.beckett_names)
     found_key = check_phrase.check_args(msg.words)
     prob = random.random()
+
+    if msg.channel.id == '398728556424986624' and not msg.roles.intersection(C.clan_ids) and found_key in C.clan_names:
+        C.loop.call_later(random.randrange(300, 600), lambda: C.loop.create_task(other.do_embrace_and_say(msg, msg.message.author, clan=found_key)))
+
+    elif maybe_embrace:
+        return
+
     await emj.on_message(message,beckett_mention)
 
     if not found_key and beckett_mention:

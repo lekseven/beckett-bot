@@ -3,7 +3,7 @@ import os
 import sys
 import discord
 import string
-
+Ready = False
 DISCORD_TOKEN = os.environ.get('DISCORD_TOKEN')
 
 if not DISCORD_TOKEN:
@@ -49,6 +49,7 @@ ignore_channels = {}
 punct2space = str.maketrans(string.punctuation, ' ' * len(string.punctuation))  # for translate
 free_cmds = {'roll','help','ignore'}
 
+# WARNING: Clans keys here must be the same to dataKeys (Clans) in data
 roles = {'Prince': '398223824514056202',
          'Sheriff': '398243225116213310',
          'Scourge': '420621473036632064',
@@ -82,10 +83,11 @@ clan_names = {'Malkavian', 'Toreador', 'Brujah', 'Ventrue', 'Nosferatu', 'Gangre
               'Ravnos', 'Followers of Set', 'Assamite', 'Giovanni',
               'Tzimisce', 'Lasombra', 'Noble Pander',
               'Cappadocian', 'Lasombra Antitribu'}
+clan_ids = { key for key in role_by_id if role_by_id[key] in clan_names}
 #clan_roles = set(roles[i] for i in clan_names)
 sabbat_clans = {'Tzimisce', 'Lasombra', 'Noble Pander'}
 #sabbat_roles = set(roles[i] for i in sabbat_clans)
-
+not_sir = {'235088799074484224'} # Радио "Harpy" 66.6FM
 '''
 Role_names [09.05.2018]:
 

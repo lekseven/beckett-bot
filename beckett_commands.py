@@ -114,7 +114,7 @@ async def say(msg):
     """\
     !say some_text: сказать Беккетом some_text на каналах из !report \
     """
-    await msg.report(msg.original.lstrip('!say '))
+    await msg.report(msg.original[len('!say '):])
 
 
 async def emoji(msg):
@@ -313,50 +313,32 @@ async def embrace(msg):
 
     clan = None
     if len(msg.args) < 3:
-        name = msg.args[1]
+        name = msg.original[len('!embrace '):]
     else:
-        role = (C.discord.utils.get(C.server.roles, id=msg.args[1]) or
-                C.discord.utils.get(C.server.roles, name=msg.args[1]))
+        role = C.discord.utils.get(C.server.roles, id=msg.args[1])
+        ln = 0
+        if not role:
+            for r in C.server.roles:
+                if r.name in msg.original:
+                    if not role or len(r.name) > len(role.name):
+                        role = r
+            if role:
+                ln = len('!embrace ') + len(role.name) + 1
+        else:
+            ln = msg.original.find(' ', len('!embrace ') + 1) + 1
         if role:
-            clan = C.role_by_id.get(clan.id, None)
+            clan = C.role_by_id.get(role.id, None)
             if clan in C.clan_names:
-                name = msg.original.lstrip('!embrace ' + msg.args[1])
+                name = msg.original[ln:]
             else:
-                print("It's not clan role")
+                await msg.qanswer("It's not clan role")
                 return
         else:
-            name = msg.original.lstrip('!embrace ')
+            name = msg.original[len('!embrace '):]
     user = other.get_user(name)
-    if user:
-        clan = clan or random.choice(list(C.clan_names))
-        roles = [C.discord.utils.get(C.server.roles, id=C.roles[clan])]
-        pander = False
-        if clan in C.sabbat_clans:
-            roles.append(C.discord.utils.get(C.server.roles, id=C.roles['Sabbat']))
-            pander = (clan == 'Noble Pander')
-        try:
-            await C.client.add_roles(user, *roles)
-        except C.discord.Forbidden:
-            print("Bot can't change roles.")
-        except:
-            print("Other error in changing roles")
-        # omg
-        clan_users=[]
-        text = ''
-        if not pander:
-            for mem in C.client.get_all_members():
-                if C.discord.utils.get(mem.roles, id=C.roles[clan]):
-                    clan_users.append(mem.id)
-            sir = random.choice(clan_users)
-            text = random.choice(data.embrace_msg).format(sir='<@'+sir+'>',child='<@'+user.id+'>')
-        else:
-            text = random.choice(data.embrace_pander).format(child='<@' + user.id + '>')
-
-        if clan in C.sabbat_clans and not pander:
-            text += "\n" + random.choice(data.embrace_sabbat)
-
+    text = await other.do_embrace(user, clan)
+    if text:
         await msg.report(text)
-
     else:
         await msg.qanswer("Не могу найти такого пользователя.")
 
@@ -366,17 +348,17 @@ async def clear_clans(msg):
         # get help
         return
 
-    user= other.get_user(msg.original.lstrip('!embrace '))
+    user= other.get_user(msg.original[len('!clear_clans '):])
     if user:
         #C.clan_names
         roles = []
         for clan in C.clan_names:
             roles.append(C.discord.utils.get(C.server.roles, id=C.roles[clan]))
         roles.append(C.discord.utils.get(C.server.roles, id=C.roles['Sabbat']))
-        await C.client.add_roles(user,*roles)
+        await C.client.remove_roles(user,*roles)
 
     else:
-        msg.qanswer("Не могу найти такого пользователя.")
+        await msg.qanswer("Не могу найти такого пользователя.")
 
 # endregion
 
@@ -498,17 +480,29 @@ async def mute_list(msg):
 
 
 async def test(msg):
+    ram.game = not ram.game
+    await other.test_status(ram.game)
+
     #await msg.answer('test!')
-    # ch = C.client.get_channel('419968987112275979')
+    # ch = C.client.get_channel('419968987112275979') #398645007944384513
     # mess = await C.client.get_message(ch, msg.args[1])
     # await C.client.purge_from(channel=ch, limit=5, after=mess)
 
-    if len(msg.args)>1:
-        N = int(msg.args[1])
-    else:
-        N = 10
-    for i in range(0,N):
-        await msg.qanswer('Тест ' + str(i+1))
+    # if len(msg.args)>1:
+    #     N = int(msg.args[1])
+    # else:
+    #     N = 10
+    # for i in range(0,N):
+    #     await msg.qanswer('Тест ' + str(i+1))
+
+async def test2(msg):
+    pass
+    # ch = C.client.get_channel('398645007944384513')
+    # await C.client.send_typing(ch)
+    # await C.client.send_typing(ch)
+    # await C.client.send_file(ch, 'pic/mushroom spores.jpg',content=
+    # '*Беккет нынче по лесу гулял,\nГрибочки по тихому он собирал,'
+    # '\nНочь вся прошла - Бекки устал,\nИ споры грибные он тут услыхал...*')
 
 
 async def roles(msg):

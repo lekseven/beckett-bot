@@ -7,5 +7,4 @@ torpor_users = {}
 mute_channels = set()
 ignore_users = set()
 emoji_users = set()
-
-# letter = True
+game = False
