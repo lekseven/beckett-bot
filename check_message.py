@@ -95,6 +95,7 @@ class Msg:
         except discord.Forbidden:
             print("Bot haven't permissions here.")
 
+
 async def reaction(message):
     msg = Msg(message)
 
@@ -138,7 +139,7 @@ async def reaction(message):
     prob = random.random()
 
     if msg.channel.id == '398728556424986624' and not msg.roles.intersection(C.clan_ids) and found_key in C.clan_names:
-        C.loop.call_later(random.randrange(300, 600), lambda: C.loop.create_task(other.do_embrace_and_say(msg, msg.message.author, clan=found_key)))
+        C.loop.call_later(random.randrange(30, 90), lambda: C.loop.create_task(other.do_embrace_and_say(msg, msg.message.author, clan=found_key)))
 
     elif maybe_embrace:
         return

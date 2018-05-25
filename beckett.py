@@ -35,15 +35,17 @@ async def on_ready():
 
 @C.client.event
 async def on_member_join(member):
-    await other.Ready()
-    welcomeChannel = discord.Object(C.WELCOME_CHANNEL_ID)
+    if not C.Ready:
+        return
+    welcome_Channel = C.client.get_channel(C.WELCOME_CHANNEL_ID)
     fmt = random.choice(data.welcomeMsgList)
-    await C.client.send_message(welcomeChannel, fmt.format(member))
+    await C.client.send_message(welcome_Channel, fmt.format(member))
 
 
 @C.client.event
 async def on_reaction_add(reaction, user):
-    await other.Ready()
+    if not C.Ready:
+        return
     message = reaction.message
     emoji = reaction.emoji
     print('[{0}]{{on_reaction_add}} {1}: {2}'.format(
@@ -57,7 +59,8 @@ async def on_reaction_add(reaction, user):
 
 @C.client.event
 async def on_reaction_remove(reaction, user):
-    await other.Ready()
+    if not C.Ready:
+        return
     message = reaction.message
     emoji = reaction.emoji
     print('[{0}]{{on_reaction_remove}} {1}: {2}'.format(
@@ -71,7 +74,8 @@ async def on_reaction_remove(reaction, user):
 
 @C.client.event
 async def on_message_edit(before, after):
-    await other.Ready()
+    if not C.Ready:
+        return
     print('[{0}]{{on_edit}}(from {2})<#{1.channel.name}> {1.author}: {1.content}'.format(
         other.t2s(), after, other.t2s(before.timestamp)))
     other.mess_plus(after)
@@ -79,7 +83,8 @@ async def on_message_edit(before, after):
 
 @C.client.event
 async def on_message_delete(message):
-    await other.Ready()
+    if not C.Ready:
+        return
     print('[{0}]{{on_delete}}(from {2})<#{1.channel.name}> {1.author}: {1.content}'.format(
         other.t2s(), message, other.t2s(message.timestamp)))
     other.mess_plus(message)
@@ -87,7 +92,8 @@ async def on_message_delete(message):
 
 @C.client.event
 async def on_message(message):
-    await other.Ready()
+    if not C.Ready:
+        return
     # Log
     print('[{0}]{{on_message}}<#{1.channel.name}> {1.author}: {1.content}'.
           format(other.t2s(message.timestamp), message))
@@ -193,7 +199,9 @@ def main_loop():
     else:
         print("ClientRun is completed without errors.")
     finally:
-        save_mem()
+        if C.Ready:
+            save_mem()
+        C.Ready = False
         print('finally exit')
 
 

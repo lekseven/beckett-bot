@@ -98,10 +98,10 @@ async def test_status(test):
         await C.client.change_presence(game=None, status=discord.Status.online, afk=False)
 
 
-async def Ready():
-    while not C.Ready:
-        time.sleep(1)
-    return
+# async def Ready():
+#     while not C.Ready:
+#         time.sleep(1)
+#     return
 
 async def do_embrace(user, clan=None):
     if user:
