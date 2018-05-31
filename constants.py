@@ -24,9 +24,11 @@ if not WELCOME_CHANNEL_ID:
 
 DATABASE_URL = os.environ.get('DATABASE_URL')
 
+
 client = discord.Client()
 loop = client.loop
-server = {} #server
+server = discord.Server
+
 
 users = {
     'Natali': '109004244689907712',
@@ -35,19 +37,31 @@ users = {
     'Tony': '377091220859518988',
     'Kuro': '414384012568690688',
     'Magdavius': '203539589284102144',
-    'bot': '419678772896333824'
+    'Rainfall': '119762429969301504',
+    'bot': '419678772896333824',
+    'Creol': '315503918077444096',
+    'Buffy': '297305326665859072',
+}
+
+channels = {
+    'flood': '398645007944384513',
+    'rules': '419207215472181268',
+    'ask': '398728556424986624',
+    '4-sop': '398728854534881280',
+    'stuff': '411647652246323200',
+    'test': '419968987112275979'
 }
 
 superusers = {users['Natali'], users['Kuro'], users['Magdavius'], } # Manf & Doriana checked by roles
 
-beckett_names = {'беккет', 'бэккет', users['bot'], 'beckett', '419975091544391680', } # last - role_id
-channels = {}
+beckett_refs = {users['bot'], '419975091544391680', } # last - role_id
+beckett_names = {users['bot'], '419975091544391680', 'беккет', 'бэккет', 'beckett',} #{'беккет', 'бэккет', 'beckett', }
 silent_channels = {}
 ignore_channels = {}
 
 
 punct2space = str.maketrans(string.punctuation, ' ' * len(string.punctuation))  # for translate
-free_cmds = {'roll','help','ignore'}
+free_cmds = {'roll','help','ignore', 'dominate'}
 
 # WARNING: Clans keys here must be the same to dataKeys (Clans) in data
 roles = {'Prince': '398223824514056202',

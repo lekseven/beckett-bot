@@ -7,6 +7,7 @@ import random
 import data
 import local_memory as ram
 
+find = discord.utils.get
 
 def comfortable_help(docs):
     lens = []
@@ -42,7 +43,6 @@ def str_keys(dict,keys,pre=''):
         if key in dict:
             ans.append(pre + '[' + key + '] = ' + dict[key])
     return '\n'.join(ans) if ans else []
-
 
 def mess_plus(message):
     if message.attachments:
@@ -84,10 +84,49 @@ def t2s(timedata=None, frm="%H:%M:%S"):
 
 
 def get_user(i): # i must be id, server nickname, true nickname or full nickname (SomeName#1234)
-    return (C.server.get_member(i) or C.server.get_member(i.translate(C.punct2space).replace(' ', '')) or
-            C.server.get_member_named(i.strip(' ')) or C.server.get_member_named(i))
+    p_name1 = i.translate(C.punct2space).replace(' ', '')
+    return (C.server.get_member(i) or C.server.get_member(p_name1) or
+            C.server.get_member_named(i.strip(' ')) or C.server.get_member_named(i) or
+            C.server.get_member_named(i.replace('@', '')) or
+            C.server.get_member_named(p_name1))
 
-#fl = discord.utils.get(cl.get_all_channels(),name='flood')
+
+def get_users(names):
+    """
+    :param1: iterator
+    :rtype: set
+    """
+    res = set()
+    for name in names:
+        usr = get_user(name)
+        if usr:
+            res.add(usr.id)
+
+
+def get_mentions(users):
+    """
+    :param1: iterator
+    :rtype: list
+    """
+    return ['<@' + id + '>' for id in users]
+
+
+def get_channel(i):
+    p_i = C.channels[i] if i in C.channels else i
+    return (C.client.get_channel(p_i) or find(C.client.get_all_channels(),name=i) or
+            find(C.client.get_all_channels(),name=i.replace('#', '')))
+
+
+def get_channels(names):
+    """
+    :param1: iterator
+    :rtype: set
+    """
+    res = set()
+    for name in names:
+        ch = get_channel(name)
+        if ch:
+            res.add(ch.id)
 
 
 async def test_status(test):
@@ -103,6 +142,14 @@ async def test_status(test):
 #         time.sleep(1)
 #     return
 
+def ch_list(id_list):
+    text = []
+    for id in id_list:
+        ch = C.client.get_channel(id) or get_user(id)
+        if ch:
+            text.append(ch.mention)
+    return text
+
 async def do_embrace(user, clan=None):
     if user:
         if not clan:
@@ -111,10 +158,10 @@ async def do_embrace(user, clan=None):
                     clan = C.role_by_id[r.id]
                     break
         clan = clan or random.choice(list(C.clan_names))
-        roles = [C.discord.utils.get(C.server.roles, id=C.roles[clan])]
+        roles = [find(C.server.roles, id=C.roles[clan])]
         pander = False
         if clan in C.sabbat_clans:
-            roles.append(C.discord.utils.get(C.server.roles, id=C.roles['Sabbat']))
+            roles.append(find(C.server.roles, id=C.roles['Sabbat']))
             pander = (clan == 'Noble Pander')
         try:
             await C.client.add_roles(user, *roles)
@@ -127,7 +174,7 @@ async def do_embrace(user, clan=None):
         text = ''
         if not pander:
             for mem in C.client.get_all_members():
-                if C.discord.utils.get(mem.roles, id=C.roles[clan]) and mem.id != user.id:
+                if find(mem.roles, id=C.roles[clan]) and mem.id != user.id:
                     clan_users.add(mem.id)
             clan_users.difference_update(C.not_sir)
             sir = random.choice(list(clan_users))
@@ -144,6 +191,6 @@ async def do_embrace(user, clan=None):
         return False    #await msg.qanswer("Не могу найти такого пользователя.")
 
 async def do_embrace_and_say(msg, user, clan=None):
-    ch = C.client.get_channel('398645007944384513')  #flood
+    ch = C.client.get_channel(C.channels['flood'])
     text = await do_embrace(user, clan=clan)
     await msg.say(ch, text)

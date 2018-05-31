@@ -7,17 +7,21 @@ import sys
 import ast
 import signal
 import functools
-import discord
+#import discord
 import constants as C
 import check_message
 import other
 import emj
+import people
 
 import local_memory as ram
 #import Log
 
-# with open('torpor.json', 'r', encoding='utf-8') as torporFile:
-#    torporData = json.load(torporFile)
+
+async def pr_say(text):
+    print(text)
+    await C.client.send_message(other.get_user(C.users['Kuro']), content=text)
+
 
 @C.client.event
 async def on_ready():
@@ -27,10 +31,15 @@ async def on_ready():
     load_mem()
     await other.test_status(ram.game)
     C.server = C.client.get_server(C.VTM_SERVER_ID)
-    emj.save_em() # TODO refresh when emojis were updated
+    emj.save_em()
+    people.bans = await C.client.get_bans(C.server)
     print('------')
     C.Ready = True
-    pass
+    # chs = []
+    # for ch in C.client.get_all_channels():
+    #     chs.append(ch)
+    # pass
+    # pass
 
 
 @C.client.event
@@ -43,6 +52,23 @@ async def on_member_join(member):
 
 
 @C.client.event
+async def on_member_remove(member):
+    if not C.Ready:
+        return
+    await pr_say(str(member) + ' go away!')
+
+
+@C.client.event
+async def on_member_ban(member):
+    await pr_say('Ban ' + str(member))
+
+
+@C.client.event
+async def on_member_unban(server, user):
+    await pr_say('Unban ' + str(user))
+
+
+@C.client.event
 async def on_reaction_add(reaction, user):
     if not C.Ready:
         return
@@ -50,7 +76,7 @@ async def on_reaction_add(reaction, user):
     emoji = reaction.emoji
     print('[{0}]{{on_reaction_add}} {1}: {2}'.format(
         other.t2s(), user,
-        hasattr(emoji,'id') and ('[{0.id}]({0.name})'.format(emoji)) or emoji ))
+        hasattr(emoji, 'id') and ('[{0.id}]({0.name})'.format(emoji)) or emoji))
     print('{{To message}}(by {1})<#{0.channel.name}> {0.author}: {0.content}'.format(
         message, other.t2s(message.timestamp)))
     other.mess_plus(message)
@@ -65,7 +91,7 @@ async def on_reaction_remove(reaction, user):
     emoji = reaction.emoji
     print('[{0}]{{on_reaction_remove}} {1}: {2}'.format(
         other.t2s(), user,
-        hasattr(emoji,'id') and ('[{0.id}]({0.name})'.format(emoji)) or emoji ))
+        hasattr(emoji, 'id') and ('[{0.id}]({0.name})'.format(emoji)) or emoji))
     print('{{From message}}(by {1})<#{0.channel.name}> {0.author}: {0.content}'.format(
         message, other.t2s(message.timestamp)))
     other.mess_plus(message)
@@ -73,21 +99,10 @@ async def on_reaction_remove(reaction, user):
 
 
 @C.client.event
-async def on_message_edit(before, after):
-    if not C.Ready:
-        return
-    print('[{0}]{{on_edit}}(from {2})<#{1.channel.name}> {1.author}: {1.content}'.format(
-        other.t2s(), after, other.t2s(before.timestamp)))
-    other.mess_plus(after)
-
-
-@C.client.event
-async def on_message_delete(message):
-    if not C.Ready:
-        return
-    print('[{0}]{{on_delete}}(from {2})<#{1.channel.name}> {1.author}: {1.content}'.format(
-        other.t2s(), message, other.t2s(message.timestamp)))
-    other.mess_plus(message)
+async def on_server_emojis_update(before, after):
+    # before, after - list of server emojis
+    await pr_say('on_server_emojis_update!')
+    emj.save_em()
 
 
 @C.client.event
@@ -118,6 +133,39 @@ async def on_message(message):
     await check_message.reaction(message)
 
 
+@C.client.event
+async def on_message_edit(before, after):
+    if not C.Ready:
+        return
+    print('[{0}]{{on_edit}}(from {2})<#{1.channel.name}> {1.author}: {1.content}'.format(
+        other.t2s(), after, other.t2s(before.timestamp)))
+    other.mess_plus(after)
+
+
+@C.client.event
+async def on_message_delete(message):
+    if not C.Ready:
+        return
+    print('[{0}]{{on_delete}}(from {2})<#{1.channel.name}> {1.author}: {1.content}'.format(
+        other.t2s(), message, other.t2s(message.timestamp)))
+    other.mess_plus(message)
+
+
+@C.client.event
+async def on_server_role_create(role):
+    await pr_say('New Role' + role.name + '!')
+
+
+@C.client.event
+async def on_server_role_delete(role):
+    await pr_say('Delete Role' + role.name + '!')
+
+
+@C.client.event
+async def on_server_role_update(before, after):
+    await pr_say('Update Role' + before.name + '/' + after.name + '!')
+
+
 def load_mem():
     print('check memory in DB')
     module = sys.modules[ram.__name__]
@@ -138,7 +186,7 @@ def load_mem():
                     else:
                         v = ast.literal_eval(row['val'])
                 except:
-                    print("ast.literal_eval can't eval [%s] = '%s'"%(row['var'], row['val']))
+                    print("ast.literal_eval can't eval [%s] = '%s'" % (row['var'], row['val']))
                 else:
                     setattr(module, row['var'], v)
     except psycopg2.DatabaseError as e:
@@ -159,10 +207,10 @@ def save_mem():
                  for key in module_attrs if key[0] != '_' and not callable(getattr(module, key))}
     conn = None
     rows = []
-    for var,val in variables.items():
-        if isinstance(val,dict):
-            val = {k: v for k,v in val.items() if v != set()}
-        rows.append((var, repr(val),))
+    for var, val in variables.items():
+        if isinstance(val, dict):
+            val = {k: v for k, v in val.items() if v != set()}
+        rows.append((var, repr(val), ))
     try:
         conn = psycopg2.connect(C.DATABASE_URL, sslmode='require')
         cur = conn.cursor(cursor_factory=psycopg2.extras.DictCursor)
@@ -171,7 +219,7 @@ def save_mem():
         cur.executemany(query, rows)
         conn.commit()
     except psycopg2.DatabaseError as e:
-        print('DatabaseError %s' % e)
+        print('[save_mem] <memory> DatabaseError %s' % e)
         sys.exit(1)
     else:
         print('Memory saved successfully')
@@ -181,7 +229,7 @@ def save_mem():
 
 
 def on_exit(signum):
-    print("Call on_exit by signal %s"%signum)
+    print("Call on_exit by signal %s" % signum)
     C.loop.create_task(C.client.logout())
     pass
     #C.loop.stop()
