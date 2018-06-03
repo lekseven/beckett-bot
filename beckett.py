@@ -53,6 +53,7 @@ async def on_member_join(member):
 
 @C.client.event
 async def on_member_remove(member):
+    # it's triggers on 'go away', kick and ban
     if not C.Ready:
         return
     await pr_say(str(member) + ' go away!')

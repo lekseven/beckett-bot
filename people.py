@@ -3,7 +3,7 @@ import datetime as dt
 import psycopg2
 import psycopg2.extras
 
-mems = {}
+usrs = {}
 gone = {}
 bans = []
 
@@ -11,10 +11,10 @@ bans = []
 def distribute(smb, t = None):
     if not smb:
         return False
-    if smb.id in mems or smb.id in gone:
-        return smb.id in mems
+    if smb.id in usrs or smb.id in gone:
+        return smb.id in usrs
     if C.server.get_member(smb.id):
-        mems[smb.id] = {
+        usrs[smb.id] = {
             'name': str(smb),
             'g_morn': 0,
             'g_day': 0,
@@ -58,7 +58,7 @@ async def sync():
 
     mem_rows = []
     usr_rows = []
-    for id, mem in mems.items():
+    for id, mem in usrs.items():
         mem_rows.append([id, *[mem[k] for k in mem if k != 'status']])
     for id, usr in gone.items():
         usr_rows.append([id, *[usr[k] for k in usr if k != 'status']])

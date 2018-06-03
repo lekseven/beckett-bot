@@ -1,40 +1,76 @@
 import re
-import time
+#import time
 import constants as C
 import datetime
 import discord
 import random
 import data
-import local_memory as ram
+#import local_memory as ram
 
 find = discord.utils.get
 
+
+# def comfortable_help1(docs):
+#     lens = []
+#     docs2 = []
+#     for doc in docs:
+#         if doc:
+#             new_doc = doc.split('\n')
+#             docs2 += new_doc
+#             for doc2 in new_doc:
+#                 lens.append(len(re.match('.*?[:]', doc2).group(0)))
+#
+#     m = max(lens)
+#     docs = []
+#     for doc in docs2:
+#         docs.append(doc.replace(':', ':' + (' ' * (m - lens.pop(0))) + '\t'))
+#
+#     docs.sort()
+#     #print('len(docs)=', len(docs))
+#     docs_len = len(docs)
+#     count_helps = int(docs_len / 21) + 1  # 20 lines for one message
+#     step = int(docs_len / count_helps - 0.001) + 1
+#     helps = [docs[i:i + step] for i in range(0, len(docs), step)]
+#     texts = []
+#     for h in helps:
+#         texts.append(('```css\n' + '\n'.join(h) + '```').replace('    !', '!'))
+#
+#     return texts
+
+
 def comfortable_help(docs):
-    lens = []
-    docs2 = []
+    help = {}
+    lens = set()
     for doc in docs:
         if doc:
-            new_doc = doc.split('\n')
-            docs2 += new_doc
-            for doc2 in new_doc:
-                lens.append(len(re.match('.*?[:]', doc2).group(0)))
+            key = re.search('![a-zA-Z_]*?[: ]', doc).group(0)[1:-1]
+            help[key] = {}
+            for cmd in doc.split('\n'): # type: str
+                s = cmd.find('!')
+                if s > -1:
+                    i = cmd.find(':')
+                    help[key][cmd[s:i]] = cmd[i+1:]
+                    lens.add(len(cmd[s:i]))
 
-    m = max(lens)
-    docs = []
-    for doc in docs2:
-        docs.append(doc.replace(':', ':' + (' ' * (m - lens.pop(0))) + '\t'))
+    key_len = max(lens)+1
+    keys = sorted(help.keys())
+    text = []
+    for k in keys:
+        cmds = sorted(help[k].keys(), key=len)
+        for cmd in cmds:
+            text.append((cmd + ':').ljust(key_len,' ') + help[k][cmd])
+            # text.append('**`' + cmd + '`**:' + help[k][cmd])
 
-    docs.sort()
-    #print('len(docs)=', len(docs))
-    docs_len = len(docs)
-    count_helps = int(docs_len / 21) + 1  # 20 lines for one message
-    step = int(docs_len / count_helps - 0.001) + 1
-    helps = [docs[i:i + step] for i in range(0, len(docs), step)]
-    texts = []
-    for h in helps:
-        texts.append(('```css\n' + '\n'.join(h) + '```').replace('    !', '!'))
+    text_len = len(text)
+    count_helps = int(text_len / 21) + 1  # 20 lines for one message
+    step = int(text_len / count_helps - 0.001) + 1
+    texts = [text[i:i + step] for i in range(0, text_len, step)]
+    helps = []
+    for t in texts:
+        helps.append(('```css\n' + '\n'.join(t) + '```'))
+        # helps.append(('\n'.join(t)))
 
-    return texts
+    return helps
 
 
 def str_keys(dict,keys,pre=''):
@@ -43,6 +79,7 @@ def str_keys(dict,keys,pre=''):
         if key in dict:
             ans.append(pre + '[' + key + '] = ' + dict[key])
     return '\n'.join(ans) if ans else []
+
 
 def mess_plus(message):
     if message.attachments:
@@ -83,7 +120,23 @@ def t2s(timedata=None, frm="%H:%M:%S"):
     return timedata.astimezone(datetime.timezone(datetime.timedelta(hours=3))).strftime(frm)
 
 
+async def get_ban_user(s_name):
+    user_bans = await C.client.get_bans(C.server)
+    user_bans.reverse()
+    names = {s_name, s_name.translate(C.punct2space).replace(' ', ''), s_name.strip(' '), s_name.replace('@', '')}
+    for b_u in user_bans:
+        for n in names:
+            if b_u.id == n or b_u.name == n or b_u.mention == n or b_u.display_name == n or str(b_u) == n:
+                return b_u
+    return None
+
+
+# noinspection PyArgumentList
 def get_user(i): # i must be id, server nickname, true nickname or full nickname (SomeName#1234)
+    """
+    :param i:
+    :return C.discord.Member:
+    """
     p_name1 = i.translate(C.punct2space).replace(' ', '')
     return (C.server.get_member(i) or C.server.get_member(p_name1) or
             C.server.get_member_named(i.strip(' ')) or C.server.get_member_named(i) or
@@ -102,6 +155,8 @@ def get_users(names):
         if usr:
             res.add(usr.id)
 
+    return res
+
 
 def get_mentions(users):
     """
@@ -113,8 +168,8 @@ def get_mentions(users):
 
 def get_channel(i):
     p_i = C.channels[i] if i in C.channels else i
-    return (C.client.get_channel(p_i) or find(C.client.get_all_channels(),name=i) or
-            find(C.client.get_all_channels(),name=i.replace('#', '')))
+    return (C.client.get_channel(p_i) or C.client.get_channel(p_i.translate(C.punct2space).replace(' ', '')) or
+            find(C.client.get_all_channels(),name=i) or find(C.client.get_all_channels(),name=i.replace('#', '')))
 
 
 def get_channels(names):
@@ -127,6 +182,8 @@ def get_channels(names):
         ch = get_channel(name)
         if ch:
             res.add(ch.id)
+
+    return res
 
 
 async def test_status(test):
@@ -194,3 +251,15 @@ async def do_embrace_and_say(msg, user, clan=None):
     ch = C.client.get_channel(C.channels['flood'])
     text = await do_embrace(user, clan=clan)
     await msg.say(ch, text)
+
+
+def super(usr):
+    '''
+
+    :param discord.Member usr:
+    :return:
+    '''
+    if (usr.id in C.superusers or usr.id == C.users['bot'] or
+        find(usr.roles, id=C.roles['Sheriff']) or find(usr.roles, id=C.roles['Scourge'])):
+        return True
+

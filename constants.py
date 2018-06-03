@@ -55,7 +55,7 @@ channels = {
 superusers = {users['Natali'], users['Kuro'], users['Magdavius'], } # Manf & Doriana checked by roles
 
 beckett_refs = {users['bot'], '419975091544391680', } # last - role_id
-beckett_names = {users['bot'], '419975091544391680', 'беккет', 'бэккет', 'beckett',} #{'беккет', 'бэккет', 'beckett', }
+beckett_names = {'беккет', 'бэккет', 'бекетт', 'бэкетт', 'beckett', }
 silent_channels = {}
 ignore_channels = {}
 
