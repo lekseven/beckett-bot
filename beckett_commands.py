@@ -690,7 +690,7 @@ async def dominate(msg):
     emb.set_author(name=auth.nick or auth.name, icon_url=auth.avatar_url)
     emb.set_image(url='https://cdn.discordapp.com/attachments/420056219068399617/450428811725766667/dominate.gif')
     #emb.set_footer(text='')
-    ch = other.get_user(C.users['Magdavius'])#C.client.get_channel(C.channels['flood']) #flood
+    ch = C.client.get_channel(C.channels['flood'])
     await msg.type2sent(ch, text=who.mention, emb=emb)
     #await C.client.send_message(ch, content=who.mention, embed=emb)
 
