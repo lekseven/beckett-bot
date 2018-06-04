@@ -44,7 +44,7 @@ async def on_ready():
 
 @C.client.event
 async def on_member_join(member):
-    if not C.Ready:
+    if not C.Ready or member.server.id != C.server.id:
         return
     welcome_Channel = C.client.get_channel(C.WELCOME_CHANNEL_ID)
     fmt = random.choice(data.welcomeMsgList)
@@ -54,24 +54,28 @@ async def on_member_join(member):
 @C.client.event
 async def on_member_remove(member):
     # it's triggers on 'go away', kick and ban
-    if not C.Ready:
+    if not C.Ready or member.server.id != C.server.id:
         return
     await pr_say(str(member) + ' go away!')
 
 
 @C.client.event
 async def on_member_ban(member):
+    if not C.Ready or member.server.id != C.server.id:
+        return
     await pr_say('Ban ' + str(member))
 
 
 @C.client.event
 async def on_member_unban(server, user):
+    if not C.Ready or server.id != C.server.id:
+        return
     await pr_say('Unban ' + str(user))
 
 
 @C.client.event
 async def on_reaction_add(reaction, user):
-    if not C.Ready:
+    if not C.Ready or (getattr(user,'server', None) and user.server.id != C.server.id):
         return
     message = reaction.message
     emoji = reaction.emoji
@@ -86,7 +90,7 @@ async def on_reaction_add(reaction, user):
 
 @C.client.event
 async def on_reaction_remove(reaction, user):
-    if not C.Ready:
+    if not C.Ready or (getattr(user,'server', None) and user.server.id != C.server.id):
         return
     message = reaction.message
     emoji = reaction.emoji
@@ -101,14 +105,19 @@ async def on_reaction_remove(reaction, user):
 
 @C.client.event
 async def on_server_emojis_update(before, after):
+    la = len(after)
+    lb = len(before)
     # before, after - list of server emojis
+    if ((la < 1 and lb < 1) or
+            (lb > 0 and before[0].server != C.server.id) or (la > 0 and after[0].server != C.server.id)):
+        return
     await pr_say('on_server_emojis_update!')
     emj.save_em()
 
 
 @C.client.event
 async def on_message(message):
-    if not C.Ready:
+    if not C.Ready or (message.server and message.server.id != C.server.id):
         return
     # Log
     print('[{0}]{{on_message}}<#{1.channel.name}> {1.author}: {1.content}'.
@@ -136,7 +145,7 @@ async def on_message(message):
 
 @C.client.event
 async def on_message_edit(before, after):
-    if not C.Ready:
+    if not C.Ready or (after.server and after.server.id != C.server.id):
         return
     print('[{0}]{{on_edit}}(from {2})<#{1.channel.name}> {1.author}: {1.content}'.format(
         other.t2s(), after, other.t2s(before.timestamp)))
@@ -145,7 +154,7 @@ async def on_message_edit(before, after):
 
 @C.client.event
 async def on_message_delete(message):
-    if not C.Ready:
+    if not C.Ready or (message.server and message.server.id != C.server.id):
         return
     print('[{0}]{{on_delete}}(from {2})<#{1.channel.name}> {1.author}: {1.content}'.format(
         other.t2s(), message, other.t2s(message.timestamp)))
@@ -154,16 +163,22 @@ async def on_message_delete(message):
 
 @C.client.event
 async def on_server_role_create(role):
+    if not C.Ready or role.server.id != C.server.id:
+        return
     await pr_say('New Role' + role.name + '!')
 
 
 @C.client.event
 async def on_server_role_delete(role):
+    if not C.Ready or role.server.id != C.server.id:
+        return
     await pr_say('Delete Role' + role.name + '!')
 
 
 @C.client.event
 async def on_server_role_update(before, after):
+    if not C.Ready or after.server.id != C.server.id:
+        return
     await pr_say('Update Role' + before.name + '/' + after.name + '!')
 
 
