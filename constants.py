@@ -4,23 +4,28 @@ import sys
 import discord
 import string
 Ready = False
+Server_Test = False
 DISCORD_TOKEN = os.environ.get('DISCORD_TOKEN')
 
 if not DISCORD_TOKEN:
     print('Config var DISCORD_TOKEN is not defined.')
     sys.exit()
 
-VTM_SERVER_ID = os.environ.get('VTM_SERVER_ID')
+if Server_Test:
+    VTM_SERVER_ID = '453126557180100619'
+    WELCOME_CHANNEL_ID = '453172109460635658'
+else:
+    VTM_SERVER_ID = os.environ.get('VTM_SERVER_ID')
 
-if not VTM_SERVER_ID:
-    print('Config var VTM_SERVER_ID is not defined.')
-    sys.exit()
+    if not VTM_SERVER_ID:
+        print('Config var VTM_SERVER_ID is not defined.')
+        sys.exit()
 
-WELCOME_CHANNEL_ID = os.environ.get('WELCOME_CHANNEL_ID')
+    WELCOME_CHANNEL_ID = os.environ.get('WELCOME_CHANNEL_ID')
 
-if not WELCOME_CHANNEL_ID:
-    print('Config var WELCOME_CHANNEL_ID is not defined.')
-    sys.exit()
+    if not WELCOME_CHANNEL_ID:
+        print('Config var WELCOME_CHANNEL_ID is not defined.')
+        sys.exit()
 
 DATABASE_URL = os.environ.get('DATABASE_URL')
 
@@ -89,6 +94,11 @@ roles = {'Prince': '398223824514056202',
          'New World Order': '420327469371883520',
          'Sabbat': '422166674528272384',
          'Anarch': '423408828097363978',
+         'Regent': '448829797221793803',
+        'Silence': '449666656143409162',
+        'Priest': '451687545412124672',
+        'Ductus': '451687735355375626',
+         'Gargoyle': '453169623576084480', # test
 }
 
 role_by_id = {value: key for (key, value) in roles.items()}
@@ -96,7 +106,9 @@ role_by_id = {value: key for (key, value) in roles.items()}
 clan_names = {'Malkavian', 'Toreador', 'Brujah', 'Ventrue', 'Nosferatu', 'Gangrel', 'Tremere',
               'Ravnos', 'Followers of Set', 'Assamite', 'Giovanni',
               'Tzimisce', 'Lasombra', 'Noble Pander',
-              'Cappadocian', 'Lasombra Antitribu'}
+              'Cappadocian', 'Lasombra Antitribu',
+              'Gargoyle', # test
+              }
 clan_ids = { key for key in role_by_id if role_by_id[key] in clan_names}
 #clan_roles = set(roles[i] for i in clan_names)
 sabbat_clans = {'Tzimisce', 'Lasombra', 'Noble Pander'}

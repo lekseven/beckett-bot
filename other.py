@@ -194,6 +194,9 @@ async def test_status(test):
         await C.client.change_presence(game=None, status=discord.Status.online, afk=False)
 
 
+async def busy():
+    await C.client.change_presence(game=None, status=discord.Status.idle, afk=True)
+
 # async def Ready():
 #     while not C.Ready:
 #         time.sleep(1)
@@ -262,4 +265,9 @@ def super(usr):
     if (usr.id in C.superusers or usr.id == C.users['bot'] or
         find(usr.roles, id=C.roles['Sheriff']) or find(usr.roles, id=C.roles['Scourge'])):
         return True
+
+
+async def pr_say(text):
+    print(text)
+    #await C.client.send_message(get_user(C.users['Kuro']), content=text)
 

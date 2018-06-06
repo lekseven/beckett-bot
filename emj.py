@@ -52,6 +52,8 @@ ems_id = {
     '451520970377789440': 'Logo_Giovanni',
     '451534670325088287': '0_Demonic_Skeleton',
     '451537898504716289': '0_GDAbyudG',
+    '452982621509779456': 'p_cthulhu',
+    '452985737000910859': 'p_cthulhu_head',
 }
 
 # to color smile: smile[ok_hand]+skins[1]
@@ -82,7 +84,7 @@ def save_em():
                'sun_with_face', 'sunny', 'sunrise_over_mountains', 'city_sunset', 'bat', 'Logo_Malkavian',
             'p_tetjaadmin', 't_ojwse', 'm_lopata'}
 
-    for em in C.client.get_all_emojis():
+    for em in C.server.emojis:  #C.client.get_all_emojis():
         #print("'{0.id}': {0.name},".format(em))
         if em.id in ems_id:
             emojis[ems_id[em.id]] = em
