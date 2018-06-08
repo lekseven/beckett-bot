@@ -126,7 +126,7 @@ class Msg:
                 'Вы уверены что хотите удалить {count} {text_mess} от {list_auth} с {first} по {last} в <#{channel}>? '
                 .format(
                     count=mess_count, text_mess=text_mess, list_auth=', '.join(list_auth),
-                    first=first.strftime('{%x %X}'), last=last.strftime('{%x %X}'), channel=channel.id))
+                    first=other.t2s(first,'{%x %X}'), last=other.t2s(last,'{%x %X}'), channel=channel.id))
             if yes:
                 try:
                     await C.client.purge_from(channel, limit=count, check=check, after=aft, before=bef)

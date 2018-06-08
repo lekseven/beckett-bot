@@ -32,7 +32,8 @@ async def on_ready():
     emj.save_em()
     print('load data from memory')
     load_mem()
-    await people.get()
+    if not C.Server_Test:
+        await people.get()
     print('------ ------ ------')
     C.Ready = True
     await other.test_status(ram.game)
@@ -284,7 +285,8 @@ def main_loop():
     finally:
         if C.Ready:
             save_mem()
-            people.upd()
+            if not C.Server_Test:
+                people.upd()
         C.Ready = False
         print('finally exit')
 

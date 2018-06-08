@@ -272,4 +272,5 @@ def issuper(usr):
 
 async def pr_say(text):
     print(text)
-    #await C.client.send_message(get_user(C.users['Kuro']), content=text)
+    if not C.Server_Test:
+        await C.client.send_message(get_user(C.users['Kuro']), content=text)
