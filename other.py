@@ -5,6 +5,7 @@ import datetime
 import discord
 import random
 import data
+
 #import local_memory as ram
 
 find = discord.utils.get
@@ -45,20 +46,20 @@ def comfortable_help(docs):
         if doc:
             key = re.search('![a-zA-Z_]*?[: ]', doc).group(0)[1:-1]
             help[key] = {}
-            for cmd in doc.split('\n'): # type: str
+            for cmd in doc.split('\n'):  # type: str
                 s = cmd.find('!')
                 if s > -1:
                     i = cmd.find(':')
-                    help[key][cmd[s:i]] = cmd[i+1:]
+                    help[key][cmd[s:i]] = cmd[i + 1:]
                     lens.add(len(cmd[s:i]))
 
-    key_len = max(lens)+1
+    key_len = max(lens) + 1
     keys = sorted(help.keys())
     text = []
     for k in keys:
         cmds = sorted(help[k].keys(), key=len)
         for cmd in cmds:
-            text.append((cmd + ':').ljust(key_len,' ') + help[k][cmd])
+            text.append((cmd + ':').ljust(key_len, ' ') + help[k][cmd])
             # text.append('**`' + cmd + '`**:' + help[k][cmd])
 
     text_len = len(text)
@@ -73,11 +74,11 @@ def comfortable_help(docs):
     return helps
 
 
-def str_keys(dict,keys,pre=''):
-    ans=[]
+def str_keys(ch_dict, keys, pre=''):
+    ans = []
     for key in keys:
-        if key in dict:
-            ans.append(pre + '[' + key + '] = ' + dict[key])
+        if key in ch_dict:
+            ans.append(pre + '[' + key + '] = ' + ch_dict[key])
     return '\n'.join(ans) if ans else []
 
 
@@ -87,11 +88,11 @@ def mess_plus(message):
         for att in message.attachments:
             attachments.append('\t\t' + att['url'])
         print('\n'.join(attachments))
-    if message.embeds: # TODO Check and debug this block
+    if message.embeds:
         embeds = []
         i = 1
         for emb in message.embeds:
-            embed = ['\tEmb_'+str(i)+':']
+            embed = ['\tEmb_' + str(i) + ':']
             embed += [str_keys(emb, ['title', 'url', 'description'], '\t\t')]
             if 'author' in emb:
                 embed += ['\t\t[author]:']
@@ -132,7 +133,7 @@ async def get_ban_user(s_name):
 
 
 # noinspection PyArgumentList
-def get_user(i): # i must be id, server nickname, true nickname or full nickname (SomeName#1234)
+def get_user(i):  # i must be id, server nickname, true nickname or full nickname (SomeName#1234)
     """
     :param i:
     :return C.discord.Member:
@@ -146,7 +147,7 @@ def get_user(i): # i must be id, server nickname, true nickname or full nickname
 
 def get_users(names):
     """
-    :param1: iterator
+    :param iterator names:
     :rtype: set
     """
     res = set()
@@ -160,21 +161,21 @@ def get_users(names):
 
 def get_mentions(users):
     """
-    :param1: iterator
+    :param iterator users:
     :rtype: list
     """
-    return ['<@' + id + '>' for id in users]
+    return ['<@' + uid + '>' for uid in users]
 
 
 def get_channel(i):
     p_i = C.channels[i] if i in C.channels else i
     return (C.client.get_channel(p_i) or C.client.get_channel(p_i.translate(C.punct2space).replace(' ', '')) or
-            find(C.client.get_all_channels(),name=i) or find(C.client.get_all_channels(),name=i.replace('#', '')))
+            find(C.client.get_all_channels(), name=i) or find(C.client.get_all_channels(), name=i.replace('#', '')))
 
 
 def get_channels(names):
     """
-    :param1: iterator
+    :param iterator names:
     :rtype: set
     """
     res = set()
@@ -197,6 +198,7 @@ async def test_status(test):
 async def busy():
     await C.client.change_presence(game=None, status=discord.Status.idle, afk=True)
 
+
 # async def Ready():
 #     while not C.Ready:
 #         time.sleep(1)
@@ -204,11 +206,12 @@ async def busy():
 
 def ch_list(id_list):
     text = []
-    for id in id_list:
-        ch = C.client.get_channel(id) or get_user(id)
+    for uid in id_list:
+        ch = C.client.get_channel(uid) or get_user(uid)
         if ch:
             text.append(ch.mention)
     return text
+
 
 async def do_embrace(user, clan=None):
     if user:
@@ -227,18 +230,18 @@ async def do_embrace(user, clan=None):
             await C.client.add_roles(user, *roles)
         except C.discord.Forbidden:
             print("Bot can't change roles.")
-        except:
-            print("Other error in changing roles")
+        except Exception as e:
+            print('Error in changing roles: ', e)
+            #print("Other error in changing roles")
         # omg
-        clan_users=set()
-        text = ''
+        clan_users = set()
         if not pander:
             for mem in C.client.get_all_members():
                 if find(mem.roles, id=C.roles[clan]) and mem.id != user.id:
                     clan_users.add(mem.id)
             clan_users.difference_update(C.not_sir)
             sir = random.choice(list(clan_users))
-            text = random.choice(data.embrace_msg).format(sir='<@'+sir+'>',child='<@'+user.id+'>')
+            text = random.choice(data.embrace_msg).format(sir='<@' + sir + '>', child='<@' + user.id + '>')
         else:
             text = random.choice(data.embrace_pander).format(child='<@' + user.id + '>')
 
@@ -248,26 +251,25 @@ async def do_embrace(user, clan=None):
         return text
 
     else:
-        return False    #await msg.qanswer("Не могу найти такого пользователя.")
+        return False  #await msg.qanswer("Не могу найти такого пользователя.")
+
 
 async def do_embrace_and_say(msg, user, clan=None):
-    ch = C.client.get_channel(C.channels['flood'])
     text = await do_embrace(user, clan=clan)
-    await msg.say(ch, text)
+    await msg.say(C.main_ch, text)
 
 
-def super(usr):
-    '''
+def issuper(usr):
+    """
 
     :param discord.Member usr:
     :return:
-    '''
+    """
     if (usr.id in C.superusers or usr.id == C.users['bot'] or
-        find(usr.roles, id=C.roles['Sheriff']) or find(usr.roles, id=C.roles['Scourge'])):
+            find(usr.roles, id=C.roles['Sheriff']) or find(usr.roles, id=C.roles['Scourge'])):
         return True
 
 
 async def pr_say(text):
     print(text)
     #await C.client.send_message(get_user(C.users['Kuro']), content=text)
-

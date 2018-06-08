@@ -1,6 +1,7 @@
 # -*- coding: utf8 -*-
-import random
-import data
+#import random
+#import data
+import communication as com
 import psycopg2
 import psycopg2.extras
 import sys
@@ -15,40 +16,43 @@ import emj
 import people
 
 import local_memory as ram
+
+
 #import Log
-
-
-async def pr_say(text):
-    print(text)
-    await C.client.send_message(other.get_user(C.users['Kuro']), content=text)
 
 
 @C.client.event
 async def on_ready():
+    await other.busy()
     print('Logged in as')
     print(C.client.user.name)
     print(C.client.user.id)
-    load_mem()
-    await other.test_status(ram.game)
     C.server = C.client.get_server(C.VTM_SERVER_ID)
+    C.main_ch = C.client.get_channel(C.WELCOME_CHANNEL_ID)
     emj.save_em()
-    people.bans = await C.client.get_bans(C.server)
-    print('------')
+    print('load data from memory')
+    load_mem()
+    await people.get()
+    print('------ ------ ------')
     C.Ready = True
-    # chs = []
-    # for ch in C.client.get_all_channels():
-    #     chs.append(ch)
-    # pass
-    # pass
+    await other.test_status(ram.game)
+
+    pass
+    pass
 
 
 @C.client.event
 async def on_member_join(member):
     if not C.Ready or member.server.id != C.server.id:
         return
-    welcome_Channel = C.client.get_channel(C.WELCOME_CHANNEL_ID)
-    fmt = random.choice(data.welcomeMsgList)
-    await C.client.send_message(welcome_Channel, fmt.format(member))
+    uid = member.id
+    if people.Usr.check_new(member):
+        await C.client.send_message(C.main_ch, com.comeback_msg(uid, people.time_out(uid), people.clan(uid)))
+        await other.pr_say(str(member) + ' comeback!')
+    else:
+        #fmt = random.choice(data.welcomeMsgList)
+        await C.client.send_message(C.main_ch, com.welcome_msg(uid))
+        await other.pr_say(str(member) + ' new!')
 
 
 @C.client.event
@@ -56,26 +60,38 @@ async def on_member_remove(member):
     # it's triggers on 'go away', kick and ban
     if not C.Ready or member.server.id != C.server.id:
         return
-    await pr_say(str(member) + ' go away!')
+
+    #if member.id not in people.gone or people.gone[member.id].status == 'del':
+    if not other.find(await C.client.get_bans(C.server), id=member.id):
+        people.Gn.check_new(member)
+        await C.client.send_message(C.main_ch, com.bye_msg(member.id))
+        await other.pr_say(str(member) + ' go away!')
 
 
 @C.client.event
 async def on_member_ban(member):
     if not C.Ready or member.server.id != C.server.id:
         return
-    await pr_say('Ban ' + str(member))
+    # people.bans += await C.client.get_user_info(member.id)
+    # if member.id in people.usrs:
+    #     people.usrs[member.id]['status'] = 'del'
+    await people.on_ban(member)
+    await C.client.send_message(C.main_ch, com.ban_msg(member.id))
+    await other.pr_say('Ban ' + str(member))
 
 
 @C.client.event
 async def on_member_unban(server, user):
     if not C.Ready or server.id != C.server.id:
         return
-    await pr_say('Unban ' + str(user))
+    people.on_unban(user)
+    await C.client.send_message(C.main_ch, com.unban_msg(user.id))
+    await other.pr_say('Unban ' + str(user))
 
 
 @C.client.event
 async def on_reaction_add(reaction, user):
-    if not C.Ready or (getattr(user,'server', None) and user.server.id != C.server.id):
+    if not C.Ready or (getattr(user, 'server', None) and user.server.id != C.server.id):
         return
     message = reaction.message
     emoji = reaction.emoji
@@ -90,7 +106,7 @@ async def on_reaction_add(reaction, user):
 
 @C.client.event
 async def on_reaction_remove(reaction, user):
-    if not C.Ready or (getattr(user,'server', None) and user.server.id != C.server.id):
+    if not C.Ready or (getattr(user, 'server', None) and user.server.id != C.server.id):
         return
     message = reaction.message
     emoji = reaction.emoji
@@ -111,7 +127,7 @@ async def on_server_emojis_update(before, after):
     if ((la < 1 and lb < 1) or
             (lb > 0 and before[0].server != C.server.id) or (la > 0 and after[0].server != C.server.id)):
         return
-    await pr_say('on_server_emojis_update!')
+    await other.pr_say('on_server_emojis_update!')
     emj.save_em()
 
 
@@ -132,10 +148,11 @@ async def on_message(message):
 #     if message.author.id == '109004244689907712' and ram.letter:  # Natali
 #         emb = discord.Embed(title="Передай пожалуйста Натали лично в руки.", color=0x206694)
 #         emb.set_author(name="Kuro",
-#                          icon_url = "https://cdn.discordapp.com/avatars/414384012568690688/f263f8762379c0ee4d5362127857fdab.png")
+#           icon_url = "https://cdn.discordapp.com/avatars/414384012568690688/f263f8762379c0ee4d5362127857fdab.png")
 #         emb.set_image(url='https://cdn.discordapp.com/attachments/420056219068399617/432063393826996224/letter.jpg')
 #         emb.set_footer(text='Суббота, 7 апреля 2018')
-#         await C.client.send_message(message.channel,content='Мой <@&398223824514056202>, меня просили передать лично вам :love_letter:',embed=emb)
+#         await C.client.send_message(message.channel,
+#                   content='Мой <@&398223824514056202>, меня просили передать лично вам :love_letter:',embed=emb)
 #         #await C.client.send_file(message.channel, 'Beckett.jpg')
 #         ram.letter = False
 #         return
@@ -165,21 +182,21 @@ async def on_message_delete(message):
 async def on_server_role_create(role):
     if not C.Ready or role.server.id != C.server.id:
         return
-    await pr_say('New Role' + role.name + '!')
+    await other.pr_say('New Role' + role.name + '!')
 
 
 @C.client.event
 async def on_server_role_delete(role):
     if not C.Ready or role.server.id != C.server.id:
         return
-    await pr_say('Delete Role' + role.name + '!')
+    await other.pr_say('Delete Role' + role.name + '!')
 
 
 @C.client.event
 async def on_server_role_update(before, after):
     if not C.Ready or after.server.id != C.server.id:
         return
-    await pr_say('Update Role' + before.name + '/' + after.name + '!')
+    await other.pr_say('Update Role' + before.name + '/' + after.name + '!')
 
 
 def load_mem():
@@ -201,7 +218,8 @@ def load_mem():
                         v = set()
                     else:
                         v = ast.literal_eval(row['val'])
-                except:
+                except Exception as e:
+                    print('Error: ', e)
                     print("ast.literal_eval can't eval [%s] = '%s'" % (row['var'], row['val']))
                 else:
                     setattr(module, row['var'], v)
@@ -226,7 +244,7 @@ def save_mem():
     for var, val in variables.items():
         if isinstance(val, dict):
             val = {k: v for k, v in val.items() if v != set()}
-        rows.append((var, repr(val), ))
+        rows.append((var, repr(val),))
     try:
         conn = psycopg2.connect(C.DATABASE_URL, sslmode='require')
         cur = conn.cursor(cursor_factory=psycopg2.extras.DictCursor)
@@ -257,7 +275,8 @@ def main_loop():
     try:
         print("Start ClientRun.")
         C.client.run(C.DISCORD_TOKEN)
-    except:
+    except Exception as e:
+        print('Error: ', e)
         ei = sys.exc_info()
         print("[ClientRun] Unexpected error:", ei[0], ei[1])
     else:
@@ -265,6 +284,7 @@ def main_loop():
     finally:
         if C.Ready:
             save_mem()
+            people.upd()
         C.Ready = False
         print('finally exit')
 
@@ -275,4 +295,3 @@ def main_loop():
 #Log.send_log()
 main_loop()
 sys.exit(0)
-

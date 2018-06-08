@@ -3,6 +3,7 @@ import os
 import sys
 import discord
 import string
+
 Ready = False
 Server_Test = False
 DISCORD_TOKEN = os.environ.get('DISCORD_TOKEN')
@@ -29,11 +30,10 @@ else:
 
 DATABASE_URL = os.environ.get('DATABASE_URL')
 
-
 client = discord.Client()
 loop = client.loop
-server = discord.Server
-
+server = None  # type: discord.Server
+main_ch = None  # type: discord.Channel
 
 users = {
     'Natali': '109004244689907712',
@@ -57,16 +57,15 @@ channels = {
     'test': '419968987112275979'
 }
 
-superusers = {users['Natali'], users['Kuro'], users['Magdavius'], } # Manf & Doriana checked by roles
+superusers = {users['Natali'], users['Kuro'], users['Magdavius'], }  # Manf & Doriana checked by roles
 
-beckett_refs = {users['bot'], '419975091544391680', } # last - role_id
+beckett_refs = {users['bot'], '419975091544391680', }  # last - role_id
 beckett_names = {'беккет', 'бэккет', 'бекетт', 'бэкетт', 'beckett', }
 silent_channels = {}
 ignore_channels = {}
 
-
 punct2space = str.maketrans(string.punctuation, ' ' * len(string.punctuation))  # for translate
-free_cmds = {'roll','help','ignore', 'dominate'}
+free_cmds = {'roll', 'help', 'ignore', 'dominate'}
 
 # WARNING: Clans keys here must be the same to dataKeys (Clans) in data
 roles = {'Prince': '398223824514056202',
@@ -95,11 +94,11 @@ roles = {'Prince': '398223824514056202',
          'Sabbat': '422166674528272384',
          'Anarch': '423408828097363978',
          'Regent': '448829797221793803',
-        'Silence': '449666656143409162',
-        'Priest': '451687545412124672',
-        'Ductus': '451687735355375626',
-         'Gargoyle': '453169623576084480', # test
-}
+         'Silence': '449666656143409162',
+         'Priest': '451687545412124672',
+         'Ductus': '451687735355375626',
+         'Gargoyle': '453169623576084480',  # test Server
+         }
 
 role_by_id = {value: key for (key, value) in roles.items()}
 
@@ -107,13 +106,13 @@ clan_names = {'Malkavian', 'Toreador', 'Brujah', 'Ventrue', 'Nosferatu', 'Gangre
               'Ravnos', 'Followers of Set', 'Assamite', 'Giovanni',
               'Tzimisce', 'Lasombra', 'Noble Pander',
               'Cappadocian', 'Lasombra Antitribu',
-              'Gargoyle', # test
+              'Gargoyle',  # test Server
               }
-clan_ids = { key for key in role_by_id if role_by_id[key] in clan_names}
+clan_ids = {key for key in role_by_id if role_by_id[key] in clan_names}
 #clan_roles = set(roles[i] for i in clan_names)
 sabbat_clans = {'Tzimisce', 'Lasombra', 'Noble Pander'}
 #sabbat_roles = set(roles[i] for i in sabbat_clans)
-not_sir = {'235088799074484224'} # Радио "Harpy" 66.6FM
+not_sir = {'235088799074484224'}  # Радио "Harpy" 66.6FM
 '''
 Role_names [09.05.2018]:
 

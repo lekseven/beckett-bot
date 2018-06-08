@@ -5,6 +5,7 @@ import random
 import other
 import constants as C
 import local_memory as ram
+import people
 #import data
 
 """ 
@@ -138,8 +139,7 @@ async def sayf(msg):
     """\
     !sayf text: сказать Беккетом text во #flood \
     """
-    ch = other.get_channel(C.channels['flood'])
-    await msg.say(ch, msg.original[len('!sayf '):])
+    await msg.say(C.main_ch, msg.original[len('!sayf '):])
 
 
 async def emoji(msg):
@@ -495,7 +495,7 @@ async def kick(msg):
     if not usr:
         await msg.qanswer('Пользователь не найден.')
     else:
-        if other.super(usr):
+        if other.issuper(usr):
             await msg.qanswer('Пользователя нельзя кикнуть.')
         else:
             await C.client.kick(usr)
@@ -510,7 +510,7 @@ async def ban(msg):
     if not usr:
         await msg.qanswer('Пользователь не найден.')
     else:
-        if other.super(usr):
+        if other.issuper(usr):
             await msg.qanswer('Пользователя нельзя банить.')
         else:
             await C.client.ban(usr, delete_message_days=0)
@@ -583,13 +583,13 @@ async def test(msg):
     #     await msg.qanswer('Тест ' + str(i+1))
 
 
-async def super(msg):
+async def issuper(msg):
     if len(msg.args) < 2:
         return
 
     name = msg.original[len('!super '):]
     usr = other.get_user(name)
-    if other.super(usr):
+    if other.issuper(usr):
         await msg.qanswer('yes')
     else:
         await msg.qanswer('no')
@@ -690,9 +690,28 @@ async def dominate(msg):
     emb.set_author(name=auth.nick or auth.name, icon_url=auth.avatar_url)
     emb.set_image(url='https://cdn.discordapp.com/attachments/420056219068399617/450428811725766667/dominate.gif')
     #emb.set_footer(text='')
-    ch = C.client.get_channel(C.channels['flood'])
-    await msg.type2sent(ch, text=who.mention, emb=emb)
+    await msg.type2sent(C.main_ch, text=who.mention, emb=emb)
     #await C.client.send_message(ch, content=who.mention, embed=emb)
+
+
+async def people_clear(msg):
+    ans = await msg.question('ВЫ СОБИРАЕТЕСЬ СТЕРЕТЬ ВСЕ ТАБЛИЦЫ ПОЛЬЗОВАТЕЛЕЙ. ЭТО ДЕЙСТВИЕ НЕВОЗМОЖНО ОТМЕНИТЬ.'
+                             'ВЫ ТОЧНО ЖЕЛАЕТЕ ПРОДОЛЖИТЬ?')
+    if ans:
+        people.clear()
+        await msg.qanswer(":ok_hand:")
+    else:
+        await msg.qanswer("Отмена people_clear.")
+
+
+async def people_sync(msg):
+    ans = await msg.question('Это займёт некоторое время и полностью перезапишет Базу Данных пользователей. '
+                             'Вы **точно** уверены, что *действительно* желаете продолжить?')
+    if ans:
+        await people.sync()
+        await msg.qanswer(":ok_hand:")
+    else:
+        await msg.qanswer("Отмена people_sync.")
 
 
 # Delete msgs from private channel:

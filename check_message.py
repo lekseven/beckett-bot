@@ -97,7 +97,8 @@ class Msg:
     async def purge(self, channel, check_count=1, check=None, aft=None, bef=None):
         try:
             count = int(check_count)
-        except:
+        except Exception as e:
+            print('Error: ', e)
             await self.qanswer('N должно быть числом!')
             return
         mess_count = 0
@@ -121,14 +122,12 @@ class Msg:
         else:
             text_mess = 'сообщение' if mess_count == 1 else 'сообшения' if mess_count < 5 else 'сообщений'
             list_auth = other.get_mentions(auth)
-            yes = {'1', 'y', 'yes', 'да', 'у', '+'}
-            await self.qanswer(
-                'Вы уверены что хотите удалить {count} {text_mess} от {list_auth} с {first} по {last}? '
-                '\n*(для согласия введите 1/y/yes/да/+)*'.format(
+            yes = await self.question(
+                'Вы уверены что хотите удалить {count} {text_mess} от {list_auth} с {first} по {last} в <#{channel}>? '
+                .format(
                     count=mess_count, text_mess=text_mess, list_auth=', '.join(list_auth),
-                    first=first.strftime('{%x %X}'), last=last.strftime('{%x %X}')))
-            ans = await C.client.wait_for_message(timeout=60, author=self.message.author, channel=self.channel)
-            if ans and yes.intersection(ans.content.lower().split()):
+                    first=first.strftime('{%x %X}'), last=last.strftime('{%x %X}'), channel=channel.id))
+            if yes:
                 try:
                     await C.client.purge_from(channel, limit=count, check=check, after=aft, before=bef)
                 except discord.Forbidden:
@@ -137,6 +136,12 @@ class Msg:
                     await self.qanswer(":ok_hand:")
             else:
                 await self.qanswer("Отмена purge.")
+
+    async def question(self, text):
+        yes = {'1', 'y', 'yes', 'да', 'у', '+'}
+        await self.qanswer(text + '\n*(для согласия введите 1/y/yes/да/+)*')
+        ans = await C.client.wait_for_message(timeout=60, author=self.message.author, channel=self.channel)
+        return ans and yes.intersection(ans.content.lower().split())
 
 
 async def reaction(message):
