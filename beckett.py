@@ -29,11 +29,11 @@ async def on_ready():
     print(C.client.user.id)
     C.server = C.client.get_server(C.VTM_SERVER_ID)
     C.main_ch = C.client.get_channel(C.WELCOME_CHANNEL_ID)
-    emj.save_em()
+    emj.prepare()
     print('load data from memory')
     load_mem()
-    if not C.Server_Test:
-        await people.get()
+    await people.get(check=(not C.Server_Test))
+    com.prepare()
     print('------ ------ ------')
     C.Ready = True
     await other.test_status(ram.game)
@@ -142,7 +142,7 @@ async def on_message(message):
     other.mess_plus(message)
     # End log
 
-    if message.author == C.client.user or message.channel.id in C.ignore_channels:
+    if message.channel.id in C.ignore_channels: # message.author == C.client.user or
         return
 
 #    if message.author.id == '414384012568690688' and ram.letter: # Kuro

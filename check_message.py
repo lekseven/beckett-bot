@@ -1,8 +1,8 @@
 # -*- coding: utf8 -*-
-
-import discord
+import datetime as dt
 import re
 import random
+import discord
 import data
 import check_phrase
 import local_memory as ram
@@ -10,6 +10,8 @@ import beckett_commands as cmd
 import constants as C
 import emj
 import other
+import communication as com
+import people
 
 
 class Msg:
@@ -31,16 +33,17 @@ class Msg:
                 self.channel.id in ram.torpor_users[self.author] or 'All' in ram.torpor_users[self.author]))
         self.cmd_ch = ram.cmd_channels.get(self.author, set())
         self.rep_ch = ram.rep_channels.get(self.author, set())
+        self.gt = people.get_gt(self.author)
 
     def prepare(self, fun=''):
         text = self.original[len('!' + fun + ' '):]  #self.text.replace('!' + fun + ' ', '')
         self.args = ([fun] or []) + text.split()
-        self.words = set(self.args)
+        self.words = set(self.args).difference({'', ' '})
 
     def prepare2(self, fun=''):
         text = self.text.replace(fun, '')
         self.args = ([fun] or []) + text.translate(C.punct2space).split()
-        self.words = set(self.args)
+        self.words = set(self.args).difference({'', ' '})
 
     async def delete(self):
         try:
@@ -59,8 +62,8 @@ class Msg:
         t = min(1500, len(text)) / 20 + extra
         await C.client.send_typing(ch)
         for i in range(1, int(t / 10) + 1):
-            C.loop.call_later(i * 10, lambda: C.loop.create_task(C.client.send_typing(ch)))
-        C.loop.call_later(t, lambda: C.loop.create_task(C.client.send_message(ch, content=text, embed=emb)))
+            other.later(i * 10, C.client.send_typing(ch))
+        other.later(t, C.client.send_message(ch, content=text, embed=emb))
         return t
 
     async def report(self, text):
@@ -147,6 +150,15 @@ class Msg:
 async def reaction(message):
     msg = Msg(message)
 
+    if msg.author == C.users['bot']:
+        if msg.original == data.tremer_joke:
+            other.later(20, msg.delete())
+        return
+
+    # TO#DO del check me =)
+    # if msg.author != C.users['Kuro']:
+    #     return # for test
+
     if msg.torpor:
         await msg.delete()
         return
@@ -162,6 +174,7 @@ async def reaction(message):
     if not msg.super:
         if any(link in msg.text for link in data.forbiddenLinks):
             await msg.delete()
+            await msg.answer(random.choice(data.threats).format(name=msg.author))
             return
         '''str = msg.text
         for link in data.forbiddenLinks:
@@ -189,28 +202,22 @@ async def reaction(message):
             return
 
     msg.prepare2()
-    beckett_reference = C.beckett_refs.intersection(msg.words)
-    beckett_mention = C.beckett_names.intersection(msg.words)  #any(name in msg.args for name in C.beckett_names)
+    beckett_reference = bool(C.beckett_refs.intersection(msg.words))
+    beckett_mention = bool(C.beckett_names.intersection(msg.words))  #any(name in msg.args for name in C.beckett_names)
+    beckett = beckett_reference or beckett_mention
     found_keys = check_phrase.check_args(msg.words)
     prob = random.random()
 
     if msg.channel.id == C.channels['ask'] and not msg.roles.intersection(C.clan_ids):
         clan_keys = list(C.clan_names.intersection(found_keys))
         if clan_keys:
-            C.loop.call_later(random.randrange(30, 90), lambda: C.loop.create_task(
-                other.do_embrace_and_say(msg, msg.message.author, clan=random.choice(clan_keys))))
+            other.later(random.randrange(30, 90),
+                        other.do_embrace_and_say(msg, msg.message.author, clan=random.choice(clan_keys)))
 
     elif maybe_embrace:
         return
 
-    await emj.on_message(message, beckett_mention or beckett_reference)
-
-    if not found_keys and (beckett_reference or (beckett_mention and random.random() < 0.25)):
-        if msg.author == C.users['Natali'] and prob < 0.4:
-            await msg.answer(random.choice(data.specialGreetings))
-        else:
-            await msg.answer(random.choice(data.responsesData['beckett']))
-        return
+    await emj.on_message(message, beckett)
 
     if found_keys:
         response = False
@@ -222,15 +229,66 @@ async def reaction(message):
             await msg.answer(random.choice(data.responsesData[random.choice(found_keys)]))
             return
     else:
-        if '(╯°□°）╯︵ ┻━┻' in msg.original:
+        if '(╯°□°）╯︵ ┻━┻' in msg.original or '(╯°益°)╯彡┻━┻' in msg.original:
             ans = ''
-            if prob < 0.25 or msg.super or msg.author == C.users['Buffy']:
+            if msg.super or msg.author == C.users['Buffy']:
                 ans = '(╯°□°）╯︵ ┻━┻'
-            elif prob > 0.75:
+            elif prob > 0.2:
                 ans = '┬─┬ ノ( ゜-゜ノ)'
             if ans:
                 await msg.answer(ans)
                 return
+
+        gt_key = com.f_gt_key(msg.original, msg.text, msg.words, beckett)
+        if gt_key:
+            h18 = 64800  # 18h in sec
+            if (dt.datetime.now().timestamp() - msg.gt[gt_key['g_key']]) > h18: # not beckett and
+                phr = random.choice(com.good_time[gt_key['g_key']][gt_key['g_type']]['response'])
+                if gt_key['g_key'] == 'g_morn' and msg.author in com.morning_add:
+                    phr += ' ' + com.morning_add[msg.author]
+                await msg.answer(other.name_phr(msg.author, phr))
+                people.set_gt(msg.author, gt_key['g_key'])
+            return
+
+        if beckett:
+            yes = 'да' in msg.words
+            no = 'не' in msg.words or 'нет' in msg.words
+            ans = ''
+            if msg.words.intersection({'спасибо', 'благодарю'}):    #'спасибо'
+                ans = other.name_rand_phr(msg.author, data.sm_resp['wlc'])
+            elif msg.words.intersection(data.sm_resp['hi']) or msg.words.intersection(data.sm_resp['hi_smiles']):
+                m = data.sm_resp['hi'].copy()
+                m.append([(':' + w + ':') for w in data.sm_resp['hi_smiles']])
+                ans = other.name_rand_phr(msg.author, m)
+            elif msg.words.intersection(data.sm_resp['bye']):
+                ans = other.name_rand_phr(msg.author, data.sm_resp['bye'])
+            elif msg.words.intersection(data.sm_resp['love']) and not no:
+                if msg.author == C.users['Natali']:
+                    ans = ':purple_heart:'
+                else:
+                    ans = ':heart:'
+            elif 'любимый клан' in msg.text:
+                if prob > 0.09:
+                    ans = random.choice(data.sm_resp['apoliticality'])
+                else:
+                    ans = data.tremer_joke
+            elif msg.words.intersection(data.sm_resp['bot_dog']):
+                if msg.super or prob > 0.2:
+                    ans = other.name_rand_phr(msg.author, data.sm_resp['not_funny'])
+                else:
+                    ans = random.choice(data.threats).format(name=msg.author)
+            elif yes != no and msg.text.endswith('?') and msg.super:
+                if yes:
+                    ans = other.name_rand_phr(msg.author, data.sm_resp['yes'])
+                else:
+                    ans = other.name_rand_phr(msg.author, data.sm_resp['no'])
+            elif 'мимими' in msg.text:
+                return
+
+            if ans:
+                await msg.answer(ans)
+                return
+
 
         if beckett_reference or (beckett_mention and random.random() < 0.25):
             if msg.author == C.users['Natali'] and prob < 0.4:

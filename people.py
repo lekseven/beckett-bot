@@ -18,10 +18,10 @@ class Usr:
         self.name = name
         self.karma = karma
         self.status = status
-        self.g_morn = g_morn
-        self.g_day = g_day
-        self.g_ev = g_ev
-        self.g_n = g_n
+        self.g_morn = int(g_morn)
+        self.g_day = int(g_day)
+        self.g_ev = int(g_ev)
+        self.g_n = int(g_n)
         # usrs[id] = self
 
     def set(self, **kwargs):
@@ -98,7 +98,7 @@ class Gn:
         self.karma = karma
         self.status = status
         self.ban = ban if ban is not None else gid in bans_id
-        self.last = t
+        self.last = int(t)
         self.role = role
         # gone[id] = self
 
@@ -174,7 +174,7 @@ class Gn:
 
         #'id': smb.id, 'name': str(smb), 'g_morn': 0, 'g_day': 0, 'g_ev': 0, 'g_n': 0, 'karma': 0, 'status': status,
     def time_out(self):
-        return dt.datetime.now().timestamp() - self.last
+        return int(dt.datetime.now().timestamp()) - self.last
 
 
 async def test():
@@ -480,10 +480,11 @@ async def get_bans():
     bans_id = set(ban.id for ban in bans)
 
 
-async def get():
+async def get(check=True):
     await get_bans()
     load()
-    await check_now()
+    if check:
+        await check_now()
 
 
 async def on_ban(memb):
@@ -508,3 +509,18 @@ def time_out(uid):
 
 def clan(uid):
     return uid in gone and gone[uid].role != '0' and gone[uid].role
+
+
+def get_gt(uid):
+    if uid in usrs:
+        return {'g_morn': usrs[uid].g_morn, 'g_day': usrs[uid].g_day, 'g_ev': usrs[uid].g_ev, 'g_n': usrs[uid].g_n}
+    else:
+        return {'g_morn': 0, 'g_day': 0, 'g_ev': 0, 'g_n': 0}
+
+
+def set_gt(uid, key):
+    keys = {'g_morn', 'g_day', 'g_ev', 'g_n'}
+    if uid in usrs and key in keys:
+        setattr(usrs[uid], key, int(dt.datetime.now().timestamp()))
+        usrs[uid].status = 'upd'
+

@@ -58,8 +58,11 @@ ems_id = {
 
 # to color smile: smile[ok_hand]+skins[1]
 skins = ['', '🏻', '🏼', '🏽', '🏾', '🏿']
+skins_set = set(skins)
 rand_em = set()
 name_em = {}
+em_set = set()
+em_name = {}
 
 
 def e(name):
@@ -68,6 +71,28 @@ def e(name):
     else:
         print('Warn: [e] there no emoji ' + name)
         return None
+
+
+def get_emname(em):
+    if em in em_name:
+        return em_name[em]
+    else:
+        print('Warn: [e] there no name of emoji ' + em)
+        return None
+
+
+def prepare():
+    print('Prepare emj')
+    save_em()
+    for name in emojis:
+        em_name[emojis[name]] = name
+        em_set.add(emojis[name])
+
+    i = 1
+    for sk in skins[1:]:
+        em_name[sk] = 'skin_' + str(i)
+        em_set.add(sk)
+        i += 1
 
 
 def save_em():
@@ -91,7 +116,6 @@ def save_em():
         else:
             print('Warn: new smile '+str(em))
 
-
     for name in special:
         name_em[C.users[name]] = set()
         for em_name in special[name]:
@@ -107,6 +131,10 @@ def save_em():
             rand_em.add(em)
         else:
             print("Warn: can't find {0} in emojis (2)".format(em_name))
+
+
+def is_emj(em):
+    return em in em_set
 
 
 async def on_reaction_add(reaction, user):

@@ -255,8 +255,10 @@ async def do_embrace(user, clan=None):
 
 
 async def do_embrace_and_say(msg, user, clan=None):
-    text = await do_embrace(user, clan=clan)
-    await msg.say(C.main_ch, text)
+    roles = {role.id for role in C.server.get_member(user).roles[1:]}
+    if not roles.intersection(C.clan_ids):
+        text = await do_embrace(user, clan=clan)
+        await msg.say(C.main_ch, text)
 
 
 def issuper(usr):
@@ -274,3 +276,25 @@ async def pr_say(text):
     print(text)
     if not C.Server_Test:
         await C.client.send_message(get_user(C.users['Kuro']), content=text)
+
+
+def name_pat():
+    patterns = ['{ph}, <@{id}>.', '<@{id}>, {ph}.']
+    return random.choice(patterns)
+
+
+def name_phr(uid, phr):
+    return name_pat().format(id=uid, ph=phr).capitalize()
+
+
+def name_rand_phr(uid, arr):
+    return name_phr(uid, random.choice(arr))
+
+
+def later(t, coro):
+    """
+
+    :param t: int
+    :param coro: coroutine object
+    """
+    C.loop.call_later(t, lambda: C.loop.create_task(coro))
