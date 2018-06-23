@@ -194,8 +194,8 @@ async def reaction(message):
                 return
 
     maybe_embrace = False
-    if (ram.mute_channels.intersection(
-            {msg.channel.id, 'All'}) or msg.author in ram.ignore_users or msg.channel.id in C.ignore_channels):
+    if (ram.mute_channels.intersection({msg.channel.id, 'All'})
+            or msg.author in ram.ignore_users or msg.channel.id in C.ignore_channels):
         if msg.channel.id == C.channels['ask']:
             maybe_embrace = True
         else:
@@ -212,7 +212,7 @@ async def reaction(message):
         clan_keys = list(C.clan_names.intersection(found_keys))
         if clan_keys:
             other.later(random.randrange(30, 90),
-                        other.do_embrace_and_say(msg, msg.message.author, clan=random.choice(clan_keys)))
+                        other.do_embrace_and_say(msg, msg.author, clan=random.choice(clan_keys)))
 
     elif maybe_embrace:
         return
@@ -288,7 +288,6 @@ async def reaction(message):
             if ans:
                 await msg.answer(ans)
                 return
-
 
         if beckett_reference or (beckett_mention and random.random() < 0.25):
             if msg.author == C.users['Natali'] and prob < 0.4:
