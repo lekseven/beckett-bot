@@ -254,8 +254,9 @@ async def do_embrace(user, clan=None):
         return False  #await msg.qanswer("Не могу найти такого пользователя.")
 
 
-async def do_embrace_and_say(msg, user, clan=None):
-    roles = {role.id for role in C.server.get_member(user).roles[1:]}
+async def do_embrace_and_say(msg, name, clan=None):
+    user = get_user(name)
+    roles = {role.id for role in user.roles[1:]}
     if not roles.intersection(C.clan_ids):
         text = await do_embrace(user, clan=clan)
         await msg.say(C.main_ch, text)
