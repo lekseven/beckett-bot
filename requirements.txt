@@ -1,4 +1,6 @@
 discord
+opus
+ffmpeg
 discord.py==0.16.12
 psycopg2_binary==2.7.4
 requests==2.18.4
