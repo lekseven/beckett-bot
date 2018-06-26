@@ -244,9 +244,17 @@ async def reaction(message):
             h18 = 64800  # 18h in sec
             if (dt.datetime.now().timestamp() - msg.gt[gt_key['g_key']]) > h18: # not beckett and
                 phr = random.choice(com.good_time[gt_key['g_key']][gt_key['g_type']]['response'])
+                str_weather = ''
                 if gt_key['g_key'] == 'g_morn' and msg.author in com.morning_add:
                     phr += ' ' + com.morning_add[msg.author]
-                await msg.answer(other.name_phr(msg.author, phr))
+                    if msg.author == C.users['Natali']:
+                        try:
+                            print('try get_weather for Natali')
+                            str_weather = '\n:newspaper: ' + other.get_weather()
+                        except Exception as e:
+                            print('[get_weather] Error: ', e)
+
+                await msg.answer(other.name_phr(msg.author, phr) + str_weather)
                 people.set_gt(msg.author, gt_key['g_key'])
             return
 

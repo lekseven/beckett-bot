@@ -56,7 +56,8 @@ channels = {
     'ask': '398728556424986624',
     '4-sop': '398728854534881280',
     'stuff': '411647652246323200',
-    'test': '419968987112275979'
+    'test': '419968987112275979',
+    'rpg': '458975748611375104',
 }
 
 superusers = {users['Natali'], users['Kuro'], users['Magdavius'], }  # Manf & Doriana checked by roles

@@ -1,3 +1,4 @@
 discord
 discord.py==0.16.12
 psycopg2_binary==2.7.4
+lxml==4.2.2

@@ -8,7 +8,7 @@ import sys
 import ast
 import signal
 import functools
-#import discord
+import discord
 import constants as C
 import check_message
 import other
@@ -27,19 +27,32 @@ async def on_ready():
     print('Logged in as')
     print(C.client.user.name)
     print(C.client.user.id)
-    C.server = C.client.get_server(C.VTM_SERVER_ID)
+    C.server = C.client.get_server(C.VTM_SERVER_ID) # type: discord.Server
     C.main_ch = C.client.get_channel(C.WELCOME_CHANNEL_ID)
     emj.prepare()
     print('load data from memory')
+    #await C.client.change_nickname(C.server.me, 'Beckett') # Beckett
     load_mem()
     await people.get(check=(not C.Server_Test))
     com.prepare()
+    other.later(3600, hour_timer())
     print('------ ------ ------')
     C.Ready = True
+
     await other.test_status(ram.game)
 
     pass
     pass
+
+
+async def hour_timer():
+    # just for test now
+    try:
+        print('[{0}]'.format(other.t2s()),'Hour timer!')
+    except Exception as e:
+        print('[hour_timer] Error: ', e)
+    finally:
+        other.later(3600, hour_timer())
 
 
 @C.client.event

@@ -583,16 +583,9 @@ async def test(msg):
     #     await msg.qanswer('Тест ' + str(i+1))
 
 
-async def issuper(msg):
-    if len(msg.args) < 2:
-        return
-
-    name = msg.original[len('!super '):]
-    usr = other.get_user(name)
-    if other.issuper(usr):
-        await msg.qanswer('yes')
-    else:
-        await msg.qanswer('no')
+async def tst(msg):
+    print('test get_weather')
+    await msg.answer(other.get_weather())
     pass
     # ch = C.client.get_channel('398645007944384513')
     # await C.client.send_typing(ch)

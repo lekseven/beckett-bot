@@ -5,6 +5,9 @@ import datetime
 import discord
 import random
 import data
+# for weather
+import requests
+import lxml.html
 
 #import local_memory as ram
 
@@ -299,3 +302,26 @@ def later(t, coro):
     :param coro: coroutine object
     """
     C.loop.call_later(t, lambda: C.loop.create_task(coro))
+
+
+def get_weather():
+    url = 'https://weather.com/ru-RU/weather/5day/l/UPXX0017:1:UP'
+    resp = requests.get(url)
+    page = lxml.html.fromstring(resp.content)
+    d = page.get_element_by_id('twc-scrollabe')
+    tr = d.getchildren()[0].getchildren()[1].getchildren()[0]
+    tr_ch = tr.getchildren()
+    desc = tr_ch[2].text_content()
+    t_max = tr_ch[3].getchildren()[0].getchildren()[0].text_content()
+    t_min = tr_ch[3].getchildren()[0].getchildren()[2].text_content()
+    rain = tr_ch[4].text_content()
+    wind = re.search('\d+',tr_ch[5].text_content())[0] # км/ч
+    hum = tr_ch[6].text_content()
+    t_desc = ''
+    if t_min != '--' or t_max != '--':
+        t_desc = (' Температура' +
+            (' от ' + t_min if t_min != '--' else '') +
+            (' до ' + t_max if t_max != '--' else '') +
+            '.')
+    return ('Во Львове сегодня {descr}.{temp} Вероятность дождя {rain}, ветер до {wind} км/ч, влажность {hum}.'.format(
+        descr=desc.lower(), temp=t_desc, rain=rain, wind=wind, hum=hum))

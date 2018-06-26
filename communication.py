@@ -17,6 +17,12 @@ def prepare():
         g_period = []
         for d_type in D.good_time[g_key]:
             g_type = {'simple': set(d_type['simple']), 'check_phrases': [], 'response': []}
+            if 'key' in d_type:
+                for noun in d_type['key']['noun']:
+                    for adj in d_type['key']['adj']:
+                        g_type['check_phrases'].append(noun + ' ' + adj)
+                        g_type['check_phrases'].append(adj + ' ' + noun)
+
             for noun in d_type['noun']:
                 for adj in d_type['adj']:
                     g_type['check_phrases'].append(noun + ' ' + adj)
