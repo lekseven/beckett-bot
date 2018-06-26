@@ -37,7 +37,9 @@ async def on_ready():
     await people.get(check=(not C.Server_Test))
     com.prepare()
     if not discord.opus.is_loaded():
-        discord.opus.load_opus(find_library("opuslib"))
+        lb = find_library("opus")
+        print('opus: ', lb)
+        discord.opus.load_opus(lb)
     other.later(3600, hour_timer())
     print('------ ------ ------')
     C.Ready = True
