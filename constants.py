@@ -34,6 +34,12 @@ client = discord.Client()
 loop = client.loop
 server = None  # type: discord.Server
 main_ch = None  # type: discord.Channel
+voice = None # type: discord.VoiceClient
+player = None # type: type(discord.VoiceClient.create_stream_player())
+
+
+
+
 
 users = {
     'Natali': '109004244689907712',
@@ -58,6 +64,11 @@ channels = {
     'stuff': '411647652246323200',
     'test': '419968987112275979',
     'rpg': '458975748611375104',
+    'chantry': '402222682403504138',
+    'voice': '422157208017436673',
+    'garden': '423559892759085072',
+    'ingame': '460752648967290900',
+
 }
 
 superusers = {users['Natali'], users['Kuro'], users['Magdavius'], }  # Manf & Doriana checked by roles

@@ -1,6 +1,7 @@
 # -*- coding: utf8 -*-
 #import random
 #import data
+from ctypes.util import find_library
 import communication as com
 import psycopg2
 import psycopg2.extras
@@ -27,7 +28,7 @@ async def on_ready():
     print('Logged in as')
     print(C.client.user.name)
     print(C.client.user.id)
-    C.server = C.client.get_server(C.VTM_SERVER_ID) # type: discord.Server
+    C.server = C.client.get_server(C.VTM_SERVER_ID)   # type: discord.Server
     C.main_ch = C.client.get_channel(C.WELCOME_CHANNEL_ID)
     emj.prepare()
     print('load data from memory')
@@ -35,10 +36,11 @@ async def on_ready():
     load_mem()
     await people.get(check=(not C.Server_Test))
     com.prepare()
+    if not discord.opus.is_loaded():
+        discord.opus.load_opus(find_library("opus"))
     other.later(3600, hour_timer())
     print('------ ------ ------')
     C.Ready = True
-
     await other.test_status(ram.game)
 
     pass
@@ -53,6 +55,7 @@ async def hour_timer():
         print('[hour_timer] Error: ', e)
     finally:
         other.later(3600, hour_timer())
+
 
 
 @C.client.event

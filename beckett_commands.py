@@ -714,3 +714,38 @@ async def people_sync(msg):
     #     print(message.id, str(message.author), message.content)
     #     if message.author.id == C.users['bot']:
     #         await C.client.delete_message(message)
+
+# Voice
+
+async def connect(msg):
+    """
+    !connect ch: подсоедениться к войсу
+    """
+    if len(msg.args) > 1:
+        ch = other.get_channel(' '.join(msg.args[1:]))
+        if ch:
+            if ch.type == discord.ChannelType.voice:
+                if C.voice and C.voice.is_connected():
+                    await C.voice.move_to(ch)
+                else:
+                    C.voice = await C.client.join_voice_channel(ch)
+            else:
+                await msg.qanswer("Канал - не войс")
+        else:
+            await msg.qanswer("Не найден канал")
+    else:
+        await msg.qanswer(other.comfortable_help([str(connect.__doc__)]))
+
+
+async def disconnect(msg):
+    """
+    !disconnect: отлючится от войса
+    """
+    if C.voice and C.voice.is_connected():
+        await C.voice.disconnect()
+
+
+async def haha(msg):
+    if C.voice and C.voice.is_connected():
+        C.player = C.voice.create_ffmpeg_player('sound/sabbatlaugh1.mp3')
+        C.player.start()
