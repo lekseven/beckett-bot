@@ -728,7 +728,11 @@ async def connect(msg):
                 if C.voice and C.voice.is_connected():
                     await C.voice.move_to(ch)
                 else:
-                    C.voice = await C.client.join_voice_channel(ch)
+                    try:
+                        C.voice = await C.client.join_voice_channel(ch)
+                    except Exception as e:
+                        print('[connect] Error: ', e)
+                        C.voice = C.client.voice_client_in(C.server)
             else:
                 await msg.qanswer("Канал - не войс")
         else:
