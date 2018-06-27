@@ -38,8 +38,11 @@ async def on_ready():
     com.prepare()
     if not discord.opus.is_loaded():
         lb = find_library("opus")
-        print('opus: ', lb)
-        discord.opus.load_opus(lb)
+        print('opus lib: ', lb) # i can't find it on heroku
+        if lb:
+            discord.opus.load_opus(lb)
+        else:
+            print('opus lib not load!')
     other.later(3600, hour_timer())
     print('------ ------ ------')
     C.Ready = True
