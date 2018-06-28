@@ -5,6 +5,7 @@ import psycopg2.extras
 import sys
 import other
 import discord
+import log
 
 usrs = {} # type: dict[id, Usr]
 gone = {} # type: dict[id, Gn]
@@ -231,7 +232,7 @@ def test3():
 
     usrs = new_usrs
     gone = new_gone
-    print('===========================================')
+    log.p('===========================================')
 
 
 def load(res=False):
@@ -239,7 +240,7 @@ def load(res=False):
     gone_l = {}
     conn = None
     if not res:
-        print('Load people tables')
+        log.I('- load people tables')
     try:
         conn = psycopg2.connect(C.DATABASE_URL, sslmode='require')
         cur = conn.cursor(cursor_factory=psycopg2.extras.DictCursor)
@@ -256,11 +257,11 @@ def load(res=False):
             gone_l[g.id] = g
 
     except psycopg2.DatabaseError as e:
-        print('DatabaseError %s' % e)
+        log.E('DatabaseError %s' % e)
         sys.exit(1)
     else:
         if not res:
-            print('People tables loaded successfully')
+            log.I('+ people tables loaded successfully')
     finally:
         if conn:
             conn.close()
@@ -274,7 +275,7 @@ def load(res=False):
 
 
 async def check_now():
-    print('- start check people')
+    log.I('- start check people')
     s_mems = set()
     # noinspection PyTypeChecker
     for mem in C.server.members:
@@ -308,7 +309,7 @@ async def check_now():
             if gone[gn].toban(False):
                 await other.pr_say('User ' + gone[gn].name + ' not in ban now!')
 
-    print('- finished check people')
+    log.I('+ finished check people')
 
 
 def upd():
@@ -337,7 +338,7 @@ def upd():
                 change_gone['del'].append([uid])
 
     conn = None
-    print('Update people tables')
+    log.I('- update people tables')
     try:
         conn = psycopg2.connect(C.DATABASE_URL, sslmode='require')
         cur = conn.cursor(cursor_factory=psycopg2.extras.DictCursor)
@@ -375,10 +376,10 @@ def upd():
             conn.commit()
 
     except psycopg2.DatabaseError as e:
-        print('DatabaseError %s' % e)
+        log.E('DatabaseError %s' % e)
         sys.exit(1)
     else:
-        print('People tables updated successfully')
+        log.I('+ people tables updated successfully')
     finally:
         if conn:
             conn.close()
@@ -411,9 +412,9 @@ def rewrite():
         conn.commit()
 
     except psycopg2.DatabaseError as e:
-        print('[rewrite] DatabaseError %s' % e)
+        log.E('{{rewrite}} DatabaseError %s' % e)
     else:
-        print('Members rewrite successfully')
+        log.I('Members rewrite successfully')
     finally:
         if conn:
             conn.close()
@@ -443,7 +444,7 @@ def distribute(smb, t=None):
 
 async def sync():
     # scan chat and get users array from messages in history
-    print('Sync Start')
+    log.I('Sync Start')
     count = 0
     # print('[{0}] TEST'.format(other.t2s()))
     for mem in C.client.get_all_members():
@@ -451,7 +452,7 @@ async def sync():
 
     async for message in C.client.logs_from(C.main_ch, limit=1000000):
         if count % 10000 == 0:
-            print('<sync> Check message {0}'.format(str(count)))
+            log.D('<sync> Check message {0}'.format(str(count)))
         count = count + 1
         distribute(message.author, message.timestamp.timestamp())
         # for i in message.raw_mentions:
@@ -459,28 +460,30 @@ async def sync():
 
     for usr in bans:
         distribute(usr)
-    print('<sync> MESS COUNT = {0}'.format(str(count)))
+    log.D('<sync> MESS COUNT = {0}'.format(str(count)))
     rewrite()
-    print('Sync End')
+    log.I('Sync End')
 
 
 def clear():
     global usrs, gone
-    print('CLEAR people tables')
+    log.I('CLEAR people tables')
     usrs = {}
     gone = {}
     rewrite()
-    print('CLEAR done')
+    log.I('CLEAR done')
 
 
 async def get_bans():
-    print('- get bans')
+    log.I('- get bans')
     global bans, bans_id
     bans = await C.client.get_bans(C.server)
     bans_id = set(ban.id for ban in bans)
+    log.I('+ get bans done')
 
 
 async def get(check=True):
+    log.I('Get people data')
     await get_bans()
     load()
     if check:
@@ -523,4 +526,3 @@ def set_gt(uid, key):
     if uid in usrs and key in keys:
         setattr(usrs[uid], key, int(dt.datetime.now().timestamp()))
         usrs[uid].status = 'upd'
-

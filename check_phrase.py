@@ -25,5 +25,5 @@ def check_args(args):
     for word in args:
         found_key = find_key(word)
         if found_key and found_key in data.responsesData:
-            keys+= [found_key]
+            keys += [found_key]
     return keys

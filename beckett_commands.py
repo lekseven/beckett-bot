@@ -6,6 +6,7 @@ import other
 import constants as C
 import local_memory as ram
 import people
+import log
 #import data
 
 """ 
@@ -45,7 +46,7 @@ async def help(msg):
                 text - просто любой текст;
                 * - бесконечно повторение последнего аргумента разделённого пробелом
                 (например ch* = ch1 ch2 ch3...; usr* = usr1 usr2 usr3...);
-            ```''').replace('            ',''))
+            ```''').replace('            ', ''))
         docs = [getattr(module, cmd).__doc__ for cmd in cmds]
         texts += other.comfortable_help(docs)
     else:
@@ -312,9 +313,9 @@ async def delete(msg):
             await C.client.delete_message(mess)
             done = True
         except discord.Forbidden:
-            print("Bot haven't permissions here.")
+            log.jW("Bot haven't permissions here.")
         except discord.NotFound:
-            print("Bot can't find message.")
+            log.jW("Bot can't find message.")
 
     if done:
         await msg.qanswer(":ok_hand:")
@@ -584,9 +585,32 @@ async def test(msg):
 
 
 async def tst(msg):
-    print('test get_weather')
+    log.jD('test get_weather')
     await msg.answer(other.get_weather())
     pass
+
+
+async def tst2(msg):
+    if len(msg.args) < 2:
+        await msg.qanswer(other.comfortable_help([str(dominate.__doc__)]))
+        return
+    if not msg.super and msg.author != C.users['Creol']:
+        await msg.answer('Нет у вас доминирования ¯\_(ツ)_/¯')
+        return
+
+    auth = other.get_user(msg.author)
+    who = other.get_user(msg.args[1])
+    if not auth or not who:
+        await msg.qanswer(other.comfortable_help([str(dominate.__doc__)]))
+        return
+    emb = discord.Embed(title=msg.original[len('!dominate ' + msg.args[1] + ' '):], color=auth.color)
+    emb.set_author(name=auth.nick or auth.name, icon_url=auth.avatar_url)
+    emb.set_image(url='https://cdn.discordapp.com/attachments/420056219068399617/450428811725766667/dominate.gif')
+    emb.add_field(name='f1', value='it is f1')
+    emb.add_field(name='f2', value='it is f2')
+    emb.set_footer(text='it is footer', icon_url=C.server.me.avatar_url)
+    #emb.set_footer(text='')
+    await msg.answer(text=who.mention, emb=emb)
     # ch = C.client.get_channel('398645007944384513')
     # await C.client.send_typing(ch)
     # await C.client.send_typing(ch)
@@ -637,9 +661,9 @@ async def pin(msg):
             mess = await C.client.get_message(ch, mess_id)
             await C.client.pin_message(mess)
         except discord.Forbidden:
-            print("Bot haven't permissions here.")
+            log.jW("Bot haven't permissions here.")
         except discord.NotFound:
-            print("Bot can't find message.")
+            log.jW("Bot can't find message.")
 
 
 async def unpin(msg):
@@ -658,9 +682,9 @@ async def unpin(msg):
             mess = await C.client.get_message(ch, mess_id)
             await C.client.unpin_message(mess)
         except discord.Forbidden:
-            print("Bot haven't permissions here.")
+            log.jW("Bot haven't permissions here.")
         except discord.NotFound:
-            print("Bot can't find message.")
+            log.jW("Bot can't find message.")
 
 
 async def dominate(msg):
@@ -731,7 +755,7 @@ async def connect(msg):
                     try:
                         C.voice = await C.client.join_voice_channel(ch)
                     except Exception as e:
-                        print('[connect] Error: ', e)
+                        other.pr_error(e, 'connect')
                         C.voice = C.client.voice_client_in(C.server)
             else:
                 await msg.qanswer("Канал - не войс")

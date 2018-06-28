@@ -1,10 +1,11 @@
 import re
-#import time
+import sys
 import constants as C
 import datetime
 import discord
 import random
 import data
+import log
 # for weather
 import requests
 import lxml.html
@@ -81,47 +82,23 @@ def str_keys(ch_dict, keys, pre=''):
     ans = []
     for key in keys:
         if key in ch_dict:
-            ans.append(pre + '[' + key + '] = ' + ch_dict[key])
-    return '\n'.join(ans) if ans else []
-
-
-def mess_plus(message):
-    if message.attachments:
-        attachments = []
-        for att in message.attachments:
-            attachments.append('\t\t' + att['url'])
-        print('\n'.join(attachments))
-    if message.embeds:
-        embeds = []
-        i = 1
-        for emb in message.embeds:
-            embed = ['\tEmb_' + str(i) + ':']
-            embed += [str_keys(emb, ['title', 'url', 'description'], '\t\t')]
-            if 'author' in emb:
-                embed += ['\t\t[author]:']
-                embed += [str_keys(emb['author'], ['name', 'icon_url'], '\t\t\t')]
-
-            if 'fields' in emb:
-                j = 1
-                for field in emb['fields']:
-                    embed += ['\t\t[field_' + str(j) + ']:']
-                    embed += [str_keys(field, ['name', 'value'], '\t\t\t')]
-                    j += 1
-
-            if 'footer' in emb:
-                embed += ['\t\t[footer]:']
-                embed += [str_keys(emb['footer'], ['icon_url', 'text'], '\t\t\t')]
-
-            i += 1
-            embeds.append('\n'.join(embed))
-
-        print('\n'.join(embeds))
+            ans.append('{0}[{1}] = {2}'.format(pre, key, ch_dict[key]))
+    return ['\n'.join(ans)] if ans else []
 
 
 def t2s(timedata=None, frm="%H:%M:%S"):
     timedata = timedata or datetime.datetime.utcnow()
     timedata = timedata.replace(tzinfo=timedata.tzinfo or datetime.timezone.utc)
     return timedata.astimezone(datetime.timezone(datetime.timedelta(hours=3))).strftime(frm)
+
+
+def delta2s(timedelta):
+    total_sec = timedelta.seconds
+    hours = int(total_sec/3600)
+    total_sec -= hours*3600
+    mins = int(total_sec / 60)
+    total_sec -= mins * 60
+    return '{0}:{1}:{2}'.format(hours, mins, total_sec)
 
 
 async def get_ban_user(s_name):
@@ -232,9 +209,9 @@ async def do_embrace(user, clan=None):
         try:
             await C.client.add_roles(user, *roles)
         except C.discord.Forbidden:
-            print("Bot can't change roles.")
+            log.jW("Bot can't change roles.")
         except Exception as e:
-            print('Error in changing roles: ', e)
+            pr_error(e, 'do_embrace', 'Error in changing roles')
             #print("Other error in changing roles")
         # omg
         clan_users = set()
@@ -277,7 +254,7 @@ def issuper(usr):
 
 
 async def pr_say(text):
-    print(text)
+    log.I(text)
     if not C.Server_Test:
         await C.client.send_message(get_user(C.users['Kuro']), content=text)
 
@@ -315,7 +292,7 @@ def get_weather():
     t_max = tr_ch[3].getchildren()[0].getchildren()[0].text_content()
     t_min = tr_ch[3].getchildren()[0].getchildren()[2].text_content()
     rain = tr_ch[4].text_content()
-    wind = re.search('\d+',tr_ch[5].text_content())[0] # км/ч
+    wind = re.search('\d+', tr_ch[5].text_content())[0] # км/ч
     hum = tr_ch[6].text_content()
     t_desc = ''
     if t_min != '--' or t_max != '--':
@@ -325,3 +302,14 @@ def get_weather():
             '.')
     return ('Во Львове сегодня {descr}.{temp} Вероятность дождя {rain}, ветер до {wind} км/ч, влажность {hum}.'.format(
         descr=desc.lower(), temp=t_desc, rain=rain, wind=wind, hum=hum))
+
+
+def pr_error(e, cat='beckett', text='Error'):
+    ei = sys.exc_info()
+    log.E("{{{cat}}} {text}:".format(cat=cat, text=text), e, ei[0], ei[1])
+
+
+def get_now():
+    timedata = datetime.datetime.utcnow()
+    timedata = timedata.replace(tzinfo=timedata.tzinfo or datetime.timezone.utc)
+    return timedata.astimezone(datetime.timezone(datetime.timedelta(hours=3)))

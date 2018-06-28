@@ -3,6 +3,7 @@ import constants as C
 import local_memory as ram
 import other
 import random
+import log
 
 # Emojis [31.05.2018]:
 ems_id = {
@@ -69,7 +70,7 @@ def e(name):
     if name in emojis:
         return emojis[name]
     else:
-        print('Warn: [e] there no emoji ' + name)
+        log.jW('{e} there no emoji ' + name)
         return None
 
 
@@ -77,12 +78,12 @@ def get_emname(em):
     if em in em_name:
         return em_name[em]
     else:
-        print('Warn: [e] there no name of emoji ' + em)
+        log.jW('{e} there no name of emoji ' + em)
         return None
 
 
 def prepare():
-    print('Prepare emj')
+    log.I('Prepare emj')
     save_em()
     for name in emojis:
         em_name[emojis[name]] = name
@@ -114,23 +115,23 @@ def save_em():
         if em.id in ems_id:
             emojis[ems_id[em.id]] = em
         else:
-            print('Warn: new smile '+str(em))
+            log.jW('{save_em} new smile '+str(em))
 
     for name in special:
         name_em[C.users[name]] = set()
-        for em_name in special[name]:
-            em = e(em_name)
+        for e_name in special[name]:
+            em = e(e_name)
             if em:
                 name_em[C.users[name]].add(em)
             else:
-                print("Warn: can't find {0} in emojis (1)".format(em_name))
+                log.jW("{{save_em}} can't find {0} in emojis (1)".format(e_name))
 
-    for em_name in rand:
-        em = e(em_name)
+    for e_name in rand:
+        em = e(e_name)
         if em:
             rand_em.add(em)
         else:
-            print("Warn: can't find {0} in emojis (2)".format(em_name))
+            log.jW("{{save_em}} can't find {0} in emojis (2)".format(e_name))
 
 
 def is_emj(em):
@@ -159,19 +160,19 @@ async def on_reaction_add(reaction, user):
     if user.id in name_em:
         # emoji[0] because it can be different colors
         if (isinstance(emoji, str) and emoji[0] in name_em[user.id]) or emoji in name_em[user.id]:
-            print('Copy special reaction')
+            log.jD('Copy special reaction')
             await C.client.add_reaction(message, emoji)
             return
 
     if emoji in rand_em:
         chance = random.random()
         if chance <= 0.01:
-            print('Copy some reaction')
+            log.jD('Copy some reaction')
             await C.client.add_reaction(message, emoji)
             return
 
     if emoji == e('Logo_Gangrel') and other.find(C.server.get_member(user.id).roles, id=C.roles['Gangrel']):
-        print('Copy Gangrel reaction')
+        log.jD('Copy Gangrel reaction')
         await C.client.add_reaction(message, emoji)
 
     # len(message.reactions) < 20
@@ -194,7 +195,7 @@ async def on_reaction_remove(reaction, user):
     if user.id in name_em:
         # emoji[0] because it can be different colors
         if (isinstance(emoji, str) and emoji[0] in name_em[user.id]) or emoji in name_em[user.id]:
-            print('Remove special reaction')
+            log.jD('Remove special reaction')
             await C.client.remove_reaction(message, emoji, C.server.me)
 
     # if str(user) == 'Kuro#3777':
@@ -207,37 +208,37 @@ async def on_message(message, beckett_mention):
 
     if author == C.users['Natali']:
         if beckett_mention:
-            print('Like Natali for Beckett')
+            log.jD('Like Natali for Beckett')
             await C.client.add_reaction(message, e('purple_heart')) #green_heart
         elif prob < 0.01:
-            print('Like Natali chance 0.01')
+            log.jD('Like Natali chance 0.01')
             await C.client.add_reaction(message, e('purple_heart'))
         return
 
     if author == C.users['Doriana']:
         if beckett_mention and prob < 0.1:
-            print('Like Doriana for Beckett chance 0.1')
+            log.jD('Like Doriana for Beckett chance 0.1')
             await C.client.add_reaction(message, e('octopus'))
         elif prob < 0.005:
-            print('Like Doriana chance 0.005')
+            log.jD('Like Doriana chance 0.005')
             await C.client.add_reaction(message, e('black_heart'))
         return
 
     if author == C.users['Tony']:
         if beckett_mention and prob < 0.1:
-            print('Like Tony for Beckett chance 0.1')
+            log.jD('Like Tony for Beckett chance 0.1')
             await C.client.add_reaction(message, e('Logo_Ventrue'))
         elif prob < 0.005:
-            print('Like Tony chance 0.005')
+            log.jD('Like Tony chance 0.005')
             await C.client.add_reaction(message, e('ok_hand'))
         return
 
     if author == C.users['Rainfall']:
         if beckett_mention and prob < 0.1:
-            print('Like Rainfall for Beckett chance 0.1')
+            log.jD('Like Rainfall for Beckett chance 0.1')
             await C.client.add_reaction(message, e('green_heart'))
         elif prob < 0.005:
-            print('Like Rainfall chance 0.005')
+            log.jD('Like Rainfall chance 0.005')
             await C.client.add_reaction(message, e('green_heart'))
         return
 

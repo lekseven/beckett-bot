@@ -4,6 +4,7 @@ import random as R
 import constants as C
 import emj
 import other
+import log
 
 
 good_time = {}
@@ -11,8 +12,8 @@ morning_add = {}
 
 
 def prepare():
-    print('Prepare communication:')
-    print('\t -make dictionary good_type')
+    log.I('Prepare communication:')
+    log.jI('\t -make dictionary good_type')
     for g_key in D.good_time:
         g_period = []
         for d_type in D.good_time[g_key]:
@@ -32,7 +33,7 @@ def prepare():
                     # g_type['response'].append('<@{name}>, ' + adj + ' ' + noun + '.')
             g_period.append(g_type)
         good_time[g_key] = g_period
-    print('\t -make morning add')
+    log.jI('\t -make morning add')
     morn_add = {
         'Kuro': ':tea:', 'Natali': ':tea::chocolate_bar:', 'Soul': ':coffee:',
         'Buffy': ':sun_with_face:', 'Tilia': ':sun_with_face:',
@@ -41,7 +42,7 @@ def prepare():
     for name in morn_add:
         if name in C.users:
             morning_add[C.users[name]] = morn_add[name]
-    print('Prepare communication done.')
+    log.I('Prepare communication done.')
 
 
 def f_gt_key(orig_phrase, tr_phrase, words, bot_mention):

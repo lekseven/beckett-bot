@@ -1,22 +1,25 @@
 # -*- coding: utf8 -*-
 #import random
 #import data
+import os
 from ctypes.util import find_library
-import communication as com
 import psycopg2
 import psycopg2.extras
 import sys
 import ast
 import signal
 import functools
+import datetime
 import discord
+
+import communication as com
 import constants as C
 import check_message
 import other
 import emj
 import people
-
 import local_memory as ram
+import log
 
 
 #import Log
@@ -25,26 +28,24 @@ import local_memory as ram
 @C.client.event
 async def on_ready():
     await other.busy()
-    print('Logged in as')
-    print(C.client.user.name)
-    print(C.client.user.id)
-    C.server = C.client.get_server(C.VTM_SERVER_ID)   # type: discord.Server
-    C.main_ch = C.client.get_channel(C.WELCOME_CHANNEL_ID)
+    log.I('Logged in as ', C.client.user, ' (', C.client.user.id, ')')
+    prepare_const2()
     emj.prepare()
-    print('load data from memory')
+    log.I('load data from memory')
     #await C.client.change_nickname(C.server.me, 'Beckett') # Beckett
     load_mem()
     await people.get(check=(not C.Server_Test))
     com.prepare()
     if not discord.opus.is_loaded():
         lb = find_library("opus")
-        print('opus lib: ', lb) # i can't find it on heroku
+        log.jD('opus lib: ', lb) # i can't find it on heroku
         if lb:
             discord.opus.load_opus(lb)
         else:
-            print('opus lib not load!')
+            log.jW('opus lib not load!')
     other.later(3600, hour_timer())
-    print('------ ------ ------')
+    log.I('Ready to work at ', ram.t_start.strftime('[%D %T]'))
+    log.p('------ ------ ------')
     C.Ready = True
     await other.test_status(ram.game)
 
@@ -52,15 +53,72 @@ async def on_ready():
     pass
 
 
+def prepare_const():
+    log.I('- prepare_const')
+
+    C.Server_Test = os.environ.get('Server_Test')
+    if not C.Server_Test:
+        C.Server_Test = False
+
+    C.DISCORD_TOKEN = os.environ.get('DISCORD_TOKEN')
+
+    if not C.DISCORD_TOKEN:
+        log.E('Config var DISCORD_TOKEN is not defined.')
+        sys.exit()
+
+    if C.Server_Test:
+        server_key = 'TEST_SERVER_ID'
+        channel_key = 'TEST_CHANNEL_ID'
+        log.jI('Bot work with Test Server')
+    else:
+        server_key = 'VTM_SERVER_ID'
+        channel_key = 'WELCOME_CHANNEL_ID'
+
+    C.VTM_SERVER_ID = os.environ.get(server_key)
+
+    if not C.VTM_SERVER_ID:
+        log.E('Config var VTM_SERVER_ID is not defined.')
+        sys.exit()
+
+    C.WELCOME_CHANNEL_ID = os.environ.get(channel_key)
+
+    if not C.WELCOME_CHANNEL_ID:
+        log.E('Config var WELCOME_CHANNEL_ID is not defined.')
+        sys.exit()
+
+    C.DATABASE_URL = os.environ.get('DATABASE_URL')
+    if not C.DATABASE_URL:
+        log.E('Config var DATABASE_URL is not defined.')
+        sys.exit()
+
+    C.DROPBOX_ID = os.environ.get('DROPBOX_ID')
+
+    ram.t_start = other.get_now()
+    log.I('+ prepare_const done')
+
+
+def prepare_const2():
+    log.I('- prepare_const2')
+    C.server = C.client.get_server(C.VTM_SERVER_ID)  # type: discord.Server
+    if not C.server:
+        log.E("Can't find server.")
+        sys.exit()
+
+    C.main_ch = C.client.get_channel(C.WELCOME_CHANNEL_ID)
+    if not C.main_ch:
+        log.E("Can't find welcome_channel.")
+        sys.exit()
+    log.I('+ prepare_const2 done')
+
+
 async def hour_timer():
     # just for test now
     try:
-        print('[{0}]'.format(other.t2s()),'Hour timer!')
+        log.D('[{0}]'.format(other.t2s()), 'Hour timer!')
     except Exception as e:
-        print('[hour_timer] Error: ', e)
+        other.pr_error(e, 'hour_timer')
     finally:
         other.later(3600, hour_timer())
-
 
 
 @C.client.event
@@ -70,11 +128,10 @@ async def on_member_join(member):
     uid = member.id
     if people.Usr.check_new(member):
         await C.client.send_message(C.main_ch, com.comeback_msg(uid, people.time_out(uid), people.clan(uid)))
-        await other.pr_say(str(member) + ' comeback!')
+        await log.pr_news('{0} ({0.mention}) comeback!'.format(member))
     else:
-        #fmt = random.choice(data.welcomeMsgList)
         await C.client.send_message(C.main_ch, com.welcome_msg(uid))
-        await other.pr_say(str(member) + ' new!')
+        await log.pr_news('{0} ({0.mention}) new!'.format(member))
 
 
 @C.client.event
@@ -83,23 +140,20 @@ async def on_member_remove(member):
     if not C.Ready or member.server.id != C.server.id:
         return
 
-    #if member.id not in people.gone or people.gone[member.id].status == 'del':
     if not other.find(await C.client.get_bans(C.server), id=member.id):
         people.Gn.check_new(member)
         await C.client.send_message(C.main_ch, com.bye_msg(member.id))
-        await other.pr_say(str(member) + ' go away!')
+        await log.pr_news('{0} ({0.mention}) go away!'.format(member))
 
 
 @C.client.event
 async def on_member_ban(member):
     if not C.Ready or member.server.id != C.server.id:
         return
-    # people.bans += await C.client.get_user_info(member.id)
-    # if member.id in people.usrs:
-    #     people.usrs[member.id]['status'] = 'del'
+
     await people.on_ban(member)
     await C.client.send_message(C.main_ch, com.ban_msg(member.id))
-    await other.pr_say('Ban ' + str(member))
+    await log.pr_news('Ban {0} ({0.mention})!'.format(member))
 
 
 @C.client.event
@@ -108,37 +162,19 @@ async def on_member_unban(server, user):
         return
     people.on_unban(user)
     await C.client.send_message(C.main_ch, com.unban_msg(user.id))
-    await other.pr_say('Unban ' + str(user))
+    await log.pr_news('Unban {0} ({0.mention})!'.format(user))
 
 
 @C.client.event
 async def on_reaction_add(reaction, user):
-    if not C.Ready or (getattr(user, 'server', None) and user.server.id != C.server.id):
-        return
-    message = reaction.message
-    emoji = reaction.emoji
-    print('[{0}]{{on_reaction_add}} {1}: {2}'.format(
-        other.t2s(), user,
-        hasattr(emoji, 'id') and ('[{0.id}]({0.name})'.format(emoji)) or emoji))
-    print('{{To message}}(by {1})<#{0.channel.name}> {0.author}: {0.content}'.format(
-        message, other.t2s(message.timestamp)))
-    other.mess_plus(message)
-    await emj.on_reaction_add(reaction, user)
+    if await log.on_reaction(reaction, 'on_reaction_add', user):
+        await emj.on_reaction_add(reaction, user)
 
 
 @C.client.event
 async def on_reaction_remove(reaction, user):
-    if not C.Ready or (getattr(user, 'server', None) and user.server.id != C.server.id):
-        return
-    message = reaction.message
-    emoji = reaction.emoji
-    print('[{0}]{{on_reaction_remove}} {1}: {2}'.format(
-        other.t2s(), user,
-        hasattr(emoji, 'id') and ('[{0.id}]({0.name})'.format(emoji)) or emoji))
-    print('{{From message}}(by {1})<#{0.channel.name}> {0.author}: {0.content}'.format(
-        message, other.t2s(message.timestamp)))
-    other.mess_plus(message)
-    await emj.on_reaction_remove(reaction, user)
+    if await log.on_reaction(reaction, 'on_reaction_remove', user):
+        await emj.on_reaction_remove(reaction, user)
 
 
 @C.client.event
@@ -147,82 +183,53 @@ async def on_server_emojis_update(before, after):
     lb = len(before)
     # before, after - list of server emojis
     if ((la < 1 and lb < 1) or
-            (lb > 0 and before[0].server != C.server.id) or (la > 0 and after[0].server != C.server.id)):
+            (lb > 0 and before[0].server.id != C.server.id) or (la > 0 and after[0].server.id != C.server.id)):
         return
-    await other.pr_say('on_server_emojis_update!')
+    await log.pr_news('on_server_emojis_update!')
+
     emj.save_em()
 
 
 @C.client.event
 async def on_message(message):
-    if not C.Ready or (message.server and message.server.id != C.server.id):
-        return
-    # Log
-    print('[{0}]{{on_message}}<#{1.channel.name}> {1.author}: {1.content}'.
-          format(other.t2s(message.timestamp), message))
-    other.mess_plus(message)
-    # End log
-
-    if message.channel.id in C.ignore_channels: # message.author == C.client.user or
-        return
-
-#    if message.author.id == '414384012568690688' and ram.letter: # Kuro
-#     if message.author.id == '109004244689907712' and ram.letter:  # Natali
-#         emb = discord.Embed(title="Передай пожалуйста Натали лично в руки.", color=0x206694)
-#         emb.set_author(name="Kuro",
-#           icon_url = "https://cdn.discordapp.com/avatars/414384012568690688/f263f8762379c0ee4d5362127857fdab.png")
-#         emb.set_image(url='https://cdn.discordapp.com/attachments/420056219068399617/432063393826996224/letter.jpg')
-#         emb.set_footer(text='Суббота, 7 апреля 2018')
-#         await C.client.send_message(message.channel,
-#                   content='Мой <@&398223824514056202>, меня просили передать лично вам :love_letter:',embed=emb)
-#         #await C.client.send_file(message.channel, 'Beckett.jpg')
-#         ram.letter = False
-#         return
-
-    await check_message.reaction(message)
+    if await log.on_mess(message, 'on_message'):
+        await check_message.reaction(message)
 
 
 @C.client.event
 async def on_message_edit(before, after):
-    if not C.Ready or (after.server and after.server.id != C.server.id):
-        return
-    print('[{0}]{{on_edit}}(from {2})<#{1.channel.name}> {1.author}: {1.content}'.format(
-        other.t2s(), after, other.t2s(before.timestamp)))
-    other.mess_plus(after)
+    await log.on_mess(after, 'on_message_edit')
 
 
 @C.client.event
 async def on_message_delete(message):
-    if not C.Ready or (message.server and message.server.id != C.server.id):
-        return
-    print('[{0}]{{on_delete}}(from {2})<#{1.channel.name}> {1.author}: {1.content}'.format(
-        other.t2s(), message, other.t2s(message.timestamp)))
-    other.mess_plus(message)
+    await log.on_mess(message, 'on_message_delete')
 
 
 @C.client.event
 async def on_server_role_create(role):
     if not C.Ready or role.server.id != C.server.id:
         return
-    await other.pr_say('New Role' + role.name + '!')
+    await log.pr_news('New Role' + role.name + '!')
 
 
 @C.client.event
 async def on_server_role_delete(role):
     if not C.Ready or role.server.id != C.server.id:
         return
-    await other.pr_say('Delete Role' + role.name + '!')
+    await log.pr_news('Delete Role' + role.name + '!')
 
 
 @C.client.event
 async def on_server_role_update(before, after):
     if not C.Ready or after.server.id != C.server.id:
         return
-    await other.pr_say('Update Role' + before.name + '/' + after.name + '!')
+    await log.pr_news('Update Role' + before.name + '/' + after.name + '!')
 
 
 def load_mem():
-    print('check memory in DB')
+    log.I('check memory in DB')
+    not_load = {'t_start', 't_finish', 't_work'}
     module = sys.modules[ram.__name__]
     module_attrs = dir(module)
     variables = set(key for key in module_attrs if key[0] != '_' and not callable(getattr(module, key)))
@@ -234,29 +241,29 @@ def load_mem():
         rows = cur.fetchall()
         for row in rows:
             #print("%s %s %s" % (row["id"], row["var"], row["val"]))
-            if row['var'] in variables:
+            if row['var'] in variables and not row['var'] in not_load:
                 try:
                     if row['val'] == 'set()':
                         v = set()
                     else:
                         v = ast.literal_eval(row['val'])
                 except Exception as e:
-                    print('Error: ', e)
-                    print("ast.literal_eval can't eval [%s] = '%s'" % (row['var'], row['val']))
+                    other.pr_error(e, 'load_mem')
+                    log.jW("ast.literal_eval can't eval [%s] = '%s'" % (row['var'], row['val']))
                 else:
                     setattr(module, row['var'], v)
     except psycopg2.DatabaseError as e:
-        print('DatabaseError %s' % e)
+        log.E('DatabaseError %s' % e)
         sys.exit(1)
     else:
-        print('Memory loaded successfully')
+        log.I('memory loaded successfully')
     finally:
         if conn:
             conn.close()
 
 
 def save_mem():
-    print('save memory in DB')
+    log.I('save memory in DB')
     module = sys.modules[ram.__name__]
     module_attrs = dir(module)
     variables = {key: getattr(module, key)
@@ -266,6 +273,8 @@ def save_mem():
     for var, val in variables.items():
         if isinstance(val, dict):
             val = {k: v for k, v in val.items() if v != set()}
+        if isinstance(val, (datetime.datetime, datetime.timedelta)):
+            val = str(val)
         rows.append((var, repr(val),))
     try:
         conn = psycopg2.connect(C.DATABASE_URL, sslmode='require')
@@ -275,17 +284,17 @@ def save_mem():
         cur.executemany(query, rows)
         conn.commit()
     except psycopg2.DatabaseError as e:
-        print('[save_mem] <memory> DatabaseError %s' % e)
+        log.E('[save_mem] <memory> DatabaseError %s' % e)
         sys.exit(1)
     else:
-        print('Memory saved successfully')
+        log.I('Memory saved successfully')
     finally:
         if conn:
             conn.close()
 
 
 def on_exit(signum):
-    print("Call on_exit by signal %s" % signum)
+    log.I("Call on_exit by signal %s" % signum)
     C.loop.create_task(C.client.logout())
     pass
     #C.loop.stop()
@@ -295,26 +304,31 @@ def main_loop():
     for signame in ('SIGINT', 'SIGTERM'):
         C.loop.add_signal_handler(getattr(signal, signame), functools.partial(on_exit, signame))
     try:
-        print("Start ClientRun.")
+        log.I("Start ClientRun.")
         C.client.run(C.DISCORD_TOKEN)
     except Exception as e:
-        print('Error: ', e)
-        ei = sys.exc_info()
-        print("[ClientRun] Unexpected error:", ei[0], ei[1])
+        other.pr_error(e, 'ClientRun', 'Unexpected error')
     else:
-        print("ClientRun is completed without errors.")
+        log.I("ClientRun is completed without errors.")
     finally:
+        ram.t_finish = other.get_now()
+        ram.t_work = (ram.t_finish-ram.t_start)
         if C.Ready:
+            C.Ready = False
             save_mem()
             if not C.Server_Test:
                 people.upd()
-        C.Ready = False
-        print('finally exit')
+        log.I('Finally exit at ', ram.t_finish.strftime('[%D %T]'),
+              ', working for ', other.delta2s(ram.t_work))
+        log.p('------ ------ ------')
 
 
 # main_loop[try] -> ERROR -> main_loop[except] -> main_loop[finally] -> sys.exit(0)
 # main_loop[try] -> SIG -> on_exit -> main_loop[else] -> main_loop[finally] -> sys.exit(0)
 #Log.log_fun(main_loop)
 #Log.send_log()
-main_loop()
+prepare_const()
+#main_loop()
+log.log_fun(main_loop)
+log.send_log()
 sys.exit(0)

@@ -12,6 +12,7 @@ import emj
 import other
 import communication as com
 import people
+import log
 
 
 class Msg:
@@ -49,7 +50,7 @@ class Msg:
         try:
             await C.client.delete_message(self.message)
         except discord.Forbidden:
-            print("Bot haven't permissions here.")
+            log.jW("Bot haven't permissions here.")
 
     async def edit(self, new_msg):  #not permissions
         await C.client.edit_message(self.message, new_msg)
@@ -101,7 +102,7 @@ class Msg:
         try:
             count = int(check_count)
         except Exception as e:
-            print('Error: ', e)
+            other.pr_error(e, 'purge')
             await self.qanswer('N должно быть числом!')
             return
         mess_count = 0
@@ -129,12 +130,12 @@ class Msg:
                 'Вы уверены что хотите удалить {count} {text_mess} от {list_auth} с {first} по {last} в <#{channel}>? '
                 .format(
                     count=mess_count, text_mess=text_mess, list_auth=', '.join(list_auth),
-                    first=other.t2s(first,'{%x %X}'), last=other.t2s(last,'{%x %X}'), channel=channel.id))
+                    first=other.t2s(first, '{%x %X}'), last=other.t2s(last, '{%x %X}'), channel=channel.id))
             if yes:
                 try:
                     await C.client.purge_from(channel, limit=count, check=check, after=aft, before=bef)
                 except discord.Forbidden:
-                    print("Bot haven't permissions here.")
+                    log.jW("Bot haven't permissions here.")
                 else:
                     await self.qanswer(":ok_hand:")
             else:
@@ -249,10 +250,10 @@ async def reaction(message):
                     phr += ' ' + com.morning_add[msg.author]
                     if msg.author == C.users['Natali']:
                         try:
-                            print('try get_weather for Natali')
+                            log.I('try get_weather for Natali')
                             str_weather = '\n:newspaper: ' + other.get_weather()
                         except Exception as e:
-                            print('[get_weather] Error: ', e)
+                            other.pr_error(e, 'get_weather')
 
                 await msg.answer(other.name_phr(msg.author, phr) + str_weather)
                 people.set_gt(msg.author, gt_key['g_key'])
