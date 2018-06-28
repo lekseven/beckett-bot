@@ -1,4 +1,5 @@
 import sys
+import os
 import re
 from contextlib import redirect_stdout, redirect_stderr
 import dropbox
@@ -48,6 +49,9 @@ def log_fun(loop):
     global log_full, log_name
     log_name = 'log[{0}].txt'.format(ram.t_start.strftime('%d|%m|%y %T'))
     log_full = log_path + log_name
+    directory = os.path.dirname(log_full)
+    if not os.path.exists(directory):
+        os.makedirs(directory)
     with open(log_full, 'w') as logfile:
         with redirect_stdout(LogWrite(sys.stdout, logfile)):
             with redirect_stderr(ErrWrite(sys.stderr, logfile)):
