@@ -1,9 +1,11 @@
+import discord
 from data_emoji import emojis
 import constants as C
 import local_memory as ram
 import other
 import random
 import log
+
 
 # Emojis [31.05.2018]:
 ems_id = {
@@ -64,7 +66,7 @@ rand_em = set()
 name_em = {}
 em_set = set()
 em_name = {}
-
+hearts = {'❤', '💛', '💚', '💙', '💜', '❣', '💕', '💞', '💓', '💗', '💖', '💘', '💝', '💟',} # '💔',
 
 def e(name):
     if name in emojis:
@@ -153,6 +155,13 @@ async def on_reaction_add(reaction, user):
             await C.client.remove_reaction(message, emoji, user)
             await C.client.add_reaction(message, emoji)
         return
+
+    if user.id == C.users['Kuro'] and e('middle_finger') in emoji:
+        log.D('Get *that* smile, try delete message')
+        try:
+            await C.client.delete_message(message)
+        except discord.Forbidden:
+            log.jW("Bot haven't permissions here.")
 
     if message.author == C.server.me or message.author == user:
         return

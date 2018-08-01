@@ -93,12 +93,12 @@ def t2s(timedata=None, frm="%H:%M:%S"):
 
 
 def delta2s(timedelta):
-    total_sec = timedelta.seconds
+    total_sec = timedelta.total_seconds()
     hours = int(total_sec/3600)
     total_sec -= hours*3600
     mins = int(total_sec / 60)
     total_sec -= mins * 60
-    return '{0}:{1}:{2}'.format(hours, mins, total_sec)
+    return '{0}:{1}:{2}'.format(hours, mins, int(total_sec))
 
 
 async def get_ban_user(s_name):

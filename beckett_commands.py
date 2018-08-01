@@ -777,3 +777,11 @@ async def haha(msg):
     if C.voice and C.voice.is_connected():
         C.player = C.voice.create_ffmpeg_player('sound/sabbatlaugh1.mp3')
         C.player.start()
+
+
+async def play(msg):
+    game = None
+    if len(msg.args) > 1:
+        game = discord.Game(name=msg.original[len('!play '):])
+    status = (discord.Status.dnd if ram.game else discord.Status.online)
+    await C.client.change_presence(game=game, status=status, afk=False)

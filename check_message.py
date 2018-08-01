@@ -240,7 +240,7 @@ async def reaction(message):
                 await msg.answer(ans)
                 return
 
-        gt_key = com.f_gt_key(msg.original, msg.text, msg.words, beckett)
+        gt_key = com.f_gt_key(msg.original, msg.text, msg.words.copy(), beckett)
         if gt_key:
             h18 = 64800  # 18h in sec
             if (dt.datetime.now().timestamp() - msg.gt[gt_key['g_key']]) > h18: # not beckett and
@@ -271,11 +271,12 @@ async def reaction(message):
                 ans = other.name_rand_phr(msg.author, m)
             elif msg.words.intersection(data.sm_resp['bye']):
                 ans = other.name_rand_phr(msg.author, data.sm_resp['bye'])
-            elif msg.words.intersection(data.sm_resp['love']) and not no:
+            elif (msg.words.intersection(data.sm_resp['love']) or msg.words.intersection(emj.hearts)) and not no:
                 if msg.author == C.users['Natali']:
                     ans = ':purple_heart:'
                 else:
                     ans = ':heart:'
+                ans = other.name_phr(msg.author, ans)
             elif 'любимый клан' in msg.text:
                 if prob > 0.09:
                     ans = random.choice(data.sm_resp['apoliticality'])

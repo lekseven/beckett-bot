@@ -64,7 +64,7 @@ beckett_names = {'беккет', 'бэккет', 'бекетт', 'бэкетт',
 silent_channels = {}
 ignore_channels = {channels['vtm_news'], channels['vtm_links']}
 
-punct2space = str.maketrans(string.punctuation, ' ' * len(string.punctuation))  # for translate
+punct2space = str.maketrans(string.punctuation + '«»', ' ' * (len(string.punctuation) + 2))  # for translate
 free_cmds = {'roll', 'help', 'ignore', 'dominate'}
 
 # WARNING: Clans keys here must be the same to dataKeys (Clans) in data
