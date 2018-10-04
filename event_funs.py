@@ -88,24 +88,24 @@ async def on_server_emojis_update_o(server, before, after, *args):
 
 
 async def on_server_role_create_u(role, *args):
-    await log.pr_news('New Role' + role.name + '!')
+    await log.pr_news('New Role: ' + role.name + '!')
 
 
 async def on_server_role_create_o(server, role, *args):
-    await log.pr_other_news(server, 'New Role' + role.name + '!')
+    await log.pr_other_news(server, 'New Role: ' + role.name + '!')
 
 
 async def on_server_role_delete_u(role, *args):
-    await log.pr_news('Delete Role' + role.name + '!')
+    await log.pr_news('Delete Role: ' + role.name + '!')
 
 
 async def on_server_role_delete_o(server, role, *args):
-    await log.pr_other_news(server, 'Delete Role' + role.name + '!')
+    await log.pr_other_news(server, 'Delete Role: ' + role.name + '!')
 
 
 async def on_server_role_update_u(before, after, *args):
-    await log.pr_news('Update Role' + before.name + '/' + after.name + '!')
+    await log.pr_news('Update Role: ' + before.name + '/' + after.name + '!')
 
 
 async def on_server_role_update_o(server, before, after, *args):
-    await log.pr_other_news(server, 'Update Role' + before.name + '/' + after.name + '!')
+    await log.pr_other_news(server, 'Update Role: ' + before.name + '/' + after.name + '!')

@@ -185,7 +185,7 @@ async def on_server_role_delete(role):
 
 @C.client.event
 async def on_server_role_update(before, after):
-    await ev.check_server(before.server, ev.on_server_emojis_update_u, ev.on_server_emojis_update_o, before, after)
+    await ev.check_server(before.server, ev.on_server_role_update_u, ev.on_server_role_update_o, before, after)
 # endregion
 
 
