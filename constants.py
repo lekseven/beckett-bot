@@ -3,18 +3,27 @@ import discord
 import string
 
 Ready = False
-Server_Test = False
+is_test = False
 
 DISCORD_TOKEN = ''
 VTM_SERVER_ID = ''
+TST_SERVER_ID = ''
 WELCOME_CHANNEL_ID = ''
+TEST_CHANNEL_ID = ''
 DATABASE_URL = ''
 DROPBOX_ID = ''
 
 client = discord.Client()
 loop = client.loop
-server = None  # type: discord.Server
+vtm_server = None  # type: discord.Server
+tst_server = None  # type: discord.Server
+prm_server = None  # type: discord.Server
 main_ch = None  # type: discord.Channel
+test_ch = None  # type: discord.Channel
+vtm_news_ch = None  # type: discord.Channel
+other_news_ch = None  # type: discord.Channel
+vtm_links_ch = None  # type: discord.Channel
+other_links_ch = None  # type: discord.Channel
 voice = None # type: discord.VoiceClient
 player = None # type: type(discord.VoiceClient.create_stream_player())
 
@@ -45,6 +54,7 @@ channels = {
     'test': '419968987112275979',
     'rpg': '458975748611375104',
     'chantry': '402222682403504138',
+    'bar': '415646441730474007',
     # voice channels
     'voice': '422157208017436673',
     'garden': '423559892759085072',
@@ -54,7 +64,9 @@ channels = {
     'beckett': '459193166185234444',
     'vtm_news': '453172109460635658',
     'vtm_links': '461424461950877698',
-
+    'other_news': '497142772415856641',
+    'other_links': '497142885700075540',
+    'test_mode_only': '497143071604211743',
 }
 
 superusers = {users['Natali'], users['Kuro'], users['Magdavius'], }  # Manf & Doriana checked by roles
@@ -62,7 +74,7 @@ superusers = {users['Natali'], users['Kuro'], users['Magdavius'], }  # Manf & Do
 beckett_refs = {users['bot'], '419975091544391680', }  # last - role_id
 beckett_names = {'беккет', 'бэккет', 'бекетт', 'бэкетт', 'beckett', }
 silent_channels = {}
-ignore_channels = {channels['vtm_news'], channels['vtm_links']}
+ignore_channels = {channels['vtm_news'], channels['vtm_links'], channels['other_news'], channels['other_links']}
 
 punct2space = str.maketrans(string.punctuation + '«»', ' ' * (len(string.punctuation) + 2))  # for translate
 free_cmds = {'roll', 'help', 'ignore', 'dominate'}
@@ -97,7 +109,7 @@ roles = {'Prince': '398223824514056202',
          'Silence': '449666656143409162',
          'Priest': '451687545412124672',
          'Ductus': '451687735355375626',
-         'Gargoyle': '453169623576084480',  # test Server
+         # 'Gargoyle': '453169623576084480',  # test Server
          }
 
 role_by_id = {value: key for (key, value) in roles.items()}
@@ -106,7 +118,7 @@ clan_names = {'Malkavian', 'Toreador', 'Brujah', 'Ventrue', 'Nosferatu', 'Gangre
               'Ravnos', 'Followers of Set', 'Assamite', 'Giovanni',
               'Tzimisce', 'Lasombra', 'Noble Pander',
               'Cappadocian', 'Lasombra Antitribu',
-              'Gargoyle',  # test Server
+              # 'Gargoyle',  # test Server
               }
 clan_ids = {key for key in role_by_id if role_by_id[key] in clan_names}
 #clan_roles = set(roles[i] for i in clan_names)

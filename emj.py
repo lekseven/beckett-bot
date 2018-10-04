@@ -112,7 +112,7 @@ def save_em():
                'sun_with_face', 'sunny', 'sunrise_over_mountains', 'city_sunset', 'bat', 'Logo_Malkavian',
             'p_tetjaadmin', 't_ojwse', 'm_lopata'}
 
-    for em in C.server.emojis:  #C.client.get_all_emojis():
+    for em in C.vtm_server.emojis:  #C.client.get_all_emojis():
         #print("'{0.id}': {0.name},".format(em))
         if em.id in ems_id:
             emojis[ems_id[em.id]] = em
@@ -141,16 +141,23 @@ def is_emj(em):
 
 
 async def on_reaction_add(reaction, user):
-    if user == C.server.me:
+    """
+
+    :type reaction: discord.Reaction
+    :type user: discord.User
+    :return:
+    """
+    server = reaction.message.server
+    if user == server.me:
         return
 
-    message = reaction.message
-    emoji = reaction.emoji
+    message = reaction.message # type: discord.Message
+    emoji = reaction.emoji # type: discord.Emoji
 
     if user.id in ram.emoji_users and not message.channel.is_private:
         if other.find(message.reactions, emoji=emoji, me=True):
             await C.client.remove_reaction(message, emoji, user)
-            await C.client.remove_reaction(message, emoji, C.server.me)
+            await C.client.remove_reaction(message, emoji, server.me)
         else:
             await C.client.remove_reaction(message, emoji, user)
             await C.client.add_reaction(message, emoji)
@@ -163,7 +170,7 @@ async def on_reaction_add(reaction, user):
         except discord.Forbidden:
             log.jW("Bot haven't permissions here.")
 
-    if message.author == C.server.me or message.author == user:
+    if message.author == server.me or message.author == user:
         return
 
     if user.id in name_em:
@@ -180,9 +187,10 @@ async def on_reaction_add(reaction, user):
             await C.client.add_reaction(message, emoji)
             return
 
-    if emoji == e('Logo_Gangrel') and other.find(C.server.get_member(user.id).roles, id=C.roles['Gangrel']):
-        log.jD('Copy Gangrel reaction')
-        await C.client.add_reaction(message, emoji)
+    if server.id == C.vtm_server.id:
+        if emoji == e('Logo_Gangrel') and other.find(C.vtm_server.get_member(user.id).roles, id=C.roles['Gangrel']):
+            log.jD('Copy Gangrel reaction')
+            await C.client.add_reaction(message, emoji)
 
     # len(message.reactions) < 20
     # if str(user) == 'Kuro#3777':
@@ -192,20 +200,27 @@ async def on_reaction_add(reaction, user):
 
 
 async def on_reaction_remove(reaction, user):
-    if user == C.server.me:
+    """
+
+        :type reaction: discord.Reaction
+        :type user: discord.User
+        :return:
+        """
+    server = reaction.message.server
+    if user == server.me:
         return
 
-    message = reaction.message
-    emoji = reaction.emoji
+    message = reaction.message  # type: discord.Message
+    emoji = reaction.emoji  # type: discord.Emoji
 
-    if message.author == C.server.me or message.author == user:
+    if message.author == server.me or message.author == user:
         return
 
     if user.id in name_em:
         # emoji[0] because it can be different colors
         if (isinstance(emoji, str) and emoji[0] in name_em[user.id]) or emoji in name_em[user.id]:
             log.jD('Remove special reaction')
-            await C.client.remove_reaction(message, emoji, C.server.me)
+            await C.client.remove_reaction(message, emoji, server.me)
 
     # if str(user) == 'Kuro#3777':
     #     await C.client.remove_reaction(message, emoji, C.server.me)

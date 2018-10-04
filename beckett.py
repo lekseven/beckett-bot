@@ -20,9 +20,7 @@ import emj
 import people
 import local_memory as ram
 import log
-
-
-#import Log
+import event_funs as ev
 
 
 @C.client.event
@@ -32,9 +30,8 @@ async def on_ready():
     prepare_const2()
     emj.prepare()
     log.I('load data from memory')
-    #await C.client.change_nickname(C.server.me, 'Beckett') # Beckett
     load_mem()
-    await people.get(check=(not C.Server_Test))
+    await people.get(check=(not C.is_test))
     com.prepare()
     if not discord.opus.is_loaded():
         lb = find_library("opus")
@@ -51,14 +48,13 @@ async def on_ready():
 
     pass
     pass
+    # sys.exit(0)
 
 
 def prepare_const():
     log.I('- prepare_const')
 
-    C.Server_Test = os.environ.get('Server_Test')
-    if not C.Server_Test:
-        C.Server_Test = False
+    C.is_test = os.environ.get('Server_Test') or False
 
     C.DISCORD_TOKEN = os.environ.get('DISCORD_TOKEN')
 
@@ -66,24 +62,34 @@ def prepare_const():
         log.E('Config var DISCORD_TOKEN is not defined.')
         sys.exit()
 
-    if C.Server_Test:
-        server_key = 'TEST_SERVER_ID'
-        channel_key = 'TEST_CHANNEL_ID'
+    if C.is_test:
         log.jI('Bot work with Test Server')
-    else:
-        server_key = 'VTM_SERVER_ID'
-        channel_key = 'WELCOME_CHANNEL_ID'
 
-    C.VTM_SERVER_ID = os.environ.get(server_key)
+    tst_server_key = 'TEST_SERVER_ID'
+    tst_channel_key = 'TEST_CHANNEL_ID'
+    vtm_server_key = 'VTM_SERVER_ID'
+    vtm_channel_key = 'WELCOME_CHANNEL_ID'
+
+    C.VTM_SERVER_ID = os.environ.get(vtm_server_key)
+    C.TST_SERVER_ID = os.environ.get(tst_server_key)
 
     if not C.VTM_SERVER_ID:
         log.E('Config var VTM_SERVER_ID is not defined.')
         sys.exit()
 
-    C.WELCOME_CHANNEL_ID = os.environ.get(channel_key)
+    if not C.TST_SERVER_ID:
+        log.E('Config var TST_SERVER_ID is not defined.')
+        sys.exit()
+
+    C.WELCOME_CHANNEL_ID = os.environ.get(vtm_channel_key)
+    C.TEST_CHANNEL_ID = os.environ.get(tst_channel_key)
 
     if not C.WELCOME_CHANNEL_ID:
         log.E('Config var WELCOME_CHANNEL_ID is not defined.')
+        sys.exit()
+
+    if not C.TEST_CHANNEL_ID:
+        log.E('Config var TEST_CHANNEL_ID is not defined.')
         sys.exit()
 
     C.DATABASE_URL = os.environ.get('DATABASE_URL')
@@ -99,15 +105,34 @@ def prepare_const():
 
 def prepare_const2():
     log.I('- prepare_const2')
-    C.server = C.client.get_server(C.VTM_SERVER_ID)  # type: discord.Server
-    if not C.server:
+    C.vtm_server = C.client.get_server(C.VTM_SERVER_ID)  # type: discord.Server
+    C.tst_server = C.client.get_server(C.TST_SERVER_ID)  # type: discord.Server
+    if not C.vtm_server:
         log.E("Can't find server.")
         sys.exit()
+    if not C.tst_server:
+        log.E("Can't find test server.")
+        sys.exit()
 
-    C.main_ch = C.client.get_channel(C.WELCOME_CHANNEL_ID)
+    if C.is_test:
+        C.prm_server = C.tst_server
+        C.main_ch = C.client.get_channel(C.TEST_CHANNEL_ID)
+    else:
+        C.prm_server = C.vtm_server
+        C.main_ch = C.client.get_channel(C.WELCOME_CHANNEL_ID)
+
     if not C.main_ch:
         log.E("Can't find welcome_channel.")
         sys.exit()
+
+    C.vtm_news_ch = other.get_channel(C.channels['vtm_news'])
+    C.other_news_ch = other.get_channel(C.channels['other_news'])
+    C.vtm_links_ch = other.get_channel(C.channels['vtm_links'])
+    C.other_links_ch = other.get_channel(C.channels['other_links'])
+
+    if not (C.vtm_news_ch and C.other_news_ch and C.vtm_links_ch and C.other_links_ch):
+        log.W("Can't find some of helps channels!.")
+
     log.I('+ prepare_const2 done')
 
 
@@ -120,74 +145,48 @@ async def hour_timer():
     finally:
         other.later(3600, hour_timer())
 
-
+# Events with check_server
+# region Ev.check_server
 @C.client.event
 async def on_member_join(member):
-    if not C.Ready or member.server.id != C.server.id:
-        return
-    uid = member.id
-    if people.Usr.check_new(member):
-        await C.client.send_message(C.main_ch, com.comeback_msg(uid, people.time_out(uid), people.clan(uid)))
-        await log.pr_news('{0} ({0.mention}) comeback!'.format(member))
-    else:
-        await C.client.send_message(C.main_ch, com.welcome_msg(uid))
-        await log.pr_news('{0} ({0.mention}) new!'.format(member))
+    await ev.check_server(member.server, ev.on_member_join_u, ev.on_member_join_o, member)
 
 
 @C.client.event
 async def on_member_remove(member):
     # it's triggers on 'go away', kick and ban
-    if not C.Ready or member.server.id != C.server.id:
-        return
-
-    if not other.find(await C.client.get_bans(C.server), id=member.id):
-        people.Gn.check_new(member)
-        await C.client.send_message(C.main_ch, com.bye_msg(member.id))
-        await log.pr_news('{0} ({0.mention}) go away!'.format(member))
+    await ev.check_server(member.server, ev.on_member_remove_u, ev.on_member_remove_o, member)
 
 
 @C.client.event
 async def on_member_ban(member):
-    if not C.Ready or member.server.id != C.server.id:
-        return
-
-    await people.on_ban(member)
-    await C.client.send_message(C.main_ch, com.ban_msg(member.id))
-    await log.pr_news('Ban {0} ({0.mention})!'.format(member))
+    await ev.check_server(member.server, ev.on_member_ban_u, ev.on_member_ban_o, member)
 
 
 @C.client.event
 async def on_member_unban(server, user):
-    if not C.Ready or server.id != C.server.id:
-        return
-    people.on_unban(user)
-    await C.client.send_message(C.main_ch, com.unban_msg(user.id))
-    await log.pr_news('Unban {0} ({0.mention})!'.format(user))
-
-
-@C.client.event
-async def on_reaction_add(reaction, user):
-    if await log.on_reaction(reaction, 'on_reaction_add', user):
-        await emj.on_reaction_add(reaction, user)
-
-
-@C.client.event
-async def on_reaction_remove(reaction, user):
-    if await log.on_reaction(reaction, 'on_reaction_remove', user):
-        await emj.on_reaction_remove(reaction, user)
+    await ev.check_server(server, ev.on_member_unban_u, ev.on_member_unban_o, user)
 
 
 @C.client.event
 async def on_server_emojis_update(before, after):
-    la = len(after)
-    lb = len(before)
-    # before, after - list of server emojis
-    if ((la < 1 and lb < 1) or
-            (lb > 0 and before[0].server.id != C.server.id) or (la > 0 and after[0].server.id != C.server.id)):
-        return
-    await log.pr_news('on_server_emojis_update!')
+    await ev.check_server(before[0].server, ev.on_server_emojis_update_u, ev.on_server_emojis_update_o, before, after)
 
-    emj.save_em()
+
+@C.client.event
+async def on_server_role_create(role):
+    await ev.check_server(role.server, ev.on_server_role_create_u, ev.on_server_role_create_o, role)
+
+
+@C.client.event
+async def on_server_role_delete(role):
+    await ev.check_server(role.server, ev.on_server_role_delete_u, ev.on_server_role_delete_o, role)
+
+
+@C.client.event
+async def on_server_role_update(before, after):
+    await ev.check_server(before.server, ev.on_server_emojis_update_u, ev.on_server_emojis_update_o, before, after)
+# endregion
 
 
 @C.client.event
@@ -207,24 +206,15 @@ async def on_message_delete(message):
 
 
 @C.client.event
-async def on_server_role_create(role):
-    if not C.Ready or role.server.id != C.server.id:
-        return
-    await log.pr_news('New Role' + role.name + '!')
+async def on_reaction_add(reaction, user):
+    if await log.on_reaction(reaction, 'on_reaction_add', user):
+        await emj.on_reaction_add(reaction, user)
 
 
 @C.client.event
-async def on_server_role_delete(role):
-    if not C.Ready or role.server.id != C.server.id:
-        return
-    await log.pr_news('Delete Role' + role.name + '!')
-
-
-@C.client.event
-async def on_server_role_update(before, after):
-    if not C.Ready or after.server.id != C.server.id:
-        return
-    await log.pr_news('Update Role' + before.name + '/' + after.name + '!')
+async def on_reaction_remove(reaction, user):
+    if await log.on_reaction(reaction, 'on_reaction_remove', user):
+        await emj.on_reaction_remove(reaction, user)
 
 
 def load_mem():
@@ -316,7 +306,7 @@ def main_loop():
         if C.Ready:
             C.Ready = False
             save_mem()
-            if not C.Server_Test:
+            if not C.is_test:
                 people.upd()
         log.I('Finally exit at ', ram.t_finish.strftime('[%D %T]'),
               ', working for ', other.delta2s(ram.t_work))

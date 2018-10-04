@@ -9,7 +9,7 @@ def check_word(base, word):
     if word.find(base) != 0:
         return False
     ending = word[len(base):]
-    return ending in data.dataEndings
+    return ending in data.noun_endings
 
 
 def find_key(word):

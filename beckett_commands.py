@@ -107,7 +107,7 @@ async def report(msg):
     !report: выводит список сохранённых каналов \
     """
     if len(msg.args) > 1:
-        ram.rep_channels.setdefault(msg.author, set()).update(other.get_channels(msg.args[1:]))
+        ram.rep_channels.setdefault(msg.author, set()).update(other.find_channels_or_users(msg.args[1:]))
         msg.rep_ch = ram.rep_channels.get(msg.author, set())
 
     text = other.ch_list(msg.rep_ch)
@@ -122,7 +122,7 @@ async def unreport(msg):
     if len(msg.args) < 2:
         ram.rep_channels[msg.author] = set()
     else:
-        ram.rep_channels.setdefault(msg.author, set()).difference_update(other.get_channels(msg.args[1:]))
+        ram.rep_channels.setdefault(msg.author, set()).difference_update(other.find_channels_or_users(msg.args[1:]))
 
     msg.rep_ch = ram.rep_channels.get(msg.author, set())
     text = other.ch_list(msg.rep_ch)
@@ -166,7 +166,7 @@ async def purge(msg):
     check = None
 
     if len(msg.args) > 2:
-        check_set = other.get_users(msg.args[2:])   #set(msg.args[2:])
+        check_set = other.find_users(msg.args[2:])   #set(msg.args[2:])
 
         def check_user(m):
             return m.author.id in check_set
@@ -203,7 +203,7 @@ async def purge_aft(msg):
     check = None
 
     if len(msg.args) > 4:
-        check_set = other.get_users(msg.args[4:])
+        check_set = other.find_members(mess.server, msg.args[4:])
 
         def check_user(m):
             return m.author.id in check_set
@@ -239,7 +239,7 @@ async def purge_ere(msg):
     check = None
 
     if len(msg.args) > 4:
-        check_set = other.get_users(msg.args[4:])
+        check_set = other.find_members(mess.server, msg.args[4:])
 
         def check_user(m):
             return m.author.id in check_set
@@ -278,7 +278,7 @@ async def purge_bet(msg):
     check = None
 
     if len(msg.args) > 4:
-        check_set = other.get_users(msg.args[4:])
+        check_set = other.find_members(msg1.server, msg.args[4:])
 
         def check_user(m):
             return m.author.id in check_set
@@ -346,10 +346,10 @@ async def embrace(msg):
     if len(msg.args) < 3:
         name = msg.original[len('!embrace '):]
     else:
-        role = other.find(C.server.roles, id=msg.args[1])
+        role = other.find(C.vtm_server.roles, id=msg.args[1])
         ln = 0
         if not role:
-            for r in C.server.roles:
+            for r in C.vtm_server.roles:
                 if r.name in msg.original:
                     if not role or len(r.name) > len(role.name):
                         role = r
@@ -366,7 +366,7 @@ async def embrace(msg):
                 return
         else:
             name = msg.original[len('!embrace '):]
-    user = other.get_user(name)
+    user = other.find_member(C.vtm_server, name)
     text = await other.do_embrace(user, clan)
     if text:
         await msg.report(text)
@@ -379,13 +379,13 @@ async def clear_clans(msg):
         # get help
         return
 
-    user = other.get_user(msg.original[len('!clear_clans '):])
+    user = other.find_member(C.vtm_server, msg.original[len('!clear_clans '):])
     if user:
         #C.clan_names
         rls = []
-        for clan in C.clan_names:
-            rls.append(other.find(C.server.roles, id=C.roles[clan]))
-        rls.append(other.find(C.server.roles, id=C.roles['Sabbat']))
+        for clan in C.clan_names:   #TODO check for existing role on server
+            rls.append(other.find(C.vtm_server.roles, id=C.roles[clan]))
+        rls.append(other.find(C.vtm_server.roles, id=C.roles['Sabbat']))
         await C.client.remove_roles(user, *rls)
 
     else:
@@ -412,7 +412,7 @@ async def deny(msg):
     # else - deny by id (from args) in channels (from mem.cmd_channels)
     nope = {C.users['Natali'], C.users['bot'], msg.author}
     ch = msg.cmd_ch or {'All'}
-    users = other.get_users(msg.args[1:]).difference(nope)
+    users = other.find_users(msg.args[1:]).difference(nope)
     members = other.get_mentions(users)
     for usr in users:
         ram.torpor_users.setdefault(usr, set()).update(ch)
@@ -448,7 +448,7 @@ async def undeny(msg):
 
     # else - undeny by id (from args) in channels (from mem.cmd_channels)
     ch = msg.cmd_ch or {'All'}
-    users = other.get_users(msg.args[1:]).intersection(ram.torpor_users.keys())
+    users = other.find_users(msg.args[1:]).intersection(ram.torpor_users.keys())
     if ch == {'All'}:
         members = other.get_mentions(users)
         ram.torpor_users = {usr: ram.torpor_users[usr] for usr in ram.torpor_users if usr not in users}
@@ -492,7 +492,7 @@ async def kick(msg):
         return
 
     name = msg.original[len('!kick '):]
-    usr = other.get_user(name)
+    usr = msg.find_member(name)
     if not usr:
         await msg.qanswer('Пользователь не найден.')
     else:
@@ -507,7 +507,7 @@ async def ban(msg):
         return
 
     name = msg.original[len('!ban '):]
-    usr = other.get_user(name)
+    usr = msg.find_member(name)
     if not usr:
         await msg.qanswer('Пользователь не найден.')
     else:
@@ -521,11 +521,11 @@ async def unban(msg):
     if len(msg.args) < 2:
         return
 
-    usr = await other.get_ban_user(msg.original[len('!unban '):])
+    usr = await other.get_ban_user(msg.server, msg.original[len('!unban '):])
     if not usr:
         await msg.qanswer('Пользователь не найден.')
     else:
-        await C.client.unban(C.server, usr)
+        await C.client.unban(msg.server, usr)
 
 # endregion
 
@@ -598,8 +598,8 @@ async def tst2(msg):
         await msg.answer('Нет у вас доминирования ¯\_(ツ)_/¯')
         return
 
-    auth = other.get_user(msg.author)
-    who = other.get_user(msg.args[1])
+    auth = msg.find_member(msg.author)
+    who = msg.find_member(msg.args[1])
     if not auth or not who:
         await msg.qanswer(other.comfortable_help([str(dominate.__doc__)]))
         return
@@ -608,7 +608,7 @@ async def tst2(msg):
     emb.set_image(url='https://cdn.discordapp.com/attachments/420056219068399617/450428811725766667/dominate.gif')
     emb.add_field(name='f1', value='it is f1')
     emb.add_field(name='f2', value='it is f2')
-    emb.set_footer(text='it is footer', icon_url=C.server.me.avatar_url)
+    emb.set_footer(text='it is footer', icon_url=msg.server.me.avatar_url)
     #emb.set_footer(text='')
     await msg.answer(text=who.mention, emb=emb)
     # ch = C.client.get_channel('398645007944384513')
@@ -698,8 +698,8 @@ async def dominate(msg):
         await msg.answer('Нет у вас доминирования ¯\_(ツ)_/¯')
         return
 
-    auth = other.get_user(msg.author)
-    who = other.get_user(msg.args[1])
+    auth = msg.find_member(msg.author)
+    who = msg.find_member(msg.args[1])
     if not auth or not who:
         await msg.qanswer(other.comfortable_help([str(dominate.__doc__)]))
         return
@@ -756,7 +756,7 @@ async def connect(msg):
                         C.voice = await C.client.join_voice_channel(ch)
                     except Exception as e:
                         other.pr_error(e, 'connect')
-                        C.voice = C.client.voice_client_in(C.server)
+                        C.voice = C.client.voice_client_in(msg.server)
             else:
                 await msg.qanswer("Канал - не войс")
         else:
@@ -782,6 +782,209 @@ async def haha(msg):
 async def play(msg):
     game = None
     if len(msg.args) > 1:
-        game = discord.Game(name=msg.original[len('!play '):])
-    status = (discord.Status.dnd if ram.game else discord.Status.online)
-    await C.client.change_presence(game=game, status=status, afk=False)
+        ram.game = msg.original[len('!play '):]
+        game = discord.Game(name=ram.game)
+    else:
+        ram.game = False
+    # status = (discord.Status.dnd if ram.game else discord.Status.online)
+    await C.client.change_presence(game=game, status=discord.Status.online, afk=False)
+
+
+async def info(msg):
+    ans = []
+    for s in C.client.servers:  # type: discord.Server
+        ans.append(s.name + ' {' + s.id + '}')
+        ans.append('\tOwner: ' + str(s.owner) + ' (' +s.owner.mention + ')')
+        ans.append('\tCount: ' + str(s.member_count))
+        ans.append('\tRoles: ')
+        for r in s.role_hierarchy:
+            ans.append('\t\t' + r.name + ' {' + r.mention + '}')
+        v = {}
+        t = {}
+        for ch in s.channels: # type: discord.Channel
+            if str(ch.type) == 'text':
+                t[ch.position] = '\t\t' + ch.name + ' {' + ch.id + '}'
+            elif str(ch.type) == 'voice':
+                v[ch.position] = '\t\t' + ch.name + ' {' + ch.id + '}'
+            # if ch.type == 4:
+            #     continue  # group
+        ans.append('\tChannels: ')
+        ans += [t[k] for k in sorted(t)]
+        ans.append('\tVoices: ')
+        ans += [v[k] for k in sorted(v)]
+        ans.append('\tMembers: ')
+        for m in s.members: # type: discord.Member
+            ans.append('\t\t' + str(m) + ' {' + m.mention + '}')
+    f_name = 'info[{0}].txt'.format(other.get_now().strftime('%d|%m|%y %T'))
+    with open(f_name, "w") as file:
+        print(*ans, file=file, sep="\n")
+
+    log.I('Sending info...')
+    log.dropbox_send(f_name, f_name, '/Info/')
+    log.I('Sending info done.')
+    await msg.qanswer(":ok_hand:")
+
+
+async def nickname(msg):
+    if len(msg.args) > 1:
+        name = msg.original[len('!nickname '):]
+    else:
+        name = 'Beckett'
+    await C.client.change_nickname(msg.server.me, name)  # Beckett
+
+
+async def add_role(msg):
+    if len(msg.args) < 3:
+        await msg.qanswer("!add_role user role1 role2 ...")
+        return
+
+    usr = msg.find_member(msg.args[1])
+    if not usr:
+        await msg.qanswer("Can't find user " + msg.args[1])
+        return
+
+    roles = []
+    not_roles = []
+    for i in range(2,len(msg.args)):
+        role = other.find(msg.server.roles, id=msg.args[i])
+        if not role:
+            role = other.find(msg.server.roles, name=msg.args[i])
+        if not role:
+            not_roles.append(msg.args[i])
+        else:
+            roles.append(role)
+
+    if not_roles:
+        await msg.qanswer("Can't find roles: " + ', '.join(not_roles))
+    if not roles:
+        await msg.qanswer("Can't find any roles!")
+        return
+
+    await C.client.add_roles(usr, *roles)
+    await msg.qanswer(":ok_hand:")
+
+
+async def rem_role(msg):
+    if len(msg.args) < 3:
+        await msg.qanswer("!rem_role user role1 role2 ...")
+        return
+
+    usr = msg.find_member(msg.args[1])
+    if not usr:
+        await msg.qanswer("Can't find user " + msg.args[1])
+        return
+
+    roles = []
+    not_roles = []
+    for i in range(2, len(msg.args)):
+        role = other.find(msg.server.roles, id=msg.args[i])
+        if not role:
+            role = other.find(msg.server.roles, name=msg.args[i])
+        if not role:
+            not_roles.append(msg.args[i])
+        else:
+            roles.append(role)
+
+    if not_roles:
+        await msg.qanswer("Can't find roles: " + ', '.join(not_roles))
+    if not roles:
+        await msg.qanswer("Can't find any roles!")
+        return
+
+    await C.client.remove_roles(usr, *roles)
+    await msg.qanswer(":ok_hand:")
+
+
+async def log_channel(msg):
+    if len(msg.args) < 2:
+        await msg.qanswer("!log_channel channel")
+        return
+
+    ch = other.get_channel(msg.args[1]) # type: discord.Channel
+    if not ch:
+        await msg.qanswer("Can't find channel " + msg.args[1])
+        return
+
+    pr = ch.permissions_for(ch.server.me) # type: discord.Permissions
+    if not pr.read_message_history:
+        await msg.qanswer("No permissions!")
+        return
+
+    log.D('- log_channel start')
+    mess = []
+    async for message in C.client.logs_from(ch, limit=1000000):
+        mess += (await log.mess_plus(message, save_all_links=True))
+        mess.append(log.format_mess(message, date=True))
+    log.D('- log_channel end')
+    mess.append('')
+    mess.append('Log from {0} ({1}) at [{2}]:'.format(ch.name, ch.id, other.get_now().strftime('%d|%m|%y %T')))
+    mess.reverse()
+
+    f_name = 'log_channel({0})[{1}].txt'.format(ch.name, other.get_now().strftime('%d|%m|%y %T'))
+    with open(f_name, "w") as file:
+        print(*mess, file=file, sep="\n")
+
+    log.I('Sending log...')
+    log.dropbox_send(f_name, f_name, '/Info/')
+    log.I('Sending log done.')
+    await msg.qanswer(":ok_hand:")
+
+
+async def server(msg):
+    ans = ['All servers:']
+    for s in C.client.servers:  # type: discord.Server
+        ans.append('\t{0.name} [{0.id}] ({0.owner} [{0.owner.id}])'.format(s))
+
+    serv = None
+    if len(msg.args) > 1:
+        i = msg.original[len('!server '):]
+        for s in C.client.servers:
+            if s.name == i or s.id == i:
+                serv = s
+                break
+        if serv:
+            ram.cmd_server[msg.author] = serv.id
+            ans.append('\nYou choose {0.name} now.'.format(serv))
+        elif msg.author in ram.cmd_server:
+            ram.cmd_server.pop(msg.author)
+            ans.append('\nNo command server.')
+    else:
+        serv = msg.author in ram.cmd_server and C.client.get_server(ram.cmd_server[msg.author])
+        if serv:
+            ans.append('\nNow command server is {0.name}'.format(serv))
+        else:
+            ans.append('\nNo command server.')
+
+    await msg.qanswer('\n'.join(ans))
+
+
+async def info_channels(msg):
+    ans = []
+    servs = (msg.author in ram.cmd_server and [C.client.get_server(ram.cmd_server[msg.author])]) or C.client.servers
+    for s in servs:  # type: discord.Server
+        ans.append('{0.name} [{0.id}] ({0.owner} [{0.owner.id}]):'.format(s))
+        v = {}
+        t = {}
+        for ch in s.channels:  # type: discord.Channel
+            if str(ch.type) == 'text':
+                t[ch.position] = ch.name + ' {' + ch.id + '}'
+            elif str(ch.type) == 'voice':
+                v[ch.position] = ch.name + ' {' + ch.id + '}'
+            # if ch.type == 4:
+            #     continue  # group
+        ans.append('\tChannels: ' + ', '.join([t[k] for k in sorted(t)]))
+        ans.append('\tVoices: ' + ', '.join([v[k] for k in sorted(v)]))
+
+    res = '\n'.join(ans)
+    try:
+        await msg.qanswer(res)
+    except:
+        print(res)
+        await msg.qanswer('Check log.')
+
+
+async def get_invite(msg):
+    # invs = await C.client.invites_from(msg.server)
+    # await msg.qanswer(msg.server.name + ':\n\t' + '\n\t'.join([inv.code for inv in invs]))
+    inv = await C.client.create_invite(msg.server) # Not working with server?
+    await msg.qanswer(msg.server.name + ': ' + inv.code)

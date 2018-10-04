@@ -60,14 +60,18 @@ def log_fun(loop):
 
 def send_log():
     I('Sending log...')
-    drop_path = '/Test_logs/' if C.Server_Test else '/Logs/'
+    drop_path = '/Test_logs/' if C.is_test else '/Logs/'
     drop_log_name = 'log[{0}_{1}]({2}).txt'.format(
         ram.t_start.strftime('{%d|%m|%y %T}'), ram.t_finish.strftime('{%d|%m|%y %T}'), other.delta2s(ram.t_work))
-    f = open(log_full, 'rb')
-    dbx = dropbox.Dropbox(C.DROPBOX_ID)
-    dbx.files_upload(f.read(), drop_path + drop_log_name)
-    f.close()
+    dropbox_send(log_full, drop_log_name, drop_path)
     I('Sending log done.')
+
+
+def dropbox_send(f_path, f_name, drop_path):
+    f = open(f_path, 'rb')
+    dbx = dropbox.Dropbox(C.DROPBOX_ID)
+    dbx.files_upload(f.read(), drop_path + f_name)
+    f.close()
 
 
 def p(*args):  #time_print
@@ -101,16 +105,16 @@ def W(*args):
 def E(*args):
     print('!!!\t<E>[{0}]'.format(other.t2s(frm='%T')), *args)
 
-
 def jD(*args):
+    # without time
     tpprint('D', ' ', *args)
 
-
 def jI(*args):
+    # without time
     tpprint('I', ' ', *args)
 
-
 def jW(*args):
+    # without time
     tpprint('W', ' ', *args)
 
 
@@ -122,6 +126,7 @@ async def mess_plus(message, save_disc_links=False, save_all_links=False):
         'footer': ['icon_url', 'text'],
     }
     links = []
+    res = []
     if message.attachments:
         attachments = []
         for att in message.attachments:
@@ -129,8 +134,8 @@ async def mess_plus(message, save_disc_links=False, save_all_links=False):
             if save_all_links or (save_disc_links and 'discordapp' in att['url']) and att['url'] not in disc_links:
                 links.append(att['url'])
         if attachments:
-            print('Attachments({0}):'.format(len(attachments)))
-            print('\n'.join(attachments))
+            res.append('Attachments({0}):'.format(len(attachments)))
+            res.append('\n'.join(attachments))
 
     if message.embeds:
         embeds = []
@@ -157,7 +162,7 @@ async def mess_plus(message, save_disc_links=False, save_all_links=False):
 
         if embeds:
             text_embeds = '\n'.join(embeds)
-            print(text_embeds)
+            res.append(text_embeds)
             if save_all_links:
                 links += re.findall('https?://.*\S', text_embeds)
             elif save_disc_links:
@@ -170,17 +175,24 @@ async def mess_plus(message, save_disc_links=False, save_all_links=False):
             text = '[{t}]<{ch}> {author} ({desc})\n{links}'.format(
                 t=other.t2s(), ch=str(message.channel.name), author=str(message.author),
                 desc='save_all_links' if save_all_links else 'save_disc_links', links='\n'.join(links))
-            await C.client.send_message(other.get_channel(C.channels['vtm_links']), content=text)
+            if message.server.id == C.prm_server.id:
+                await C.client.send_message(C.vtm_links_ch, content=text)
+            else:
+                await C.client.send_message(C.other_links_ch, content=text)
+
+    return ['\n'.join(res)] if res else []
 
 
-def format_mess(msg, time=False):
+def format_mess(msg, time=False, date=False):
     """
     :type msg: discord.Message
     :param time: bool
+    :param date: bool
     :rtype: str
     """
     ch_name = str(msg.channel.user) if msg.channel.is_private else str(msg.channel.name)
-    t = '(from {0})'.format(other.t2s(msg.timestamp)) if time else ''
+    t = ('(from {0})'.format(other.t2s(msg.timestamp, '%d|%m|%y %T')) if date else
+            '(from {0})'.format(other.t2s(msg.timestamp)) if time else '')
     cont = msg.content.replace('\n', '\n\t')  # type: str
     if msg.mentions:
         for user in msg.mentions:
@@ -201,31 +213,56 @@ async def on_mess(msg, kind):
     :param kind: str
     """
     desc = {'on_message': 'on_msg', 'on_message_edit': 'on_edt', 'on_message_delete': 'on_del'}
-    if not C.Ready or (msg.server and msg.server.id != C.server.id) or msg.channel.id in C.ignore_channels:
+    if not C.Ready or msg.channel.id in C.ignore_channels:
         return False
+
+    s_server = ''
+    if msg.server:
+        if ((C.is_test and msg.server.id == C.vtm_server.id) or
+                (not C.is_test and msg.channel.id == C.channels['test_mode_only'])):
+            return False
+        if msg.server.id != C.prm_server.id:
+            s_server = '<{0}>'.format(msg.server.name)
 
     time = (kind != 'on_message')
     save_all_links = (kind == 'on_message_delete')
     save_disc_links = not save_all_links
 
-    time_tpprint('M', '{{{0}}}'.format(desc[kind]), format_mess(msg, time))
-    await mess_plus(msg, save_disc_links, save_all_links)
+    time_tpprint('M', s_server, '{{{0}}}'.format(desc[kind]), format_mess(msg, time))
+    pl = await mess_plus(msg, save_disc_links, save_all_links)
+    if pl:
+        print(pl[0])
     return True
 
 
 async def on_reaction(reaction, kind, user):
     msg = reaction.message
     emoji = reaction.emoji
-    if not C.Ready or (msg.server and msg.server.id != C.server.id) or msg.channel.id in C.ignore_channels:
+    if not C.Ready or msg.channel.id in C.ignore_channels:
         return False
+
+    s_server = ''
+    if msg.server:
+        if ((C.is_test and msg.server.id == C.vtm_server.id) or
+                (not C.is_test and msg.channel.id == C.channels['test_mode_only'])):
+            return False
+        if msg.server.id != C.prm_server.id:
+            s_server = '<{0}>'.format(msg.server.name)
 
     desc = {'on_reaction_add': 'on_r_add', 'on_reaction_remove': 'on_r_rem'}
     text_emoji = '[{0.name}:{0.id}]'.format(emoji) if hasattr(emoji, 'id') else emoji
-    time_tpprint('M', '{{{0}}} {1}: {2}\n\t{3}'.format(desc[kind], str(user), text_emoji, format_mess(msg, True)))
-    await mess_plus(msg)
+    time_tpprint('M', s_server, '{{{0}}} {1}: {2}\n\t{3}'.format(desc[kind], str(user), text_emoji, format_mess(msg, True)))
+    pl = await mess_plus(msg)
+    if pl:
+        print(pl[0])
     return True
 
 
 async def pr_news(text):
     time_tpprint('Ev', ' ', text)
-    await C.client.send_message(other.get_channel(C.channels['vtm_news']), content='<Ev> ' + text)
+    await C.client.send_message(C.vtm_news_ch, content='<Ev> ' + text)
+
+
+async def pr_other_news(server, text):
+    time_tpprint('Ev', '<', server.name, '> ', text)
+    await C.client.send_message(C.other_news_ch, content='<Ev from {0}> {1}'.format(server.name, text))

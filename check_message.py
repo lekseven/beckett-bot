@@ -4,7 +4,6 @@ import re
 import random
 import discord
 import data
-import check_phrase
 import local_memory as ram
 import beckett_commands as cmd
 import constants as C
@@ -18,15 +17,23 @@ import log
 class Msg:
 
     def __init__(self, message):
+        """
 
+        :type message: discord.Message
+        """
         self.author = message.author.id
+        self.member = C.vtm_server.get_member(self.author)
+        self.personal = not message.server
+        self.server = ((self.author in ram.cmd_server and C.client.get_server(ram.cmd_server[self.author])) or
+                       (C.prm_server if self.personal else message.server))
+        self.is_vtm = not self.personal and self.server.id == C.prm_server.id
         self.message = message
         self.original = message.content
         self.text = message.content.lower().replace('ё', 'е')
         self.args = []
         self.words = set()
         self.channel = message.channel
-        self.roles = {role.id for role in C.server.get_member(self.author).roles[1:]}
+        self.roles = {role.id for role in self.member.roles[1:]} if self.member else set()
         self.prince = self.author == C.users['Natali']
         self.super = self.author in C.superusers or (
                 self.prince or C.roles['Sheriff'] in self.roles or C.roles['Scourge'] in self.roles)
@@ -69,7 +76,7 @@ class Msg:
 
     async def report(self, text):
         for ch_id in self.rep_ch:
-            ch = C.client.get_channel(ch_id) or other.get_user(ch_id)
+            ch = C.client.get_channel(ch_id) or other.find_user(ch_id)
             if ch:
                 #await C.client.send_message(ch, text)
                 await self.type2sent(ch, text)
@@ -147,6 +154,12 @@ class Msg:
         ans = await C.client.wait_for_message(timeout=60, author=self.message.author, channel=self.channel)
         return ans and yes.intersection(ans.content.lower().split())
 
+    def find_member(self, i):
+        return other.find_member(self.server, i)
+
+    def find_members(self, names):
+        return other.find_members(self.server, names)
+
 
 async def reaction(message):
     msg = Msg(message)
@@ -206,7 +219,8 @@ async def reaction(message):
     beckett_reference = bool(C.beckett_refs.intersection(msg.words))
     beckett_mention = bool(C.beckett_names.intersection(msg.words))  #any(name in msg.args for name in C.beckett_names)
     beckett = beckett_reference or beckett_mention
-    found_keys = check_phrase.check_args(msg.words)
+    # found_keys = check_phrase.check_args(msg.words)
+    found_keys = com.check_phrase(msg.text, msg.words)
     prob = random.random()
 
     if msg.channel.id == C.channels['ask'] and not msg.roles.intersection(C.clan_ids):
@@ -227,14 +241,15 @@ async def reaction(message):
             response = True
 
         if response:
-            await msg.answer(random.choice(data.responsesData[random.choice(found_keys)]))
+            ans_phr = com.get_resp(found_keys)
+            await msg.answer(ans_phr['text'])
             return
     else:
         if '(╯°□°）╯︵ ┻━┻' in msg.original or '(╯°益°)╯彡┻━┻' in msg.original:
             ans = ''
-            if msg.super or msg.author == C.users['Buffy']:
+            if msg.super: # or msg.author == C.users['Buffy']:
                 ans = '(╯°□°）╯︵ ┻━┻'
-            elif prob > 0.2:
+            else: #elif prob > 0.2:
                 ans = '┬─┬ ノ( ゜-゜ノ)'
             if ans:
                 await msg.answer(ans)
@@ -267,7 +282,7 @@ async def reaction(message):
                 ans = other.name_rand_phr(msg.author, data.sm_resp['wlc'])
             elif msg.words.intersection(data.sm_resp['hi']) or msg.words.intersection(data.sm_resp['hi_smiles']):
                 m = data.sm_resp['hi'].copy()
-                m.append([(':' + w + ':') for w in data.sm_resp['hi_smiles']])
+                m += data.sm_resp['hi_smiles'].copy()
                 ans = other.name_rand_phr(msg.author, m)
             elif msg.words.intersection(data.sm_resp['bye']):
                 ans = other.name_rand_phr(msg.author, data.sm_resp['bye'])
@@ -301,8 +316,9 @@ async def reaction(message):
 
         if beckett_reference or (beckett_mention and random.random() < 0.25):
             if msg.author == C.users['Natali'] and prob < 0.4:
-                ans = random.choice(data.specialGreetings)
+                ans_phr = com.get_resp(['For_Prince'])
             else:
-                ans = random.choice(data.responsesData['beckett'])
+                ans_phr = com.get_resp(['beckett'])
+            ans = ans_phr['text']
             await msg.answer(ans)
             return

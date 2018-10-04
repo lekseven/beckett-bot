@@ -11,6 +11,7 @@ usrs = {} # type: dict[id, Usr]
 gone = {} # type: dict[id, Gn]
 bans = [] # type: list[discord.User]
 bans_id = set() # type: set(discord.User.id)
+other_usrs = {}
 
 
 class Usr:
@@ -159,11 +160,11 @@ class Gn:
     def comeback(self, memb=None, res=False):
         global usrs
         nm = self.name
-        m = memb or other.get_user(self.id)
+        m = memb or other.find_member(C.vtm_server, self.id)
         if m:
             nm = str(m)
             if self.role != '0':
-                role = other.find(C.server.roles, id=self.role)
+                role = other.find(C.vtm_server.roles, id=self.role)
                 if role:
                     C.loop.create_task(C.client.add_roles(m, *[role]))
         self.status = 'del'
@@ -278,36 +279,36 @@ async def check_now():
     log.I('- start check people')
     s_mems = set()
     # noinspection PyTypeChecker
-    for mem in C.server.members:
+    for mem in C.vtm_server.members:
         s_mems.add(mem.id)
         if mem.id not in usrs:
             if Usr.check_new(mem):
                 if gone[mem.id].ban:
-                    await other.pr_say('New user ' + usrs[mem.id].name + ' from ban!')
+                    await log.pr_news('New user ' + usrs[mem.id].name + ' from ban!')
                 else:
-                    await other.pr_say('New user ' + usrs[mem.id].name + ' from gone!')
+                    await log.pr_news('New user ' + usrs[mem.id].name + ' from gone!')
             else:
-                await other.pr_say('New user ' + usrs[mem.id].name + '!')
+                await log.pr_news('New user ' + usrs[mem.id].name + '!')
 
     for usr in usrs:
         if usr not in s_mems:
             usrs[usr].go()
-            await other.pr_say('User ' + usrs[usr].name + ' disappeared! [Ban: ' + str(gone[usr].ban) + ']')
+            await log.pr_news('User ' + usrs[usr].name + ' disappeared! [Ban: ' + str(gone[usr].ban) + ']')
 
     for u_ban in bans:
         if u_ban.id not in gone:
             if Gn.check_new(u_ban):
-                await other.pr_say('New ban user ' + gone[u_ban.id].name + ' from users!')
+                await log.pr_news('New ban user ' + gone[u_ban.id].name + ' from users!')
             else:
-                await other.pr_say('New ban user ' + gone[u_ban.id].name + ' from somewhere!')
+                await log.pr_news('New ban user ' + gone[u_ban.id].name + ' from somewhere!')
         else:
             if gone[u_ban.id].toban(True):
-                await other.pr_say('New ban user ' + gone[u_ban.id].name + ' from gone!')
+                await log.pr_news('New ban user ' + gone[u_ban.id].name + ' from gone!')
 
     for gn in gone:
         if gn not in bans_id:
             if gone[gn].toban(False):
-                await other.pr_say('User ' + gone[gn].name + ' not in ban now!')
+                await log.pr_news('User ' + gone[gn].name + ' not in ban now!')
 
     log.I('+ finished check people')
 
@@ -430,7 +431,7 @@ def distribute(smb, t=None):
     if not smb:
         return False
     # noinspection PyArgumentList
-    if C.server.get_member(smb.id):
+    if C.vtm_server.get_member(smb.id):
         if smb.id in usrs:
             return True
         usrs[smb.id] = Usr(smb.id, str(smb))
@@ -477,7 +478,7 @@ def clear():
 async def get_bans():
     log.I('- get bans')
     global bans, bans_id
-    bans = await C.client.get_bans(C.server)
+    bans = await C.client.get_bans(C.vtm_server)
     bans_id = set(ban.id for ban in bans)
     log.I('+ get bans done')
 
@@ -517,12 +518,21 @@ def clan(uid):
 def get_gt(uid):
     if uid in usrs:
         return {'g_morn': usrs[uid].g_morn, 'g_day': usrs[uid].g_day, 'g_ev': usrs[uid].g_ev, 'g_n': usrs[uid].g_n}
+    elif uid in other_usrs:
+        return other_usrs[uid]
     else:
         return {'g_morn': 0, 'g_day': 0, 'g_ev': 0, 'g_n': 0}
 
 
 def set_gt(uid, key):
     keys = {'g_morn', 'g_day', 'g_ev', 'g_n'}
-    if uid in usrs and key in keys:
-        setattr(usrs[uid], key, int(dt.datetime.now().timestamp()))
-        usrs[uid].status = 'upd'
+    if key in keys:
+        if uid in usrs:
+            setattr(usrs[uid], key, int(dt.datetime.now().timestamp()))
+            usrs[uid].status = 'upd'
+        else:
+            if not uid in other_usrs:
+                other_usrs[uid] = {'g_morn': 0, 'g_day': 0, 'g_ev': 0, 'g_n': 0}
+            other_usrs[uid][key] = int(dt.datetime.now().timestamp())
+                
+            

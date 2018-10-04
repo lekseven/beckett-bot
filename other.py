@@ -101,8 +101,8 @@ def delta2s(timedelta):
     return '{0}:{1}:{2}'.format(hours, mins, int(total_sec))
 
 
-async def get_ban_user(s_name):
-    user_bans = await C.client.get_bans(C.server)
+async def get_ban_user(server, s_name):
+    user_bans = await C.client.get_bans(server)
     user_bans.reverse()
     names = {s_name, s_name.translate(C.punct2space).replace(' ', ''), s_name.strip(' '), s_name.replace('@', '')}
     for b_u in user_bans:
@@ -113,26 +113,49 @@ async def get_ban_user(s_name):
 
 
 # noinspection PyArgumentList
-def get_user(i):  # i must be id, server nickname, true nickname or full nickname (SomeName#1234)
+def find_member(server, i):  # i must be id, server nickname, true nickname or full nickname (SomeName#1234)
     """
+    :param server:
     :param i:
     :return C.discord.Member:
     """
     p_name1 = i.translate(C.punct2space).replace(' ', '')
-    return (C.server.get_member(i) or C.server.get_member(p_name1) or
-            C.server.get_member_named(i.strip(' ')) or C.server.get_member_named(i) or
-            C.server.get_member_named(i.replace('@', '')) or
-            C.server.get_member_named(p_name1))
+    return (server.get_member(i) or server.get_member(p_name1) or
+            server.get_member_named(i.strip(' ')) or server.get_member_named(i) or
+            server.get_member_named(i.replace('@', '')) or
+            server.get_member_named(p_name1))
 
 
-def get_users(names):
+def find_members(server, names):
+    """
+    :param server:
+    :param iterator names:
+    :rtype: set
+    """
+    res = set()
+    for name in names:
+        usr = find_member(server, name)
+        if usr:
+            res.add(usr.id)
+
+    return res
+
+
+def find_user(i):
+    ps = {i, i.translate(C.punct2space).replace(' ', ''), i.strip(' '), i.replace('@', '')}
+    for m in C.client.get_all_members():
+        if ps.intersection({str(m), m.id, m.display_name, m.mention, m.name, m.nick}):
+            return m
+
+
+def find_users(names):
     """
     :param iterator names:
     :rtype: set
     """
     res = set()
     for name in names:
-        usr = get_user(name)
+        usr = find_user(name)
         if usr:
             res.add(usr.id)
 
@@ -167,12 +190,31 @@ def get_channels(names):
     return res
 
 
-async def test_status(test):
-    if test:
+def find_channels_or_users(names):
+    """
+       :param iterator names:
+       :rtype: set
+       """
+    res = set()
+    for name in names:
+        s = get_channel(name) or find_user(name)
+        if s:
+            res.add(s.id)
+
+    return res
+
+
+async def test_status(state):
+    game = None
+    status = discord.Status.online
+    if isinstance(state, str):
+        game = discord.Game(name=state)
+    elif state:
         game = discord.Game(name='«Тестирование идёт...»')
-        await C.client.change_presence(game=game, status=discord.Status.dnd, afk=False)
-    else:
-        await C.client.change_presence(game=None, status=discord.Status.online, afk=False)
+        status = discord.Status.do_not_disturb
+    # else:
+    #     await C.client.change_presence(game=None, status=discord.Status.online, afk=False)
+    await C.client.change_presence(game=game, status=status, afk=False)
 
 
 async def busy():
@@ -187,7 +229,7 @@ async def busy():
 def ch_list(id_list):
     text = []
     for uid in id_list:
-        ch = C.client.get_channel(uid) or get_user(uid)
+        ch = C.client.get_channel(uid) or find_user(uid)
         if ch:
             text.append(ch.mention)
     return text
@@ -201,10 +243,10 @@ async def do_embrace(user, clan=None):
                     clan = C.role_by_id[r.id]
                     break
         clan = clan or random.choice(list(C.clan_names))
-        roles = [find(C.server.roles, id=C.roles[clan])]
+        roles = [find(C.vtm_server.roles, id=C.roles[clan])]
         pander = False
         if clan in C.sabbat_clans:
-            roles.append(find(C.server.roles, id=C.roles['Sabbat']))
+            roles.append(find(C.vtm_server.roles, id=C.roles['Sabbat']))
             pander = (clan == 'Noble Pander')
         try:
             await C.client.add_roles(user, *roles)
@@ -235,7 +277,7 @@ async def do_embrace(user, clan=None):
 
 
 async def do_embrace_and_say(msg, name, clan=None):
-    user = get_user(name)
+    user = find_member(C.vtm_server, name)
     roles = {role.id for role in user.roles[1:]}
     if not roles.intersection(C.clan_ids):
         text = await do_embrace(user, clan=clan)
@@ -251,12 +293,6 @@ def issuper(usr):
     if (usr.id in C.superusers or usr.id == C.users['bot'] or
             find(usr.roles, id=C.roles['Sheriff']) or find(usr.roles, id=C.roles['Scourge'])):
         return True
-
-
-async def pr_say(text):
-    log.I(text)
-    if not C.Server_Test:
-        await C.client.send_message(get_user(C.users['Kuro']), content=text)
 
 
 def name_pat():

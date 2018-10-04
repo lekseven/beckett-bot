@@ -1,4 +1,5 @@
 import re
+import hashlib
 import data as D
 import random as R
 import constants as C
@@ -9,6 +10,9 @@ import log
 
 good_time = {}
 morning_add = {}
+resp_keys = {}
+resp_values = {}
+resp_data = {}
 
 
 def prepare():
@@ -33,6 +37,7 @@ def prepare():
                     # g_type['response'].append('<@{name}>, ' + adj + ' ' + noun + '.')
             g_period.append(g_type)
         good_time[g_key] = g_period
+
     log.jI('\t -make morning add')
     morn_add = {
         'Kuro': ':tea:', 'Natali': ':tea::chocolate_bar:', 'Soul': ':coffee:',
@@ -42,7 +47,73 @@ def prepare():
     for name in morn_add:
         if name in C.users:
             morning_add[C.users[name]] = morn_add[name]
+
+    log.jI('\t -make resp_keys')
+    # searching resp_keys can be done with regex, but test show,
+    # that intersection with set(words) and "in"-check(collocations) in for-cycle are faster (≈ in 10 times)
+    for key in D.dataKeys:
+        keys = D.dataKeys[key]
+        dct = {'words': set(), 'colls': set()}
+        if isinstance(keys, dict):
+            if 'clear' in keys:
+                dct['words'].update(keys['clear'])
+            if 'noun' in keys:
+                dct['words'].update(make_words(keys['noun'], D.noun_endings))
+            if 'adj' in keys:
+                dct['words'].update(make_words(keys['adj'], D.adj_endings))
+            if 'eng' in keys:
+                dct['words'].update(make_words(keys['eng'], D.eng_endings))
+            if 'clear_collocation' in keys:
+                dct['colls'].update(keys['clear_collocation'])
+            if 'n_c' in keys:
+                for coll in keys['n_c']:
+                    dct['colls'].update(make_words(make_words([coll[0]], D.noun_endings), [' ' + coll[1]]))
+            if 'a_c' in keys:
+                for coll in keys['a_c']:
+                    dct['colls'].update(make_words(make_words([coll[0]], D.adj_endings), [' ' + coll[1]]))
+        else:
+            dct['words'].update(keys)
+        resp_keys[key] = dct
+    log.jI('\t -make resp_values & resp_data')
+    for key in D.responses:
+        resp_values[key] = []
+        for phr in D.responses[key]:
+            if isinstance(phr, str):
+                h = hashlib.md5(phr.encode('utf-8')).hexdigest()
+                resp_data[h] = {'text': phr}
+                resp_values[key] += [h]
+            else:
+                if not (isinstance(phr, dict) and 'text' in phr):
+                    log.jW('fail phrase in response data: ', phr)
+                else:
+                    h = hashlib.md5(phr['text'].encode('utf-8')).hexdigest()
+                    resp_data[h] = phr
+                    resp_values[key] += [h]
+
     log.I('Prepare communication done.')
+
+
+def check_phrase(phr, words):
+    f_keys = []
+    for key in resp_keys:
+        f_key = resp_keys[key]['words'].intersection(words)
+        if not f_key:
+            for coll in resp_keys[key]['colls']:
+                f_key = coll in phr
+                if f_key:
+                    break
+
+        if f_key:
+            f_keys += [key]
+
+    return f_keys
+
+
+def get_resp(keys):
+    key = R.choice(keys)
+    answers = resp_values[key]
+    ans_phr = resp_data[R.choice(answers)]
+    return ans_phr
 
 
 def f_gt_key(orig_phrase, tr_phrase, words, bot_mention):
@@ -143,3 +214,12 @@ def ban_msg(uid):
 
 def unban_msg(uid):
     return '{msg}\n{comment}'.format(msg=R.choice(D.unban_msg).format(name=uid), comment=R.choice(D.unban_comment))
+
+
+def make_words(words, endings):
+    s = set()
+    for w in words:
+        for end in endings:
+            s.add(w + end)
+
+    return s
