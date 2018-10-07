@@ -1,0 +1,12 @@
+# Heroku Buildpacks
+# if opus don't work, then all (except python) are unnecessary
+
+https://github.com/heroku/heroku-buildpack-apt.git
+
+https://github.com/heroku/heroku-buildpack-apt
+
+heroku/python
+
+https://github.com/jonathanong/heroku-buildpack-ffmpeg-latest.git
+
+https://github.com/Crazycatz00/heroku-buildpack-libopus.git

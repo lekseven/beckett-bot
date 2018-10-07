@@ -7,6 +7,7 @@ import constants as C
 import local_memory as ram
 import people
 import log
+import event_funs as ev
 #import data
 
 """ 
@@ -585,8 +586,23 @@ async def test(msg):
 
 
 async def tst(msg):
-    log.jD('test get_weather')
-    await msg.answer(other.get_weather())
+    err = len(msg.args) < 3
+
+    ch = {}
+    if not err:
+        ch = other.get_channel(msg.args[1])  # C.client.get_channel(msg.args[1])
+        err = not ch
+
+    msg1 = {}
+    if not err:
+        msg1 = await C.client.get_message(ch, msg.args[2])
+        err = not msg1
+
+    if err:
+        msg.qanswer('Error')
+
+    pass
+    print(log.format_mess(msg1, time=True, date=False))
     pass
 
 
@@ -642,7 +658,7 @@ async def roll(msg):
             dices += ['{:02d}'.format(i + 1), 'd:\t', str(random.randint(1, dice)), '\n']
         await msg.qanswer("```" + ''.join(dices) + "```")
     else:
-        await msg.qanswer("```css\n"+str(roll.__doc__)+"```")
+        await msg.qanswer(other.comfortable_help([str(roll.__doc__)]))
 
 
 async def pin(msg):
@@ -723,12 +739,22 @@ async def people_clear(msg):
 
 async def people_sync(msg):
     ans = await msg.question('Это займёт некоторое время и полностью перезапишет Базу Данных пользователей. '
-                             'Вы **точно** уверены, что *действительно* желаете продолжить?')
+                             'Вы **точно** уверены, что *действительно желаете* продолжить?')
     if ans:
         await people.sync()
         await msg.qanswer(":ok_hand:")
     else:
         await msg.qanswer("Отмена people_sync.")
+
+
+async def people_time_sync(msg):
+    ans = await msg.question('Это займёт некоторое время и перезапишет время последних сообщений пользователей. '
+                             'Вы **точно** уверены, что *действительно желаете* продолжить?')
+    if ans:
+        await people.time_sync()
+        await msg.qanswer(":ok_hand:")
+    else:
+        await msg.qanswer("Отмена people_time_sync.")
 
 
 # Delete msgs from private channel:
@@ -794,7 +820,7 @@ async def info(msg):
     ans = []
     for s in C.client.servers:  # type: discord.Server
         ans.append(s.name + ' {' + s.id + '}')
-        ans.append('\tOwner: ' + str(s.owner) + ' (' +s.owner.mention + ')')
+        ans.append('\tOwner: ' + str(s.owner) + ' (' + s.owner.mention + ')')
         ans.append('\tCount: ' + str(s.member_count))
         ans.append('\tRoles: ')
         for r in s.role_hierarchy:
@@ -815,7 +841,7 @@ async def info(msg):
         ans.append('\tMembers: ')
         for m in s.members: # type: discord.Member
             ans.append('\t\t' + str(m) + ' {' + m.mention + '}')
-    f_name = 'info[{0}].txt'.format(other.get_now().strftime('%d|%m|%y %T'))
+    f_name = 'info[{0}].txt'.format(other.t2utc().strftime('%d|%m|%y %T'))
     with open(f_name, "w") as file:
         print(*ans, file=file, sep="\n")
 
@@ -843,24 +869,24 @@ async def add_role(msg):
         await msg.qanswer("Can't find user " + msg.args[1])
         return
 
-    roles = []
+    new_roles = []
     not_roles = []
-    for i in range(2,len(msg.args)):
+    for i in range(2, len(msg.args)):
         role = other.find(msg.server.roles, id=msg.args[i])
         if not role:
             role = other.find(msg.server.roles, name=msg.args[i])
         if not role:
             not_roles.append(msg.args[i])
         else:
-            roles.append(role)
+            new_roles.append(role)
 
     if not_roles:
         await msg.qanswer("Can't find roles: " + ', '.join(not_roles))
-    if not roles:
+    if not new_roles:
         await msg.qanswer("Can't find any roles!")
         return
 
-    await C.client.add_roles(usr, *roles)
+    await C.client.add_roles(usr, *new_roles)
     await msg.qanswer(":ok_hand:")
 
 
@@ -874,7 +900,7 @@ async def rem_role(msg):
         await msg.qanswer("Can't find user " + msg.args[1])
         return
 
-    roles = []
+    old_roles = []
     not_roles = []
     for i in range(2, len(msg.args)):
         role = other.find(msg.server.roles, id=msg.args[i])
@@ -883,15 +909,15 @@ async def rem_role(msg):
         if not role:
             not_roles.append(msg.args[i])
         else:
-            roles.append(role)
+            old_roles.append(role)
 
     if not_roles:
         await msg.qanswer("Can't find roles: " + ', '.join(not_roles))
-    if not roles:
+    if not old_roles:
         await msg.qanswer("Can't find any roles!")
         return
 
-    await C.client.remove_roles(usr, *roles)
+    await C.client.remove_roles(usr, *old_roles)
     await msg.qanswer(":ok_hand:")
 
 
@@ -917,10 +943,10 @@ async def log_channel(msg):
         mess.append(log.format_mess(message, date=True))
     log.D('- log_channel end')
     mess.append('')
-    mess.append('Log from {0} ({1}) at [{2}]:'.format(ch.name, ch.id, other.get_now().strftime('%d|%m|%y %T')))
+    mess.append('Log from {0} ({1}) at [{2}]:'.format(ch.name, ch.id, other.t2utc().strftime('%d|%m|%y %T')))
     mess.reverse()
 
-    f_name = 'log_channel({0})[{1}].txt'.format(ch.name, other.get_now().strftime('%d|%m|%y %T'))
+    f_name = 'log_channel({0})[{1}].txt'.format(ch.name, other.t2utc().strftime('%d|%m|%y %T'))
     with open(f_name, "w") as file:
         print(*mess, file=file, sep="\n")
 
@@ -978,7 +1004,7 @@ async def info_channels(msg):
     res = '\n'.join(ans)
     try:
         await msg.qanswer(res)
-    except:
+    except Exception as e:
         print(res)
         await msg.qanswer('Check log.')
 
@@ -988,3 +1014,81 @@ async def get_invite(msg):
     # await msg.qanswer(msg.server.name + ':\n\t' + '\n\t'.join([inv.code for inv in invs]))
     inv = await C.client.create_invite(msg.server) # Not working with server?
     await msg.qanswer(msg.server.name + ': ' + inv.code)
+
+
+async def go_timer(msg):
+    log.D('Start timer by command.')
+    ev.timer()
+    if C.is_test:
+        await msg.qanswer('Done, look the log.')
+    else:
+        await msg.qanswer(":ok_hand:")
+
+
+async def full_update(msg):
+    log.D('Start full update of people by command.')
+    for usr in people.usrs.values():
+        if {'add', 'upd', 'del'}.difference(usr.status):
+            usr.status = 'upd'
+
+    for gn in people.gone.values():
+        if {'add', 'upd', 'del'}.difference(gn.status):
+            gn.status = 'upd'
+
+    await go_timer(msg)
+
+
+async def get_offtime(msg):
+    """\
+    !get_offtime username: узнать, как долго пользователь ничего не пишет
+    """
+    if len(msg.args) < 2:
+        await msg.qanswer(other.comfortable_help([str(get_offtime.__doc__)]))
+        return
+    name = msg.original[len('!get_offtime '):]
+    usr = other.find_member(C.vtm_server, name)
+    if not usr:
+        await msg.qanswer('Пользователь не найден.')
+        return
+    await msg.qanswer('{0} последний раз писал(а) {1} назад.'
+                      .format(usr.mention, other.sec2str(people.offline(usr.id))))
+
+
+async def get_offlines(msg):
+    """\
+    !get_offlines d: узнать, кто не пишет уже в течении d дней
+    """
+    s_ds = msg.original[len('!get_offlines '):].replace(',', '.')
+    if len(msg.args) < 2 or not other.is_float(s_ds):
+        await msg.qanswer(other.comfortable_help([str(get_offlines.__doc__)]))
+        return
+    r_users = {}
+    for r in C.vtm_server.role_hierarchy:
+        r_users[r.name] = {}
+    ds = float(s_ds)
+    check_t = int(ds * 24 * 3600)
+    count = 0
+    for uid, usr in people.usrs.items():
+        t_off = people.offline(usr.id)
+        if t_off >= check_t:
+            count += 1
+            u = other.find_member(C.vtm_server, uid)
+            r_users[u.top_role.name][usr.last_m] = ('{0} - писал(а) {1} назад.'
+                                       .format(u.mention, other.sec2str(t_off)))
+    s_num = str(ds if ds != int(ds) else int(ds))
+    if count:
+        s_users = 'Пользователи[{0}] не пишущие'.format(count) if count > 1 else 'Уникум не пишущий'
+        s_days = ['дней', 'день', 'дня', 'дня', 'дня']
+        end_s_num = int(s_num[-1])
+        ans = ['{0} уже {1} {2}:'.format(s_users, s_num, s_days[end_s_num < 5 and end_s_num])]
+        r_users['Без ролей'] = r_users.pop('@everyone')
+        for r in r_users:
+            if r_users[r]:
+                sorted_users = [r_users[r][key] for key in sorted(r_users[r])]
+                ans.append('**```{0}[{1}]:```**{2}'.format(r, len(r_users[r]), sorted_users[0]))
+                ans += sorted_users[1:]
+        ans_20 = other.split_list(ans, 20)
+        ans = ['\n'.join(v) for v in ans_20]
+        await msg.qanswer(ans)
+    else:
+        await msg.qanswer('Пользователей не пишущих уже {0} дней нет :slight_smile:.'.format(s_num))

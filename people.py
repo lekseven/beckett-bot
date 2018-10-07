@@ -15,7 +15,7 @@ other_usrs = {}
 
 
 class Usr:
-    def __init__(self, uid, name='', karma=0, status='', g_morn=0, g_day=0, g_ev=0, g_n=0):
+    def __init__(self, uid, name='', karma=0, status='', g_morn=0, g_day=0, g_ev=0, g_n=0, last_m=-1):
         self.id = uid
         self.name = name
         self.karma = karma
@@ -24,6 +24,8 @@ class Usr:
         self.g_day = int(g_day)
         self.g_ev = int(g_ev)
         self.g_n = int(g_n)
+        l_m = int(last_m)
+        self.last_m = l_m if l_m>=0 else other.get_sec_total()
         # usrs[id] = self
 
     def set(self, **kwargs):
@@ -40,12 +42,12 @@ class Usr:
         :param str status:
         :return Usr:
         """
-        return Usr(memb.id, name=str(memb), status=status)
+        return Usr(memb.id, name=str(memb), status=status, last_m=other.get_sec_total())
 
     @staticmethod
     def load(row):
         return Usr(str(row['id']), name=row['name'], karma=row['karma'], status='',
-            g_morn=row['g_morn'], g_day=row['g_day'], g_ev=row['g_ev'], g_n=row['g_n'])
+            g_morn=row['g_morn'], g_day=row['g_day'], g_ev=row['g_ev'], g_n=row['g_n'], last_m=row['last_m'])
 
     @staticmethod
     def check_new(memb):
@@ -60,10 +62,10 @@ class Usr:
             return False
 
     def row_add(self):
-        return [self.id, self.name, self.g_morn, self.g_day, self.g_ev, self.g_n, self.karma]
+        return [self.id, self.name, self.g_morn, self.g_day, self.g_ev, self.g_n, self.karma, self.last_m]
 
-    def row_upd(self):
-        return [self.name, self.g_morn, self.g_day, self.g_ev, self.g_n, self.karma, self.id]
+    def row_upd(self): # self.id must be in the end of array
+        return [self.name, self.g_morn, self.g_day, self.g_ev, self.g_n, self.karma, self.last_m, self.id]
 
     def go(self, memb=None, res=False):
         """
@@ -90,11 +92,14 @@ class Usr:
         else:
             gone[self.id] = gn
 
+    def offline(self):
+        return other.get_sec_total() - self.last_m
+
 
 class Gn:
     def __init__(self, gid, name='', karma=0, status='', last=None, role='0', ban=None):
         global bans_id
-        t = last or dt.datetime.now().timestamp()
+        t = last or other.get_sec_total()
         self.id = gid
         self.name = name
         self.karma = karma
@@ -168,7 +173,7 @@ class Gn:
                 if role:
                     C.loop.create_task(C.client.add_roles(m, *[role]))
         self.status = 'del'
-        usr = Usr(self.id, name=nm, karma=self.karma, status='add')
+        usr = Usr(self.id, name=nm, karma=self.karma, status='add', last_m=other.get_sec_total())
         if res:
             return usr
         else:
@@ -176,7 +181,7 @@ class Gn:
 
         #'id': smb.id, 'name': str(smb), 'g_morn': 0, 'g_day': 0, 'g_ev': 0, 'g_n': 0, 'karma': 0, 'status': status,
     def time_out(self):
-        return int(dt.datetime.now().timestamp()) - self.last
+        return other.get_sec_total() - self.last
 
 
 async def test():
@@ -315,28 +320,54 @@ async def check_now():
 
 def upd():
     t = load(res=True)
-
+    log.I('- start people tables')
+    log_upd = {'change_usrs': {'add': [], 'upd': [], 'del': []}, 'change_gone': {'add': [], 'upd': [], 'del': []}}
     change_usrs = {'add': [], 'upd': [], 'del': []}
-    for uid, usr in usrs.items():
+    for uid in list(usrs.keys()):
+        usr = usrs[uid]
         if usr.status == 'add' or usr.status == 'upd':
             if uid in t['usrs']:
                 change_usrs['upd'].append(usr.row_upd())
+                log_upd['change_usrs']['upd'].append(usr.name)
             else:
                 change_usrs['add'].append(usr.row_add())
+                log_upd['change_usrs']['add'].append(usr.name)
+            usr.status = ''
         elif usr.status == 'del':
             if uid in t['usrs']:
                 change_usrs['del'].append([uid])
+                log_upd['change_usrs']['del'].append(usr.name)
+            usrs.pop(uid)
 
     change_gone = {'add': [], 'upd': [], 'del': []}
-    for uid, gn in gone.items():
+    for uid in list(gone.keys()):
+        gn = gone[uid]
         if gn.status == 'add' or gn.status == 'upd':
             if uid in t['gone']:
                 change_gone['upd'].append(gn.row_upd())
+                log_upd['change_gone']['upd'].append(gn.name)
             else:
                 change_gone['add'].append(gn.row_add())
+                log_upd['change_gone']['add'].append(gn.name)
+            gn.status = ''
         elif gn.status == 'del':
             if uid in t['gone']:
                 change_gone['del'].append([uid])
+                log_upd['change_gone']['del'].append(gn.name)
+            gone.pop(uid)
+
+    if C.is_test:
+        log.I("- it's Test mode, print results and return")
+        log_upd = {'change_usrs': change_usrs, 'change_gone': change_gone}
+        # log.jD('change_usrs:\n', change_usrs)
+        # log.jD('change_gone:\n', change_gone)
+        log.jD('subjects were updated:\n',
+               '\n'.join([cat + ':\n\t' +
+                          '\n'.join([tp + '[{0}]:\n\t\t'.format(len(u_s)) +
+                                     ',\n\t\t'.join(str(u) for u in u_s) for tp, u_s in ls.items() if u_s])
+                          for cat, ls in log_upd.items() if ls]))
+        print('--------------------------------------------------------')
+        return
 
     conn = None
     log.I('- update people tables')
@@ -344,8 +375,8 @@ def upd():
         conn = psycopg2.connect(C.DATABASE_URL, sslmode='require')
         cur = conn.cursor(cursor_factory=psycopg2.extras.DictCursor)
         if change_usrs['add']:
-            query = '''INSERT INTO members (id, name, g_morn, g_day, g_ev, g_n, karma)
-                                            VALUES (%s, %s, %s, %s, %s, %s, %s)'''
+            query = '''INSERT INTO members (id, name, g_morn, g_day, g_ev, g_n, karma, last_m)
+                                            VALUES (%s, %s, %s, %s, %s, %s, %s, %s)'''
             cur.executemany(query, change_usrs['add'])
             conn.commit()
 
@@ -356,8 +387,8 @@ def upd():
             conn.commit()
 
         if change_usrs['upd']:
-            query = '''UPDATE members SET (name, g_morn, g_day, g_ev, g_n, karma) = 
-                                                          (%s, %s, %s, %s, %s, %s) WHERE id = %s'''
+            query = '''UPDATE members SET (name, g_morn, g_day, g_ev, g_n, karma, last_m) = 
+                                                          (%s, %s, %s, %s, %s, %s, %s) WHERE id = %s'''
             cur.executemany(query, change_usrs['upd'])
             conn.commit()
 
@@ -381,6 +412,12 @@ def upd():
         sys.exit(1)
     else:
         log.I('+ people tables updated successfully')
+        log.jD('subjects were updated:\n',
+               '\n'.join([cat + ':\n\t' +
+                          '\n'.join([tp + '[{0}]:\n\t\t'.format(len(names)) +
+                                     ', '.join(names) for tp, names in ls.items() if names])
+                          for cat, ls in log_upd.items() if ls]))
+        print('--------------------------------------------------------')
     finally:
         if conn:
             conn.close()
@@ -400,8 +437,8 @@ def rewrite():
 
         cur.execute("TRUNCATE TABLE members RESTART IDENTITY")
         if usr_rows:
-            query = '''INSERT INTO members (id, name, g_morn, g_day, g_ev, g_n, karma)
-                                        VALUES (%s, %s, %s, %s, %s, %s, %s)'''
+            query = '''INSERT INTO members (id, name, g_morn, g_day, g_ev, g_n, karma, last_m)
+                                        VALUES (%s, %s, %s, %s, %s, %s, %s, %s)'''
             cur.executemany(query, usr_rows)
         conn.commit()
 
@@ -445,7 +482,7 @@ def distribute(smb, t=None):
 
 async def sync():
     # scan chat and get users array from messages in history
-    log.I('Sync Start')
+    log.I('+ Sync Start')
     count = 0
     # print('[{0}] TEST'.format(other.t2s()))
     for mem in C.client.get_all_members():
@@ -455,7 +492,7 @@ async def sync():
         if count % 10000 == 0:
             log.D('<sync> Check message {0}'.format(str(count)))
         count = count + 1
-        distribute(message.author, message.timestamp.timestamp())
+        distribute(message.author, other.get_sec_total(message.timestamp))
         # for i in message.raw_mentions:
         #     distribute(await C.client.get_user_info(i), message.timestamp)
 
@@ -463,7 +500,40 @@ async def sync():
         distribute(usr)
     log.D('<sync> MESS COUNT = {0}'.format(str(count)))
     rewrite()
-    log.I('Sync End')
+    log.I('+ Sync End')
+
+
+async def time_sync():
+    # scan chat and get users time of last_message from history
+    log.I('+ Time_sync start')
+    t = {}
+    mems = [mem.id for mem in C.vtm_server.members]
+    for ch in C.vtm_server.channels:
+        if str(ch.type) == 'text':
+            t[ch.position] = ch
+    channels = [t[k] for k in sorted(t)]
+    log.D(' - {0} channels prepare to scan:'.format(len(channels)))
+    for i, ch in enumerate(channels):
+        pr = ch.permissions_for(ch.server.me)
+        if pr.read_message_history:
+            mems_i = set(mems)
+            async for mess in C.client.logs_from(ch, limit=1000000):
+                aid = mess.author.id
+                if aid in mems_i:
+                    ts = other.get_sec_total(mess.timestamp)
+                    if ts > usrs[aid].last_m:
+                        usrs[aid].last_m = ts
+                        usrs[aid].status = 'upd'
+                    mems_i.remove(aid)
+                    if len(mems_i) < 1:
+                        break
+            log.D(' - {0}) {1} - done'.format(i+1, ch.name))
+        else:
+            log.D(' - {0}) {1} - not permissions for reading'.format(i+1, ch.name))
+    log.I('+ Time_sync end')
+    log.jD('Test results:')
+    for mem in C.vtm_server.members:
+        log.jD('{0} \t-\t {1}'.format(mem, other.sec2str(offline(mem.id))))
 
 
 def clear():
@@ -528,11 +598,18 @@ def set_gt(uid, key):
     keys = {'g_morn', 'g_day', 'g_ev', 'g_n'}
     if key in keys:
         if uid in usrs:
-            setattr(usrs[uid], key, int(dt.datetime.now().timestamp()))
+            setattr(usrs[uid], key, other.get_sec_total())
             usrs[uid].status = 'upd'
         else:
-            if not uid in other_usrs:
+            if uid not in other_usrs:
                 other_usrs[uid] = {'g_morn': 0, 'g_day': 0, 'g_ev': 0, 'g_n': 0}
-            other_usrs[uid][key] = int(dt.datetime.now().timestamp())
-                
-            
+            other_usrs[uid][key] = other.get_sec_total()
+
+
+def offline(uid):
+    return uid in usrs and usrs[uid].offline()
+
+
+def set_last_m(uid):
+    if uid in usrs:
+        usrs[uid].set(last_m=other.get_sec_total(), status='upd')

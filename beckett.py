@@ -1,23 +1,17 @@
 # -*- coding: utf8 -*-
 #import random
 #import data
-import os
-from ctypes.util import find_library
-import psycopg2
-import psycopg2.extras
-import sys
-import ast
+from os import environ as os__environ
 import signal
-import functools
-import datetime
+from ctypes.util import find_library
+from functools import partial as functools__partial
 import discord
 
-import communication as com
 import constants as C
-import check_message
+from communication import prepare as com__prepare
+from check_message import reaction as check_message__reaction
 import other
 import emj
-import people
 import local_memory as ram
 import log
 import event_funs as ev
@@ -29,10 +23,8 @@ async def on_ready():
     log.I('Logged in as ', C.client.user, ' (', C.client.user.id, ')')
     prepare_const2()
     emj.prepare()
-    log.I('load data from memory')
-    load_mem()
-    await people.get(check=(not C.is_test))
-    com.prepare()
+    await ev.load()
+    com__prepare()
     if not discord.opus.is_loaded():
         lb = find_library("opus")
         log.jD('opus lib: ', lb) # i can't find it on heroku
@@ -40,27 +32,27 @@ async def on_ready():
             discord.opus.load_opus(lb)
         else:
             log.jW('opus lib not load!')
-    other.later(3600, hour_timer())
-    log.I('Ready to work at ', ram.t_start.strftime('[%D %T]'))
+    ev.start_timer()
+    log.I('Beckett ready for work now, after starting at ', ram.t_start.strftime('[%D %T]'))
     log.p('------ ------ ------')
     C.Ready = True
     await other.test_status(ram.game)
 
     pass
     pass
-    # sys.exit(0)
+    # ev.force_exit()
 
 
 def prepare_const():
     log.I('- prepare_const')
 
-    C.is_test = os.environ.get('Server_Test') or False
+    C.is_test = os__environ.get('Server_Test') or False
 
-    C.DISCORD_TOKEN = os.environ.get('DISCORD_TOKEN')
+    C.DISCORD_TOKEN = os__environ.get('DISCORD_TOKEN')
 
     if not C.DISCORD_TOKEN:
         log.E('Config var DISCORD_TOKEN is not defined.')
-        sys.exit()
+        ev.force_exit()
 
     if C.is_test:
         log.jI('Bot work with Test Server')
@@ -70,36 +62,36 @@ def prepare_const():
     vtm_server_key = 'VTM_SERVER_ID'
     vtm_channel_key = 'WELCOME_CHANNEL_ID'
 
-    C.VTM_SERVER_ID = os.environ.get(vtm_server_key)
-    C.TST_SERVER_ID = os.environ.get(tst_server_key)
+    C.VTM_SERVER_ID = os__environ.get(vtm_server_key)
+    C.TST_SERVER_ID = os__environ.get(tst_server_key)
 
     if not C.VTM_SERVER_ID:
         log.E('Config var VTM_SERVER_ID is not defined.')
-        sys.exit()
+        ev.force_exit()
 
     if not C.TST_SERVER_ID:
         log.E('Config var TST_SERVER_ID is not defined.')
-        sys.exit()
+        ev.force_exit()
 
-    C.WELCOME_CHANNEL_ID = os.environ.get(vtm_channel_key)
-    C.TEST_CHANNEL_ID = os.environ.get(tst_channel_key)
+    C.WELCOME_CHANNEL_ID = os__environ.get(vtm_channel_key)
+    C.TEST_CHANNEL_ID = os__environ.get(tst_channel_key)
 
     if not C.WELCOME_CHANNEL_ID:
         log.E('Config var WELCOME_CHANNEL_ID is not defined.')
-        sys.exit()
+        ev.force_exit()
 
     if not C.TEST_CHANNEL_ID:
         log.E('Config var TEST_CHANNEL_ID is not defined.')
-        sys.exit()
+        ev.force_exit()
 
-    C.DATABASE_URL = os.environ.get('DATABASE_URL')
+    C.DATABASE_URL = os__environ.get('DATABASE_URL')
     if not C.DATABASE_URL:
         log.E('Config var DATABASE_URL is not defined.')
-        sys.exit()
+        ev.force_exit()
 
-    C.DROPBOX_ID = os.environ.get('DROPBOX_ID')
+    C.DROPBOX_ID = os__environ.get('DROPBOX_ID')
 
-    ram.t_start = other.get_now()
+    ram.t_start = other.t2utc()
     log.I('+ prepare_const done')
 
 
@@ -109,10 +101,10 @@ def prepare_const2():
     C.tst_server = C.client.get_server(C.TST_SERVER_ID)  # type: discord.Server
     if not C.vtm_server:
         log.E("Can't find server.")
-        sys.exit()
+        ev.force_exit()
     if not C.tst_server:
         log.E("Can't find test server.")
-        sys.exit()
+        ev.force_exit()
 
     if C.is_test:
         C.prm_server = C.tst_server
@@ -123,7 +115,7 @@ def prepare_const2():
 
     if not C.main_ch:
         log.E("Can't find welcome_channel.")
-        sys.exit()
+        ev.force_exit()
 
     C.vtm_news_ch = other.get_channel(C.channels['vtm_news'])
     C.other_news_ch = other.get_channel(C.channels['other_news'])
@@ -135,15 +127,6 @@ def prepare_const2():
 
     log.I('+ prepare_const2 done')
 
-
-async def hour_timer():
-    # just for test now
-    try:
-        log.D('[{0}]'.format(other.t2s()), 'Hour timer!')
-    except Exception as e:
-        other.pr_error(e, 'hour_timer')
-    finally:
-        other.later(3600, hour_timer())
 
 # Events with check_server
 # region Ev.check_server
@@ -192,7 +175,7 @@ async def on_server_role_update(before, after):
 @C.client.event
 async def on_message(message):
     if await log.on_mess(message, 'on_message'):
-        await check_message.reaction(message)
+        await check_message__reaction(message)
 
 
 @C.client.event
@@ -217,82 +200,19 @@ async def on_reaction_remove(reaction, user):
         await emj.on_reaction_remove(reaction, user)
 
 
-def load_mem():
-    log.I('check memory in DB')
-    not_load = {'t_start', 't_finish', 't_work'}
-    module = sys.modules[ram.__name__]
-    module_attrs = dir(module)
-    variables = set(key for key in module_attrs if key[0] != '_' and not callable(getattr(module, key)))
-    conn = None
-    try:
-        conn = psycopg2.connect(C.DATABASE_URL, sslmode='require')
-        cur = conn.cursor(cursor_factory=psycopg2.extras.DictCursor)
-        cur.execute("SELECT * FROM memory")
-        rows = cur.fetchall()
-        for row in rows:
-            #print("%s %s %s" % (row["id"], row["var"], row["val"]))
-            if row['var'] in variables and not row['var'] in not_load:
-                try:
-                    if row['val'] == 'set()':
-                        v = set()
-                    else:
-                        v = ast.literal_eval(row['val'])
-                except Exception as e:
-                    other.pr_error(e, 'load_mem')
-                    log.jW("ast.literal_eval can't eval [%s] = '%s'" % (row['var'], row['val']))
-                else:
-                    setattr(module, row['var'], v)
-    except psycopg2.DatabaseError as e:
-        log.E('DatabaseError %s' % e)
-        sys.exit(1)
-    else:
-        log.I('memory loaded successfully')
-    finally:
-        if conn:
-            conn.close()
-
-
-def save_mem():
-    log.I('save memory in DB')
-    module = sys.modules[ram.__name__]
-    module_attrs = dir(module)
-    variables = {key: getattr(module, key)
-                 for key in module_attrs if key[0] != '_' and not callable(getattr(module, key))}
-    conn = None
-    rows = []
-    for var, val in variables.items():
-        if isinstance(val, dict):
-            val = {k: v for k, v in val.items() if v != set()}
-        if isinstance(val, (datetime.datetime, datetime.timedelta)):
-            val = str(val)
-        rows.append((var, repr(val),))
-    try:
-        conn = psycopg2.connect(C.DATABASE_URL, sslmode='require')
-        cur = conn.cursor(cursor_factory=psycopg2.extras.DictCursor)
-        cur.execute("TRUNCATE TABLE memory RESTART IDENTITY")
-        query = "INSERT INTO memory (var, val) VALUES (%s, %s)"
-        cur.executemany(query, rows)
-        conn.commit()
-    except psycopg2.DatabaseError as e:
-        log.E('[save_mem] <memory> DatabaseError %s' % e)
-        sys.exit(1)
-    else:
-        log.I('Memory saved successfully')
-    finally:
-        if conn:
-            conn.close()
-
-
 def on_exit(signum):
     log.I("Call on_exit by signal %s" % signum)
     C.loop.create_task(C.client.logout())
+    ev.stop_timer()
+    C.was_Ready = C.Ready
+    C.Ready = False
     pass
     #C.loop.stop()
 
 
 def main_loop():
     for signame in ('SIGINT', 'SIGTERM'):
-        C.loop.add_signal_handler(getattr(signal, signame), functools.partial(on_exit, signame))
+        C.loop.add_signal_handler(getattr(signal, signame), functools__partial(on_exit, signame))
     try:
         log.I("Start ClientRun.")
         C.client.run(C.DISCORD_TOKEN)
@@ -301,13 +221,10 @@ def main_loop():
     else:
         log.I("ClientRun is completed without errors.")
     finally:
-        ram.t_finish = other.get_now()
+        ram.t_finish = other.t2utc()
         ram.t_work = (ram.t_finish-ram.t_start)
-        if C.Ready:
-            C.Ready = False
-            save_mem()
-            if not C.is_test:
-                people.upd()
+        if C.was_Ready:
+            ev.save()
         log.I('Finally exit at ', ram.t_finish.strftime('[%D %T]'),
               ', working for ', other.delta2s(ram.t_work))
         log.p('------ ------ ------')
@@ -321,4 +238,4 @@ prepare_const()
 #main_loop()
 log.log_fun(main_loop)
 log.send_log()
-sys.exit(0)
+ev.force_exit()

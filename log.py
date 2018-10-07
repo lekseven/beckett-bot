@@ -190,21 +190,23 @@ def format_mess(msg, time=False, date=False):
     :param date: bool
     :rtype: str
     """
+    t_m = other.t2s(msg.timestamp)
+    s_time = '(from {0})'.format(t_m) if (time or other.t2s() != t_m) else ''
     ch_name = str(msg.channel.user) if msg.channel.is_private else str(msg.channel.name)
-    t = ('(from {0})'.format(other.t2s(msg.timestamp, '%d|%m|%y %T')) if date else
-            '(from {0})'.format(other.t2s(msg.timestamp)) if time else '')
+    t = ('(from {0})'.format(other.t2s(msg.timestamp, '%d|%m|%y %T')) if date else s_time)
     cont = msg.content.replace('\n', '\n\t')  # type: str
     if msg.mentions:
         for user in msg.mentions:
-            cont = cont.replace(user.mention, str(user))
+            usr_name = str(user) + ('(' + user.display_name + ')' if user.name != user.display_name else '')
+            cont = cont.replace(user.mention, usr_name).replace('<@' + user.id + '>', usr_name)
     if msg.channel_mentions:
         for ch in msg.channel_mentions:
             cont = cont.replace(ch.mention, '#' + str(ch))
     if msg.role_mentions:
         for role in msg.role_mentions:
-            cont = cont.replace(role.mention, '@' + str(role))
-
-    return '{t}<{ch}> {author}: {cont}'.format(t=t, ch=ch_name, author=str(msg.author), cont=cont)
+            cont = cont.replace(role.mention, '&' + str(role))
+    a_n = str(msg.author) + ('(' + msg.author.display_name + ')' if msg.author.name != msg.author.display_name else '')
+    return '{t}<{ch}> {author}: {cont}'.format(t=t, ch=ch_name, author=a_n, cont=cont)
 
 
 async def on_mess(msg, kind):

@@ -3,6 +3,7 @@ import discord
 import string
 
 Ready = False
+was_Ready = False
 is_test = False
 
 DISCORD_TOKEN = ''
@@ -76,7 +77,7 @@ beckett_names = {'беккет', 'бэккет', 'бекетт', 'бэкетт',
 silent_channels = {}
 ignore_channels = {channels['vtm_news'], channels['vtm_links'], channels['other_news'], channels['other_links']}
 
-punct2space = str.maketrans(string.punctuation + '«»', ' ' * (len(string.punctuation) + 2))  # for translate
+punct2space = str.maketrans(string.punctuation + '«»🏻🏼🏽🏾🏿', ' ' * (len(string.punctuation) + 7))  # for translate
 free_cmds = {'roll', 'help', 'ignore', 'dominate'}
 
 # WARNING: Clans keys here must be the same to dataKeys (Clans) in data

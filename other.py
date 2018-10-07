@@ -86,10 +86,23 @@ def str_keys(ch_dict, keys, pre=''):
     return ['\n'.join(ans)] if ans else []
 
 
+def t2utc(timedata=None):
+    td = timedata or datetime.datetime.utcnow()
+    td = td.replace(tzinfo=td.tzinfo or datetime.timezone.utc)
+    td = td.astimezone(datetime.timezone(datetime.timedelta(hours=3)))
+    return td
+
+
+def get_now():
+    return t2utc()
+
+
+def get_sec_total(td=None):
+    return int(t2utc(td).timestamp())
+
+
 def t2s(timedata=None, frm="%H:%M:%S"):
-    timedata = timedata or datetime.datetime.utcnow()
-    timedata = timedata.replace(tzinfo=timedata.tzinfo or datetime.timezone.utc)
-    return timedata.astimezone(datetime.timezone(datetime.timedelta(hours=3))).strftime(frm)
+    return t2utc(timedata).strftime(frm)
 
 
 def delta2s(timedelta):
@@ -99,6 +112,26 @@ def delta2s(timedelta):
     mins = int(total_sec / 60)
     total_sec -= mins * 60
     return '{0}:{1}:{2}'.format(hours, mins, int(total_sec))
+
+
+def sec2str(total_sec):
+    s_names = {
+        'years': ['лет', 'год', 'года', 'года', 'года'],
+        'days': ['дней', 'день', 'дня', 'дня', 'дня'],
+        'hours': ['часов', 'час', 'часа', 'часа', 'часа'],
+        'mins': ['минут', 'минуту', 'минуты', 'минуты', 'минуты'],
+        'sec': ['секунд', 'секунду', 'секунды', 'секунды', 'секунды'],
+     }
+    sec_in = {'years': 31557600, 'days': 86400, 'hours': 3600, 'mins': 60, 'sec': 1}
+    t = {}
+    s = []
+    for k, v in s_names.items():
+        t[k] = int(total_sec / sec_in[k])
+        if s or t[k] > 0:
+            total_sec -= t[k] * sec_in[k]
+            l_numb = int(str(t[k])[-1])
+            s.append(str(t[k]) + ' ' + (v[l_numb < 5 and l_numb]))
+    return ', '.join(s) if s else 'мгновение'
 
 
 async def get_ban_user(server, s_name):
@@ -308,13 +341,22 @@ def name_rand_phr(uid, arr):
     return name_phr(uid, random.choice(arr))
 
 
-def later(t, coro):
+def later_coro(t, coro):
     """
-
+    :return: asyncio.TimerHandle
     :param t: int
     :param coro: coroutine object
     """
-    C.loop.call_later(t, lambda: C.loop.create_task(coro))
+    return C.loop.call_later(t, lambda: C.loop.create_task(coro))
+
+
+def later(t, fun):
+    """
+    :return: asyncio.TimerHandle
+    :param t: int
+    :param fun: Function
+    """
+    return C.loop.call_later(t, fun)
 
 
 def get_weather():
@@ -345,7 +387,26 @@ def pr_error(e, cat='beckett', text='Error'):
     log.E("{{{cat}}} {text}:".format(cat=cat, text=text), e, ei[0], ei[1])
 
 
-def get_now():
-    timedata = datetime.datetime.utcnow()
-    timedata = timedata.replace(tzinfo=timedata.tzinfo or datetime.timezone.utc)
-    return timedata.astimezone(datetime.timezone(datetime.timedelta(hours=3)))
+def is_float(num):
+    try:
+        float(num)
+    except ValueError:
+        return False
+    return True
+
+
+def floor(num):
+    i_num = int(num)
+    return i_num if i_num == num else i_num + 1
+
+
+def split_list(ls, by_i):
+    """
+    Return list from lists, with by_i elements (from ls) in each
+    :type ls: list
+    :type by_i: int
+
+    :rtype: list
+    """
+    ln = len(ls)
+    return [ls[i * by_i:min((i + 1) * by_i, ln)] for i in range(0, floor(ln / by_i))]

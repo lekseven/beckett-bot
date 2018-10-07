@@ -24,16 +24,17 @@ class Msg:
         self.author = message.author.id
         self.member = C.vtm_server.get_member(self.author)
         self.personal = not message.server
-        self.server = ((self.author in ram.cmd_server and C.client.get_server(ram.cmd_server[self.author])) or
-                       (C.prm_server if self.personal else message.server))
-        self.is_vtm = not self.personal and self.server.id == C.prm_server.id
+        self.cmd_server = ((self.author in ram.cmd_server and C.client.get_server(ram.cmd_server[self.author])) or
+                           (C.prm_server if self.personal else message.server))
+        self.server_id = None if self.personal else message.server.id
+        self.is_vtm = self.server_id == C.vtm_server.id
         self.message = message
         self.original = message.content
         self.text = message.content.lower().replace('ё', 'е')
         self.args = []
         self.words = set()
         self.channel = message.channel
-        self.roles = {role.id for role in self.member.roles[1:]} if self.member else set()
+        self.roles = {role.id for role in self.member.roles[1:]} if (self.member and self.is_vtm) else set()
         self.prince = self.author == C.users['Natali']
         self.super = self.author in C.superusers or (
                 self.prince or C.roles['Sheriff'] in self.roles or C.roles['Scourge'] in self.roles)
@@ -70,8 +71,8 @@ class Msg:
         t = min(1500, len(text)) / 20 + extra
         await C.client.send_typing(ch)
         for i in range(1, int(t / 10) + 1):
-            other.later(i * 10, C.client.send_typing(ch))
-        other.later(t, C.client.send_message(ch, content=text, embed=emb))
+            other.later_coro(i * 10, C.client.send_typing(ch))
+        other.later_coro(t, C.client.send_message(ch, content=text, embed=emb))
         return t
 
     async def report(self, text):
@@ -155,23 +156,22 @@ class Msg:
         return ans and yes.intersection(ans.content.lower().split())
 
     def find_member(self, i):
-        return other.find_member(self.server, i)
+        return other.find_member(self.cmd_server, i)
 
     def find_members(self, names):
-        return other.find_members(self.server, names)
+        return other.find_members(self.cmd_server, names)
 
 
 async def reaction(message):
     msg = Msg(message)
 
+    if msg.is_vtm:
+        people.set_last_m(msg.author)
+
     if msg.author == C.users['bot']:
         if msg.original == data.tremer_joke:
-            other.later(20, msg.delete())
+            other.later_coro(20, msg.delete())
         return
-
-    # TO#DO del check me =)
-    # if msg.author != C.users['Kuro']:
-    #     return # for test
 
     if msg.torpor:
         await msg.delete()
@@ -207,11 +207,11 @@ async def reaction(message):
                 await command(msg)
                 return
 
-    maybe_embrace = False
+    embrace_or_return = False
     if (ram.mute_channels.intersection({msg.channel.id, 'All'})
             or msg.author in ram.ignore_users or msg.channel.id in C.ignore_channels):
         if msg.channel.id == C.channels['ask']:
-            maybe_embrace = True
+            embrace_or_return = True
         else:
             return
 
@@ -223,13 +223,13 @@ async def reaction(message):
     found_keys = com.check_phrase(msg.text, msg.words)
     prob = random.random()
 
+    # embrace
     if msg.channel.id == C.channels['ask'] and not msg.roles.intersection(C.clan_ids):
         clan_keys = list(C.clan_names.intersection(found_keys))
         if clan_keys:
-            other.later(random.randrange(30, 90),
-                        other.do_embrace_and_say(msg, msg.author, clan=random.choice(clan_keys)))
-
-    elif maybe_embrace:
+            other.later_coro(random.randrange(30, 90),
+                             other.do_embrace_and_say(msg, msg.author, clan=random.choice(clan_keys)))
+    elif embrace_or_return:
         return
 
     await emj.on_message(message, beckett)
@@ -258,7 +258,7 @@ async def reaction(message):
         gt_key = com.f_gt_key(msg.original, msg.text, msg.words.copy(), beckett)
         if gt_key:
             h18 = 64800  # 18h in sec
-            if (dt.datetime.now().timestamp() - msg.gt[gt_key['g_key']]) > h18: # not beckett and
+            if (other.get_sec_total() - msg.gt[gt_key['g_key']]) > h18: # not beckett and
                 phr = random.choice(com.good_time[gt_key['g_key']][gt_key['g_type']]['response'])
                 str_weather = ''
                 if gt_key['g_key'] == 'g_morn' and msg.author in com.morning_add:
