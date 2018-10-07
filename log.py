@@ -183,7 +183,7 @@ async def mess_plus(message, save_disc_links=False, save_all_links=False):
     return ['\n'.join(res)] if res else []
 
 
-def format_mess(msg, time=False, date=False):
+async def format_mess(msg, time=False, date=False):
     """
     :type msg: discord.Message
     :param time: bool
@@ -195,16 +195,34 @@ def format_mess(msg, time=False, date=False):
     ch_name = str(msg.channel.user) if msg.channel.is_private else str(msg.channel.name)
     t = ('(from {0})'.format(other.t2s(msg.timestamp, '%d|%m|%y %T')) if date else s_time)
     cont = msg.content.replace('\n', '\n\t')  # type: str
-    if msg.mentions:
-        for user in msg.mentions:
-            usr_name = str(user) + ('(' + user.display_name + ')' if user.name != user.display_name else '')
-            cont = cont.replace(user.mention, usr_name).replace('<@' + user.id + '>', usr_name)
-    if msg.channel_mentions:
-        for ch in msg.channel_mentions:
-            cont = cont.replace(ch.mention, '#' + str(ch))
-    if msg.role_mentions:
-        for role in msg.role_mentions:
-            cont = cont.replace(role.mention, '&' + str(role))
+    if msg.raw_mentions:
+        for uid in msg.raw_mentions:
+            usr = other.find_member(msg.server, uid)
+            if not usr:
+                usr = other.find_user(uid)
+            if not usr:
+                usr = await C.client.get_user_info(uid)
+            if usr:
+                usr_name = str(usr) + ('(' + usr.display_name + ')' if usr.name != usr.display_name else '')
+                cont = cont.replace('<@' + usr.id + '>', usr_name).replace('<@!' + usr.id + '>', usr_name)
+    if msg.raw_channel_mentions:
+        for chid in msg.raw_channel_mentions:
+            ch = C.client.get_channel(chid)
+            if ch:
+                cont = cont.replace('<#' + ch.id + '>', '#' + str(ch))
+    if msg.raw_role_mentions:
+        role = None
+        for role_id in msg.raw_role_mentions:
+            role = other.find(msg.server.roles, id=role_id)
+            if not role:
+                for s in C.client.servers:
+                    if s.id == msg.server.id:
+                        continue
+                    role = other.find(s.roles, id=role_id)
+                    if role:
+                        break
+            if role:
+                cont = cont.replace('<@&' + role.id + '>', '&' + str(role))
     a_n = str(msg.author) + ('(' + msg.author.display_name + ')' if msg.author.name != msg.author.display_name else '')
     return '{t}<{ch}> {author}: {cont}'.format(t=t, ch=ch_name, author=a_n, cont=cont)
 
@@ -230,7 +248,7 @@ async def on_mess(msg, kind):
     save_all_links = (kind == 'on_message_delete')
     save_disc_links = not save_all_links
 
-    time_tpprint('M', s_server, '{{{0}}}'.format(desc[kind]), format_mess(msg, time))
+    time_tpprint('M', s_server, '{{{0}}}'.format(desc[kind]), await format_mess(msg, time))
     pl = await mess_plus(msg, save_disc_links, save_all_links)
     if pl:
         print(pl[0])
@@ -253,7 +271,7 @@ async def on_reaction(reaction, kind, user):
 
     desc = {'on_reaction_add': 'on_r_add', 'on_reaction_remove': 'on_r_rem'}
     text_emoji = '[{0.name}:{0.id}]'.format(emoji) if hasattr(emoji, 'id') else emoji
-    time_tpprint('M', s_server, '{{{0}}} {1}: {2}\n\t{3}'.format(desc[kind], str(user), text_emoji, format_mess(msg, True)))
+    time_tpprint('M', s_server, '{{{0}}} {1}: {2}\n\t{3}'.format(desc[kind], str(user), text_emoji, await format_mess(msg, True)))
     pl = await mess_plus(msg)
     if pl:
         print(pl[0])

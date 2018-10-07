@@ -294,6 +294,10 @@ async def check_now():
                     await log.pr_news('New user ' + usrs[mem.id].name + ' from gone!')
             else:
                 await log.pr_news('New user ' + usrs[mem.id].name + '!')
+        elif usrs[mem.id].name != str(mem):
+            usrs[mem.id].set(name=str(mem), status='upd')
+
+
 
     for usr in usrs:
         if usr not in s_mems:

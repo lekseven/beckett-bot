@@ -602,7 +602,7 @@ async def tst(msg):
         msg.qanswer('Error')
 
     pass
-    print(log.format_mess(msg1, time=True, date=False))
+    print(await log.format_mess(msg1, time=True, date=False))
     pass
 
 
@@ -940,7 +940,7 @@ async def log_channel(msg):
     mess = []
     async for message in C.client.logs_from(ch, limit=1000000):
         mess += (await log.mess_plus(message, save_all_links=True))
-        mess.append(log.format_mess(message, date=True))
+        mess.append(await log.format_mess(message, date=True))
     log.D('- log_channel end')
     mess.append('')
     mess.append('Log from {0} ({1}) at [{2}]:'.format(ch.name, ch.id, other.t2utc().strftime('%d|%m|%y %T')))
@@ -1058,7 +1058,7 @@ async def get_offlines(msg):
     """\
     !get_offlines d: узнать, кто не пишет уже в течении d дней
     """
-    s_ds = msg.original[len('!get_offlines '):].replace(',', '.')
+    s_ds = msg.original[len('!get_offlines '):].replace(',', '.').replace(' ', '')
     if len(msg.args) < 2 or not other.is_float(s_ds):
         await msg.qanswer(other.comfortable_help([str(get_offlines.__doc__)]))
         return
