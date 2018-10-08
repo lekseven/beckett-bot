@@ -741,6 +741,7 @@ async def people_sync(msg):
     ans = await msg.question('Это займёт некоторое время и полностью перезапишет Базу Данных пользователей. '
                              'Вы **точно** уверены, что *действительно желаете* продолжить?')
     if ans:
+        await msg.qanswer("Хорошо, начинаем, наберитесь терпения...")
         await people.sync()
         await msg.qanswer(":ok_hand:")
     else:
@@ -751,6 +752,7 @@ async def people_time_sync(msg):
     ans = await msg.question('Это займёт некоторое время и перезапишет время последних сообщений пользователей. '
                              'Вы **точно** уверены, что *действительно желаете* продолжить?')
     if ans:
+        await msg.qanswer("Хорошо, начинаем, наберитесь терпения...")
         await people.time_sync()
         await msg.qanswer(":ok_hand:")
     else:
@@ -933,19 +935,40 @@ async def log_channel(msg):
 
     pr = ch.permissions_for(ch.server.me) # type: discord.Permissions
     if not pr.read_message_history:
-        await msg.qanswer("No permissions!")
+        await msg.qanswer("No permissions for reading <#{0}>!".format(ch.id))
         return
 
-    log.D('- log_channel start')
-    mess = []
-    async for message in C.client.logs_from(ch, limit=1000000):
-        mess += (await log.mess_plus(message, save_all_links=True))
-        mess.append(await log.format_mess(message, date=True))
-    log.D('- log_channel end')
-    mess.append('')
-    mess.append('Log from {0} ({1}) at [{2}]:'.format(ch.name, ch.id, other.t2utc().strftime('%d|%m|%y %T')))
-    mess.reverse()
+    ans = await msg.question('Вы запустили создание лога для канала <#{0}> ({0}). '
+                             'Это может занять значительное время, если там много сообщений. '
+                             'Вы *уверены*, что желаете продолжить?'.format(ch.id))
+    if ans:
+        await msg.qanswer("Хорошо, начинаем...")
+    else:
+        await msg.qanswer("Отмена log_channel.")
+        return
 
+    log.D('- log_channel for #{0}({1}) start'.format(ch.name, ch.id))
+    count = 0
+    messages = []
+    async for message in C.client.logs_from(ch, limit=1000000):
+        messages.append(message)
+        count += 1
+        if count % 10000 == 0:
+            log.D('- - <log_channel> save messages: ', count)
+    log.D('- log_channel end save with {0} messages'.format(count))
+    messages.reverse()
+
+    log.D('- log_channel start format messages')
+    mess = ['Log from {0} ({1}) at [{2}] with {3} messages:\n'
+                .format(ch.name, ch.id, other.t2utc().strftime('%d|%m|%y %T'), count)]
+    base = {}
+    for i, message in enumerate(messages):
+        mess += (await log.mess_plus(message, save_all_links=True, save_disc_links=False))
+        mess.append(await log.format_mess(message, date=True, dbase=base))
+        if (i+1) % 10000 == 0:
+            log.D('- - <log_channel> format messages: ', i+1)
+    log.D('- log_channel end format messages')
+    # log.jD('base count: ', len(base))
     f_name = 'log_channel({0})[{1}].txt'.format(ch.name, other.t2utc().strftime('%d|%m|%y %T'))
     with open(f_name, "w") as file:
         print(*mess, file=file, sep="\n")

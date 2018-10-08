@@ -1,5 +1,4 @@
 import constants as C
-import datetime as dt
 import psycopg2
 import psycopg2.extras
 import sys
@@ -25,7 +24,7 @@ class Usr:
         self.g_ev = int(g_ev)
         self.g_n = int(g_n)
         l_m = int(last_m)
-        self.last_m = l_m if l_m>=0 else other.get_sec_total()
+        self.last_m = l_m if l_m >= 0 else other.get_sec_total()
         # usrs[id] = self
 
     def set(self, **kwargs):
@@ -297,8 +296,6 @@ async def check_now():
         elif usrs[mem.id].name != str(mem):
             usrs[mem.id].set(name=str(mem), status='upd')
 
-
-
     for usr in usrs:
         if usr not in s_mems:
             usrs[usr].go()
@@ -493,10 +490,10 @@ async def sync():
         distribute(mem)
 
     async for message in C.client.logs_from(C.main_ch, limit=1000000):
-        if count % 10000 == 0:
-            log.D('<sync> Check message {0}'.format(str(count)))
-        count = count + 1
         distribute(message.author, other.get_sec_total(message.timestamp))
+        count += 1
+        if count % 10000 == 0:
+            log.D('<sync> Check message: ', count)
         # for i in message.raw_mentions:
         #     distribute(await C.client.get_user_info(i), message.timestamp)
 
@@ -516,11 +513,13 @@ async def time_sync():
         if str(ch.type) == 'text':
             t[ch.position] = ch
     channels = [t[k] for k in sorted(t)]
-    log.D(' - {0} channels prepare to scan:'.format(len(channels)))
+    log.D('- {0} channels prepare to scan:'.format(len(channels)))
     for i, ch in enumerate(channels):
         pr = ch.permissions_for(ch.server.me)
         if pr.read_message_history:
+            log.D('+ {0}) {1} - check'.format(i + 1, ch.name))
             mems_i = set(mems)
+            count = 0
             async for mess in C.client.logs_from(ch, limit=1000000):
                 aid = mess.author.id
                 if aid in mems_i:
@@ -531,9 +530,12 @@ async def time_sync():
                     mems_i.remove(aid)
                     if len(mems_i) < 1:
                         break
-            log.D(' - {0}) {1} - done'.format(i+1, ch.name))
+                count += 1
+                if count % 10000 == 0:
+                    log.D('- - <time_sync> check messages: ', count, ', mems_i: ', len(mems_i))
+            log.D('+ {0}) {1} - done'.format(i+1, ch.name))
         else:
-            log.D(' - {0}) {1} - not permissions for reading'.format(i+1, ch.name))
+            log.D('-- {0}) {1} - not permissions for reading'.format(i+1, ch.name))
     log.I('+ Time_sync end')
     log.jD('Test results:')
     for mem in C.vtm_server.members:

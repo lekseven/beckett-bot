@@ -152,11 +152,14 @@ def find_member(server, i):  # i must be id, server nickname, true nickname or f
     :param i:
     :return C.discord.Member:
     """
-    p_name1 = i.translate(C.punct2space).replace(' ', '')
-    return (server.get_member(i) or server.get_member(p_name1) or
+    if server:
+        p_name1 = i.translate(C.punct2space).replace(' ', '')
+        return (server.get_member(i) or server.get_member(p_name1) or
             server.get_member_named(i.strip(' ')) or server.get_member_named(i) or
             server.get_member_named(i.replace('@', '')) or
             server.get_member_named(p_name1))
+    else:
+        return find_user(i)
 
 
 def find_members(server, names):
@@ -175,10 +178,14 @@ def find_members(server, names):
 
 
 def find_user(i):
+    m = find_member(C.vtm_server, i)
+    if m:
+        return m
     ps = {i, i.translate(C.punct2space).replace(' ', ''), i.strip(' '), i.replace('@', '')}
     for m in C.client.get_all_members():
         if ps.intersection({str(m), m.id, m.display_name, m.mention, m.name, m.nick}):
             return m
+    return None
 
 
 def find_users(names):

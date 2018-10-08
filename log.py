@@ -105,13 +105,16 @@ def W(*args):
 def E(*args):
     print('!!!\t<E>[{0}]'.format(other.t2s(frm='%T')), *args)
 
+
 def jD(*args):
     # without time
     tpprint('D', ' ', *args)
 
+
 def jI(*args):
     # without time
     tpprint('I', ' ', *args)
+
 
 def jW(*args):
     # without time
@@ -173,9 +176,9 @@ async def mess_plus(message, save_disc_links=False, save_all_links=False):
         if links:
             disc_links.update(links)
             text = '[{t}]<{ch}> {author} ({desc})\n{links}'.format(
-                t=other.t2s(), ch=str(message.channel.name), author=str(message.author),
+                t=other.t2s(message.timestamp, '%d|%m|%y %T'), ch=str(message.channel.name), author=str(message.author),
                 desc='save_all_links' if save_all_links else 'save_disc_links', links='\n'.join(links))
-            if message.server.id == C.prm_server.id:
+            if message.server.id == C.vtm_server.id:
                 await C.client.send_message(C.vtm_links_ch, content=text)
             else:
                 await C.client.send_message(C.other_links_ch, content=text)
@@ -183,11 +186,12 @@ async def mess_plus(message, save_disc_links=False, save_all_links=False):
     return ['\n'.join(res)] if res else []
 
 
-async def format_mess(msg, time=False, date=False):
+async def format_mess(msg, time=False, date=False, dbase=None):
     """
     :type msg: discord.Message
-    :param time: bool
-    :param date: bool
+    :type time: Bool
+    :type date: Bool
+    :type dbase: dict
     :rtype: str
     """
     t_m = other.t2s(msg.timestamp)
@@ -195,23 +199,29 @@ async def format_mess(msg, time=False, date=False):
     ch_name = str(msg.channel.user) if msg.channel.is_private else str(msg.channel.name)
     t = ('(from {0})'.format(other.t2s(msg.timestamp, '%d|%m|%y %T')) if date else s_time)
     cont = msg.content.replace('\n', '\n\t')  # type: str
+    db = dbase if dbase is not None else {}  # we need a=={} if it is
+    if msg.author.id not in db:
+        db[msg.author.id] = msg.author
     if msg.raw_mentions:
         for uid in msg.raw_mentions:
-            usr = other.find_member(msg.server, uid)
-            if not usr:
-                usr = other.find_user(uid)
-            if not usr:
-                usr = await C.client.get_user_info(uid)
-            if usr:
-                usr_name = str(usr) + ('(' + usr.display_name + ')' if usr.name != usr.display_name else '')
-                cont = cont.replace('<@' + usr.id + '>', usr_name).replace('<@!' + usr.id + '>', usr_name)
+            if uid in db:
+                usr = db[uid]
+            else:
+                usr = other.find_member(msg.server, uid) or other.find_user(uid)
+                if not usr:
+                    usr = await C.client.get_user_info(uid)
+                if usr:
+                    db[uid] = usr
+                else:
+                    continue
+            usr_name = str(usr) + ('(' + usr.display_name + ')' if usr.name != usr.display_name else '')
+            cont = cont.replace('<@' + usr.id + '>', usr_name).replace('<@!' + usr.id + '>', usr_name)
     if msg.raw_channel_mentions:
         for chid in msg.raw_channel_mentions:
             ch = C.client.get_channel(chid)
             if ch:
                 cont = cont.replace('<#' + ch.id + '>', '#' + str(ch))
     if msg.raw_role_mentions:
-        role = None
         for role_id in msg.raw_role_mentions:
             role = other.find(msg.server.roles, id=role_id)
             if not role:
@@ -271,7 +281,8 @@ async def on_reaction(reaction, kind, user):
 
     desc = {'on_reaction_add': 'on_r_add', 'on_reaction_remove': 'on_r_rem'}
     text_emoji = '[{0.name}:{0.id}]'.format(emoji) if hasattr(emoji, 'id') else emoji
-    time_tpprint('M', s_server, '{{{0}}} {1}: {2}\n\t{3}'.format(desc[kind], str(user), text_emoji, await format_mess(msg, True)))
+    time_tpprint('M', s_server, '{{{0}}} {1}: {2}\n\t{3}'
+                 .format(desc[kind], str(user), text_emoji, await format_mess(msg, True)))
     pl = await mess_plus(msg)
     if pl:
         print(pl[0])
