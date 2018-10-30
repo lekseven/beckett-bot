@@ -842,7 +842,8 @@ async def info(msg):
         ans += [v[k] for k in sorted(v)]
         ans.append('\tMembers: ')
         for m in s.members: # type: discord.Member
-            ans.append('\t\t' + str(m) + ' {' + m.mention + '}')
+            usr_name = str(m) + ('(' + m.display_name + ')' if m.name != m.display_name else '')
+            ans.append('\t\t' + usr_name + ' {' + m.mention + '}')
     f_name = 'info[{0}].txt'.format(other.t2utc().strftime('%d|%m|%y %T'))
     with open(f_name, "w") as file:
         print(*ans, file=file, sep="\n")
