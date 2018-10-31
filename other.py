@@ -336,16 +336,17 @@ def issuper(usr):
 
 
 def name_pat():
-    patterns = ['{ph}, <@{id}>.', '<@{id}>, {ph}.']
+    patterns = ['{ph}, <@{id}>{name}.', '<@{id}>{name}, {ph}.']
     return random.choice(patterns)
 
 
-def name_phr(uid, phr):
-    return name_pat().format(id=uid, ph=phr).capitalize()
+def name_phr(uid, phr, name=''):
+    name = name and '(' + name + ')'
+    return name_pat().format(id=uid, ph=phr, name='{name}').capitalize().format(name=name)
 
 
-def name_rand_phr(uid, arr):
-    return name_phr(uid, random.choice(arr))
+def name_rand_phr(uid, arr, name=''):
+    return name_phr(uid, random.choice(arr), name)
 
 
 def later_coro(t, coro):
@@ -417,3 +418,15 @@ def split_list(ls, by_i):
     """
     ln = len(ls)
     return [ls[i * by_i:min((i + 1) * by_i, ln)] for i in range(0, floor(ln / by_i))]
+
+
+def find_def_ch(server):
+    if server.default_channel:
+        return server.default_channel
+    t = {}
+    for ch in server.channels:  # type: discord.Channel
+        if str(ch.type) == 'text':
+            t[ch.position] = ch
+
+    channels = [t[k] for k in sorted(t)]
+    return channels[0]

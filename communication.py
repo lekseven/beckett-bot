@@ -200,16 +200,18 @@ def time_key(t):
         return 'years'
 
 
-def bye(uid):
-    return other.name_phr(uid, R.choice(D.bye))
+def bye(uid, name=''):
+    return other.name_phr(uid, R.choice(D.bye), name=name)
 
 
-def bye_msg(uid):
-    return '{bye}\n{phrase}'.format(bye=bye(uid), phrase=R.choice(D.bye_phrase))
+def bye_msg(uid, name=''):
+    return '{bye}\n{phrase}'.format(bye=bye(uid,name), phrase=R.choice(D.bye_phrase))
 
 
-def ban_msg(uid):
-    return '{msg}\n{comment}'.format(msg=R.choice(D.ban_msg).format(name=uid), comment=R.choice(D.ban_comment))
+def ban_msg(uid, nick=''):
+    nick = nick and '(' + nick + ')'
+    name = '<@{uid}>{nick}'.format(uid=uid, nick=nick)
+    return '{msg}\n{comment}'.format(msg=R.choice(D.ban_msg).format(name=name), comment=R.choice(D.ban_comment))
 
 
 def unban_msg(uid):

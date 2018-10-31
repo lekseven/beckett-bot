@@ -49,21 +49,25 @@ async def on_member_remove_u(member, *args):
     # it's triggers on 'go away', kick and ban
     if not other.find(await C.client.get_bans(C.prm_server), id=member.id):
         people.Gn.check_new(member)
-        await C.client.send_message(C.main_ch, com.bye_msg(member.id))
+        await C.client.send_message(C.main_ch, com.bye_msg(member.id, member.display_name))
         await log.pr_news('{0} ({0.mention}) go away!'.format(member))
 
 
 async def on_member_remove_o(server, member, *args):
+    def_ch = other.find_def_ch(server)
+    await C.client.send_message(def_ch, com.bye(member.id, member.display_name))
     await log.pr_other_news(server, '{0} ({0.mention}) go away!'.format(member))
 
 
 async def on_member_ban_u(member, *args):
     await people.on_ban(member)
-    await C.client.send_message(C.main_ch, com.ban_msg(member.id))
+    await C.client.send_message(C.main_ch, com.ban_msg(member.id, member.display_name))
     await log.pr_news('Ban {0} ({0.mention})!'.format(member))
 
 
 async def on_member_ban_o(server, member, *args):
+    def_ch = other.find_def_ch(server)
+    await C.client.send_message(def_ch, com.bye(member.id, member.display_name))
     await log.pr_other_news(server, 'Ban {0} ({0.mention})!'.format(member))
 
 
