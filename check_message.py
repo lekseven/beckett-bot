@@ -302,12 +302,20 @@ async def reaction(message):
                     ans = other.name_rand_phr(msg.author, data.sm_resp['not_funny'])
                 else:
                     ans = random.choice(data.threats).format(name=msg.author)
-            elif yes != no and msg.text.endswith('?') and msg.super:
-                if yes:
-                    ans = other.name_rand_phr(msg.author, data.sm_resp['yes'])
+            elif msg.words.intersection({'как'}) and msg.words.intersection({'дела', 'ты'}):
+                ans = random.choice(data.responses['whtasup'])
+            # other questuons must be before this
+            elif msg.text.endswith('?'):
+                if msg.super:
+                    if (yes == no) or yes:
+                        ans = other.name_rand_phr(msg.author, data.sm_resp['yes'])
+                    else:
+                        ans = other.name_rand_phr(msg.author, data.sm_resp['no'])
                 else:
-                    ans = other.name_rand_phr(msg.author, data.sm_resp['no'])
-            elif 'мимими' in msg.text:
+                    ans = random.choice(data.responses['question'])
+            elif msg.words.intersection({'скучал', 'скучала', 'скучаль'}):
+                ans = other.name_phr(msg.author, 'я тоже')
+            elif ('мимими' in msg.text) or len(msg.args) < 4:
                 return
 
             if ans:

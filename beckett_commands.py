@@ -948,6 +948,7 @@ async def log_channel(msg):
         await msg.qanswer("Отмена log_channel.")
         return
 
+    save_links = len(msg.args) > 2
     log.D('- log_channel for #{0}({1}) start'.format(ch.name, ch.id))
     count = 0
     messages = []
@@ -964,7 +965,7 @@ async def log_channel(msg):
                 .format(ch.name, ch.id, other.t2utc().strftime('%d|%m|%y %T'), count)]
     base = {}
     for i, message in enumerate(messages):
-        mess += (await log.mess_plus(message, save_all_links=True, save_disc_links=False))
+        mess += (await log.mess_plus(message, save_all_links=save_links, save_disc_links=False))
         mess.append(await log.format_mess(message, date=True, dbase=base))
         if (i+1) % 10000 == 0:
             log.D('- - <log_channel> format messages: ', i+1)

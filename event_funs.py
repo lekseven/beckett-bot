@@ -34,41 +34,43 @@ async def check_server(server, usual_fun, other_fun, *args):
 async def on_member_join_u(member, *args):
     uid = member.id
     if people.Usr.check_new(member):
-        await C.client.send_message(C.main_ch, com.comeback_msg(uid, people.time_out(uid), people.clan(uid)))
         await log.pr_news('{0} ({0.mention}) comeback!'.format(member))
+        await C.client.send_message(C.main_ch, com.comeback_msg(uid, people.time_out(uid), people.clan(uid)))
     else:
-        await C.client.send_message(C.main_ch, com.welcome_msg(uid))
         await log.pr_news('{0} ({0.mention}) new!'.format(member))
+        await C.client.send_message(C.main_ch, com.welcome_msg(uid))
 
 
 async def on_member_join_o(server, member, *args):
     await log.pr_other_news(server, '{0} ({0.mention}) new!'.format(member))
+    def_ch = other.find_def_ch(server)
+    await C.client.send_message(def_ch, com.hi(member.id))
 
 
 async def on_member_remove_u(member, *args):
     # it's triggers on 'go away', kick and ban
     if not other.find(await C.client.get_bans(C.prm_server), id=member.id):
         people.Gn.check_new(member)
-        await C.client.send_message(C.main_ch, com.bye_msg(member.id, member.display_name))
         await log.pr_news('{0} ({0.mention}) go away!'.format(member))
+        await C.client.send_message(C.main_ch, com.bye_msg(member.id, member.display_name))
 
 
 async def on_member_remove_o(server, member, *args):
+    await log.pr_other_news(server, '{0} ({0.mention}) go away!'.format(member))
     def_ch = other.find_def_ch(server)
     await C.client.send_message(def_ch, com.bye(member.id, member.display_name))
-    await log.pr_other_news(server, '{0} ({0.mention}) go away!'.format(member))
 
 
 async def on_member_ban_u(member, *args):
     await people.on_ban(member)
-    await C.client.send_message(C.main_ch, com.ban_msg(member.id, member.display_name))
     await log.pr_news('Ban {0} ({0.mention})!'.format(member))
+    await C.client.send_message(C.main_ch, com.ban_msg(member.id, member.display_name))
 
 
 async def on_member_ban_o(server, member, *args):
+    await log.pr_other_news(server, 'Ban {0} ({0.mention})!'.format(member))
     def_ch = other.find_def_ch(server)
     await C.client.send_message(def_ch, com.bye(member.id, member.display_name))
-    await log.pr_other_news(server, 'Ban {0} ({0.mention})!'.format(member))
 
 
 async def on_member_unban_u(user, *args):
