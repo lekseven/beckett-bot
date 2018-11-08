@@ -522,11 +522,11 @@ async def unban(msg):
     if len(msg.args) < 2:
         return
 
-    usr = await other.get_ban_user(msg.server, msg.original[len('!unban '):])
+    usr = await other.get_ban_user(msg.cmd_server, msg.original[len('!unban '):])
     if not usr:
         await msg.qanswer('Пользователь не найден.')
     else:
-        await C.client.unban(msg.server, usr)
+        await C.client.unban(msg.cmd_server, usr)
 
 # endregion
 
@@ -624,7 +624,7 @@ async def tst2(msg):
     emb.set_image(url='https://cdn.discordapp.com/attachments/420056219068399617/450428811725766667/dominate.gif')
     emb.add_field(name='f1', value='it is f1')
     emb.add_field(name='f2', value='it is f2')
-    emb.set_footer(text='it is footer', icon_url=msg.server.me.avatar_url)
+    emb.set_footer(text='it is footer', icon_url=msg.cmd_server.me.avatar_url)
     #emb.set_footer(text='')
     await msg.answer(text=who.mention, emb=emb)
     # ch = C.client.get_channel('398645007944384513')
@@ -784,7 +784,7 @@ async def connect(msg):
                         C.voice = await C.client.join_voice_channel(ch)
                     except Exception as e:
                         other.pr_error(e, 'connect')
-                        C.voice = C.client.voice_client_in(msg.server)
+                        C.voice = C.client.voice_client_in(msg.cmd_server)
             else:
                 await msg.qanswer("Канал - не войс")
         else:
@@ -859,7 +859,7 @@ async def nickname(msg):
         name = msg.original[len('!nickname '):]
     else:
         name = 'Beckett'
-    await C.client.change_nickname(msg.server.me, name)  # Beckett
+    await C.client.change_nickname(msg.cmd_server.me, name)  # Beckett
 
 
 async def add_role(msg):
@@ -875,9 +875,9 @@ async def add_role(msg):
     new_roles = []
     not_roles = []
     for i in range(2, len(msg.args)):
-        role = other.find(msg.server.roles, id=msg.args[i])
+        role = other.find(msg.cmd_server.roles, id=msg.args[i])
         if not role:
-            role = other.find(msg.server.roles, name=msg.args[i])
+            role = other.find(msg.cmd_server.roles, name=msg.args[i])
         if not role:
             not_roles.append(msg.args[i])
         else:
@@ -906,9 +906,9 @@ async def rem_role(msg):
     old_roles = []
     not_roles = []
     for i in range(2, len(msg.args)):
-        role = other.find(msg.server.roles, id=msg.args[i])
+        role = other.find(msg.cmd_server.roles, id=msg.args[i])
         if not role:
-            role = other.find(msg.server.roles, name=msg.args[i])
+            role = other.find(msg.cmd_server.roles, name=msg.args[i])
         if not role:
             not_roles.append(msg.args[i])
         else:
@@ -1037,8 +1037,8 @@ async def info_channels(msg):
 async def get_invite(msg):
     # invs = await C.client.invites_from(msg.server)
     # await msg.qanswer(msg.server.name + ':\n\t' + '\n\t'.join([inv.code for inv in invs]))
-    inv = await C.client.create_invite(msg.server) # Not working with server?
-    await msg.qanswer(msg.server.name + ': ' + inv.code)
+    inv = await C.client.create_invite(msg.cmd_server) # Not working with server?
+    await msg.qanswer(msg.cmd_server.name + ': ' + inv.code)
 
 
 async def go_timer(msg):

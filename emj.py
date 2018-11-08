@@ -102,7 +102,7 @@ def save_em():
     special = {
         'Natali': {'purple_heart', 'Ankh', 'Ankh_Toreador', 't_torik11', 't_torik21', 'Logo_Toreador', },
         'Doriana': {'black_heart', 'octopus', 'unicorn', 'Logo_Lasombra', },
-        'Tony': {'p_Lacr', 'ok_hand', 'thumbsup', 'Logo_Ventrue', },
+        'Tony': {'p_Lacr', 'Logo_Ventrue', }, # 'ok_hand', 'thumbsup',
         'Manf': {'m_draniki', 'm_bulba', 'star_and_crescent'},
         #'Kuro': {'point_up', 'Logo_Tremere', }, # for test
     }
@@ -252,9 +252,9 @@ async def on_message(message, beckett_mention):
         if beckett_mention and prob < 0.1:
             log.jD('Like Tony for Beckett chance 0.1')
             await C.client.add_reaction(message, e('Logo_Ventrue'))
-        elif prob < 0.005:
-            log.jD('Like Tony chance 0.005')
-            await C.client.add_reaction(message, e('ok_hand'))
+        # elif prob < 0.005:
+        #     log.jD('Like Tony chance 0.005')
+        #     await C.client.add_reaction(message, e('ok_hand'))
         return
 
     if author == C.users['Rainfall']:
@@ -263,7 +263,7 @@ async def on_message(message, beckett_mention):
             await C.client.add_reaction(message, e('green_heart'))
         elif prob < 0.005:
             log.jD('Like Rainfall chance 0.005')
-            await C.client.add_reaction(message, e('green_heart'))
+            await C.client.add_reaction(message, e('racehorse'))
         return
 
     if author == '237604798499651594': # Барон Рихтер
