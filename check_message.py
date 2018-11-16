@@ -208,7 +208,7 @@ async def reaction(message):
                 return
 
     embrace_or_return = False
-    if (ram.mute_channels.intersection({msg.channel.id, 'All'})
+    if (ram.mute_channels.intersection({msg.channel.id, 'all'})
             or msg.author in ram.ignore_users or msg.channel.id in C.ignore_channels):
         if msg.channel.id == C.channels['ask']:
             embrace_or_return = True
@@ -235,6 +235,8 @@ async def reaction(message):
     await emj.on_message(message, beckett)
 
     if found_keys:
+        if not beckett and ram.mute_light_channels.intersection({msg.channel.id, 'all'}):
+            return
         response = False
 
         if prob < 0.2 or beckett_reference or (beckett_mention and (prob < 0.9 or msg.super)):
@@ -249,6 +251,8 @@ async def reaction(message):
             ans = ''
             if msg.super: # or msg.author == C.users['Buffy']:
                 ans = '(╯°□°）╯︵ ┻━┻'
+            elif msg.author == C.users['Buffy']:
+                ans = '(╯°◡°)╯彡┻━┻'
             else: #elif prob > 0.2:
                 ans = '┬─┬ ノ( ゜-゜ノ)'
             if ans:

@@ -7,6 +7,7 @@ torpor_users = {}
 cmd_server = {}
 
 mute_channels = set()
+mute_light_channels = set()
 ignore_users = set()
 emoji_users = set()
 game = False

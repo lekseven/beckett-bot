@@ -121,7 +121,7 @@ def jW(*args):
     tpprint('W', ' ', *args)
 
 
-async def mess_plus(message, save_disc_links=False, save_all_links=False):
+async def mess_plus(message, save_disc_links=False, save_all_links=False, update_links=False, other_channel=None):
     emb_keys = {
         'author': ['name', 'icon_url'],
         'image': ['url'],
@@ -175,13 +175,14 @@ async def mess_plus(message, save_disc_links=False, save_all_links=False):
         links = list(set(links).difference(disc_links))
         if links:
             disc_links.update(links)
-            text = '[{t}]<{ch}> {author} ({desc})\n{links}'.format(
-                t=other.t2s(message.timestamp, '%d|%m|%y %T'), ch=str(message.channel.name), author=str(message.author),
-                desc='save_all_links' if save_all_links else 'save_disc_links', links='\n'.join(links))
-            if message.server.id == C.vtm_server.id:
-                await C.client.send_message(C.vtm_links_ch, content=text)
-            else:
-                await C.client.send_message(C.other_links_ch, content=text)
+            if not update_links:
+                text = '[{t}]<{ch}> {author} ({desc})\n{links}'.format(
+                    t=other.t2s(message.timestamp, '%d|%m|%y %T'), ch=str(message.channel.name), author=str(message.author),
+                    desc='save_all_links' if save_all_links else 'save_disc_links', links='\n'.join(links))
+                if message.server.id == C.vtm_server.id:
+                    await C.client.send_message(other_channel or C.vtm_links_ch, content=text)
+                else:
+                    await C.client.send_message(other_channel or C.other_links_ch, content=text)
 
     return ['\n'.join(res)] if res else []
 

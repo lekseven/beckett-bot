@@ -65,9 +65,12 @@ channels = {
     'beckett': '459193166185234444',
     'vtm_news': '453172109460635658',
     'vtm_links': '461424461950877698',
+    'vtm_links_archive': '498828812130189353',
+    'vtm_links_info_logs': '512939377219993601',
     'other_news': '497142772415856641',
     'other_links': '497142885700075540',
     'test_mode_only': '497143071604211743',
+    'beckett_ignore': '512952018739134504',
 }
 
 superusers = {users['Natali'], users['Kuro'], users['Magdavius'], }  # Manf & Doriana checked by roles
@@ -76,7 +79,10 @@ beckett_refs = {users['bot'], '419975091544391680', }  # last - role_id
 beckett_names = {'беккет', 'бэккет', 'бекетт', 'бэкетт', 'бэккетт', 'беккетт', 'beckett', }
 #beckett_names = {'люсита', 'lucita', }
 silent_channels = {}
-ignore_channels = {channels['vtm_news'], channels['vtm_links'], channels['other_news'], channels['other_links']}
+ignore_channels = {
+    channels['vtm_news'], channels['vtm_links'], channels['other_news'], channels['other_links'],
+                   channels['vtm_links_archive'], channels['vtm_links_info_logs'], channels['beckett_ignore'],
+                }
 
 punct2space = str.maketrans(string.punctuation + '«»🏻🏼🏽🏾🏿', ' ' * (len(string.punctuation) + 7))  # for translate
 free_cmds = {'roll', 'help', 'ignore', 'dominate'}

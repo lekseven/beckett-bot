@@ -536,12 +536,13 @@ async def unban(msg):
 
 async def mute(msg):
     """\
-    !mute: выключить комменты Беккета во всех каналах
+    !mute: список каналов "выключенного" Беккета-комментатора
+    !mute all: выключить комменты Беккета во всех каналах
     !mute ch*. : выключить комменты Беккета в указанных каналах \
     """
-    if len(msg.args) < 2:
-        ram.mute_channels = {'All'}
-    else:
+    if len(msg.args) > 1:
+        if 'all' in msg.args:
+            ram.mute_channels.add('all')
         ram.mute_channels.update(other.get_channels(msg.args[1:]))
 
     await mute_list(msg)
@@ -549,12 +550,15 @@ async def mute(msg):
 
 async def unmute(msg):
     """\
-    !unmute: включить комменты Беккета во всех каналах
+    !unmute all: включить комменты Беккета для остальных каналов
+    !unmute: включить комменты Беккета вообще во всех каналах
     !unmute ch* : включить комменты Беккета в указанных каналах \
     """
     if len(msg.args) < 2:
         ram.mute_channels = set()
     else:
+        if 'all' in msg.args:
+            ram.mute_channels.difference_update({'all'})
         ram.mute_channels.difference_update(other.get_channels(msg.args[1:]))
 
     await mute_list(msg)
@@ -565,6 +569,42 @@ async def mute_list(msg):
     !mute_list: список каналов "выключенного" Беккета-комментатора \
     """
     await msg.qanswer(('<#' + '>, <#'.join(ram.mute_channels) + '>') if ram.mute_channels else 'None')
+
+async def mute_l(msg):
+    """\
+    !mute_l: список каналов "выключенного" Беккета-комментатора без упоминания
+    !mute_l all: выключить комменты Беккета без упоминания во всех каналах
+    !mute_l ch*. : выключить комменты Беккета без упоминания в указанных каналах \
+    """
+    if len(msg.args) > 1:
+        if 'all' in msg.args:
+            ram.mute_light_channels.add('all')
+        ram.mute_light_channels.update(other.get_channels(msg.args[1:]))
+
+    await mute_l_list(msg)
+
+
+async def unmute_l(msg):
+    """\
+    !unmute_l all: включить комменты Беккета без упоминания для остальных каналов
+    !unmute_l: включить комменты Беккета без упоминания вообще во всех каналах
+    !unmute_l ch* : включить комменты Беккета без упоминания в указанных каналах \
+    """
+    if len(msg.args) < 2:
+        ram.mute_light_channels = set()
+    else:
+        if 'all' in msg.args:
+            ram.mute_light_channels.difference_update({'all'})
+        ram.mute_light_channels.difference_update(other.get_channels(msg.args[1:]))
+
+    await mute_l_list(msg)
+
+
+async def mute_l_list(msg):
+    """\
+    !mute_light_list: список каналов "выключенного" Беккета-комментатора без упоминания \
+    """
+    await msg.qanswer(('<#' + '>, <#'.join(ram.mute_light_channels) + '>') if ram.mute_light_channels else 'None')
 # endregion
 
 
@@ -801,7 +841,12 @@ async def disconnect(msg):
         await C.voice.disconnect()
 
 
-async def haha(msg):
+async def haha1(msg):
+    if C.voice and C.voice.is_connected():
+        C.player = C.voice.create_ffmpeg_player('sound/laugh0.mp3')
+        C.player.start()
+
+async def haha2(msg):
     if C.voice and C.voice.is_connected():
         C.player = C.voice.create_ffmpeg_player('sound/sabbatlaugh1.mp3')
         C.player.start()
@@ -963,9 +1008,21 @@ async def log_channel(msg):
     log.D('- log_channel start format messages')
     mess = ['Log from {0} ({1}) at [{2}] with {3} messages:\n'
                 .format(ch.name, ch.id, other.t2utc().strftime('%d|%m|%y %T'), count)]
+
+    channel_links = other.get_channel(C.channels['vtm_links_info_logs'])
+    if save_links:
+        link_messages = []
+        log.D('- log_channel start scan vtm_links_info_logs')
+        async for message in C.client.logs_from(channel_links, limit=1000000):
+            link_messages.append(message)
+        log.D('- log_channel end scan')
+        log.D('- log_channel start update links')
+        for message in link_messages:
+            await log.mess_plus(message, save_all_links=save_links, update_links=True)
+        log.D('- log_channel end update links')
     base = {}
     for i, message in enumerate(messages):
-        mess += (await log.mess_plus(message, save_all_links=save_links, save_disc_links=False))
+        mess += (await log.mess_plus(message, save_all_links=save_links, other_channel=channel_links))
         mess.append(await log.format_mess(message, date=True, dbase=base))
         if (i+1) % 10000 == 0:
             log.D('- - <log_channel> format messages: ', i+1)
