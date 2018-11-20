@@ -32,11 +32,23 @@ async def on_ready():
             discord.opus.load_opus(lb)
         else:
             log.jW('opus lib not load!')
-    ev.start_timer()
+    ev.start_timers()
     log.I('Beckett ready for work now, after starting at ', ram.t_start.strftime('[%D %T]'))
     log.p('------ ------ ------')
     C.Ready = True
     await other.test_status(ram.game)
+
+    # s = C.vtm_server
+    # ch = other.get_channel('402222682403504138') # type: discord.Channel
+    # if ch:
+    #     user = other.find_user(C.users['Kuro'])
+    #     # await C.client.delete_channel_permissions(ch, user)
+    #     prm = ch.overwrites_for(user)
+    #     prm.manage_channels = False
+    #     prm.manage_roles = False
+    #     prm.read_messages = False
+    #     prm.send_messages = False
+    #     await C.client.edit_channel_permissions(ch, user, overwrite=prm)
 
     pass
     pass
@@ -97,25 +109,7 @@ def prepare_const():
 
 def prepare_const2():
     log.I('- prepare_const2')
-    C.vtm_server = C.client.get_server(C.VTM_SERVER_ID)  # type: discord.Server
-    C.tst_server = C.client.get_server(C.TST_SERVER_ID)  # type: discord.Server
-    if not C.vtm_server:
-        log.E("Can't find server.")
-        ev.force_exit()
-    if not C.tst_server:
-        log.E("Can't find test server.")
-        ev.force_exit()
-
-    if C.is_test:
-        C.prm_server = C.tst_server
-        C.main_ch = C.client.get_channel(C.TEST_CHANNEL_ID)
-    else:
-        C.prm_server = C.vtm_server
-        C.main_ch = C.client.get_channel(C.WELCOME_CHANNEL_ID)
-
-    if not C.main_ch:
-        log.E("Can't find welcome_channel.")
-        ev.force_exit()
+    ev.upd_server()
 
     C.vtm_news_ch = other.get_channel(C.channels['vtm_news'])
     C.other_news_ch = other.get_channel(C.channels['other_news'])
@@ -203,7 +197,7 @@ async def on_reaction_remove(reaction, user):
 def on_exit(signum):
     log.I("Call on_exit by signal %s" % signum)
     C.loop.create_task(C.client.logout())
-    ev.stop_timer()
+    ev.stop_timers()
     C.was_Ready = C.Ready
     C.Ready = False
     pass

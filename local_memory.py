@@ -4,6 +4,7 @@
 cmd_channels = {}    # for !mute, !*deny, !purge
 rep_channels = {}    # for !say and reports for *deny commands
 torpor_users = {}
+silence_users = {}
 cmd_server = {}
 
 mute_channels = set()

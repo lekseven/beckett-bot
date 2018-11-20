@@ -56,6 +56,8 @@ channels = {
     'rpg': '458975748611375104',
     'chantry': '402222682403504138',
     'bar': '415646441730474007',
+    #
+    'primogens': '417777460772470785',
     # voice channels
     'voice': '422157208017436673',
     'garden': '423559892759085072',
@@ -73,7 +75,7 @@ channels = {
     'beckett_ignore': '512952018739134504',
 }
 
-superusers = {users['Natali'], users['Kuro'], users['Magdavius'], }  # Manf & Doriana checked by roles
+superusers = {users['Kuro'], users['Magdavius'], }  # users['Natali'],  # Manf & Doriana checked by roles
 
 beckett_refs = {users['bot'], '419975091544391680', }  # last - role_id
 beckett_names = {'беккет', 'бэккет', 'бекетт', 'бэкетт', 'бэккетт', 'беккетт', 'beckett', }
@@ -85,7 +87,6 @@ ignore_channels = {
                 }
 
 punct2space = str.maketrans(string.punctuation + '«»🏻🏼🏽🏾🏿', ' ' * (len(string.punctuation) + 7))  # for translate
-free_cmds = {'roll', 'help', 'ignore', 'dominate'}
 
 # WARNING: Clans keys here must be the same to dataKeys (Clans) in data
 roles = {'Prince': '398223824514056202',

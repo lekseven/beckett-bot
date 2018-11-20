@@ -1,4 +1,8 @@
 # -*- coding: utf8 -*-
+"""
+    here only functions as bot-commands (!cmd) with obj of check_message.Msg as arg:
+        async def cmd(msg)
+"""
 import discord
 import sys
 import random
@@ -8,33 +12,48 @@ import local_memory as ram
 import people
 import log
 import event_funs as ev
+import manager
+import emj
 #import data
 
-""" 
-    here only functions as bot-commands (!cmd) with obj of check_message.Msg as arg:
-        async def cmd(msg)
-"""
+free_cmds = {'roll', 'help', 'ignore',}
+admin_cmds = { 'roll', 'help', 'ignore', 'unsilence_all',
+    'channel', 'unchannel', 'report', 'unreport', 'say', 'sayf', 'emoji', 'dominate',
+    'purge', 'purge_aft', 'purge_ere', 'purge_bet', 'embrace', 'get_offtime', 'get_offlines',
+    'deny', 'undeny', 'mute', 'unmute', 'mute_list', 'mute_l', 'unmute_l', 'mute_l_list',
+}
+primogenat_cmds = {'roll', 'help', 'silence', 'unsilence', 'kick'}
 
-    # region Interaction commands
 
-
+# region Free
 async def help(msg):
     """\
-    !help: выводит данный хелп (неожиданно,да?)
-    !help cmd*: выводит хелп по указанным командам \
+    !help: выводит данный хелп
+    !help cmd*: поиск хелпа по категориям и командам \
     """
     module = sys.modules[__name__]
-    module_attrs = dir(module)
-    cmds = set(key for key in module_attrs if key[0] != '_' and callable(getattr(module, key)))
-    if not msg.super:
-        cmds.intersection_update(C.free_cmds)
+    # module_attrs = dir(module)
+    # cmds = set(key for key in module_attrs if key[0] != '_' and callable(getattr(module, key)))
+    # if not msg.admin:
+    #     cmds.intersection_update(free_cmds)
 
+    cmds = msg.get_commands()
+    flt = {'free': free_cmds, 'admin': admin_cmds, 'super': only_super,
+           'primogenat': primogenat_cmds, 'primogen': primogenat_cmds, }
     if len(msg.args) > 1:
-        cmds.intersection_update(set(msg.text.split()[1:]))
+        ln = 1
+        if msg.args[1] in flt:
+            cmds.intersection_update(flt[msg.args[1]])
+            ln = 2
+        if msg.args[ln:]:
+            cmds = {cmd for cmd in cmds if any(arg in cmd for arg in msg.args[ln:])}
+        # cmds.intersection_update(set(msg.text.split()[1:]))
 
+    texts = []
+    comf_help = ''
+    docs = []
     if cmds:
-        texts = []
-        if len(msg.args) < 2 and msg.super:
+        if msg.admin and any((cmds == all_cmds, cmds == only_super, cmds == admin_cmds)):    #len(msg.args) < 2 and msg.admin:
             texts.append(('''```css
             Условные обозначения аргументов:
                 ch - id, обращение (#channel) или имя канала без пробелов;
@@ -49,32 +68,265 @@ async def help(msg):
                 (например ch* = ch1 ch2 ch3...; usr* = usr1 usr2 usr3...);
             ```''').replace('            ', ''))
         docs = [getattr(module, cmd).__doc__ for cmd in cmds]
-        texts += other.comfortable_help(docs)
-    else:
+        comf_help = other.comfortable_help(docs)
+
+    if not cmds or not comf_help:
         texts = 'Увы, с этим ничем не могу помочь :sweat:'
+    else:
+        texts += other.comfortable_help(docs)
+
 
     await msg.qanswer(texts)
 
 
-'''
-async def song(msg):
-    await C.client.send_message(C.channels['FM'], "+np")
-
-    def check(m):
-        return m.embeds and 'Now Playing ♪' in m.embeds[0]['author']['name']
-
-    message = await C.client.wait_for_message(timeout=5, channel=C.channels['FM'], check=check)
-    if not message: # None
-        await msg.answer('Не играет нынче ничего в данном домене.')
+async def ignore(msg): # TODO more phrases here
+    """\
+    !ignore: вкл/выкл комментирования Беккетом своих сообщений \
+    """
+    if msg.author in ram.ignore_users:
+        ram.ignore_users.remove(msg.author)
+        await msg.answer("Что, кто-то по мне соскучился :relaxed:?")
     else:
-        embed = message.embeds[0]
-        em = C.discord.Embed(**embed)
-        em.set_thumbnail(url=embed['thumbnail']['url'])
-        em.set_author(name=embed['author']['name'], url=embed['author']['url'], icon_url=embed['author']['icon_url'])
-        await msg.answer(emb=em)
-'''
+        ram.ignore_users.add(msg.author)
+        await msg.answer("Не хочешь разговаривать, ну и не надо :confused:.")
 
 
+async def roll(msg):
+    """\
+    !roll хdу: кинуть x кубиков-y \
+    """
+    if len(msg.args) < 2:
+        msg.args.append('1d10')
+    rollrange = msg.args[1].split('d')
+    if len(rollrange) == 2 and all(i.isdigit() for i in rollrange):
+        count, dice = int(rollrange[0]), int(rollrange[1])
+        if count > 21:
+            await msg.answer('Перебор, я выиграл :slight_smile:')
+            return
+
+        dices = []
+        for i in range(0, count):
+            dices += ['{:02d}'.format(i + 1), 'd:\t', str(random.randint(1, dice)), '\n']
+        await msg.qanswer("```" + ''.join(dices) + "```")
+    else:
+        await msg.qanswer(other.comfortable_help([str(roll.__doc__)]))
+
+# endregion
+
+
+# region Primogenat
+async def silence(msg):
+    """\
+    !silence N username: включить молчанку username на N часов \
+    """
+    s_N = ''
+    err = len(msg.args) < 3
+    if not err:
+        s_N = msg.args[1].replace(',', '.')
+        err = not other.is_float(s_N)
+
+    if err:
+        await msg.qanswer(other.comfortable_help([str(silence.__doc__)]))
+        return
+
+    name = msg.original[len('!silence ') + len(s_N) + 1:]
+    t = max(float(s_N), 0.02)
+
+    await C.client.add_reaction(msg.message, emj.e('ok_hand'))
+    user = await manager.silence_on(name, t)
+    if user:
+        text = 'По решению Примогената, <@{0}> получает молчанку на {1} ч.'.format(user.id, t)
+        await msg.qanswer(text)
+        await msg.say(C.main_ch, text)
+    elif user is False:
+        await msg.qanswer(name + " имеет слишком высокую роль.")
+        return
+    elif user is None:
+        await msg.qanswer("Не могу найти пользователя " + name + ".")
+        return
+
+
+async def silence_f(msg):
+    """\
+    !silence_f N username: включить молчанку username на N часов, тихая и игнорит уровень роли \
+    """
+    s_N = ''
+    err = len(msg.args) < 3
+    if not err:
+        s_N = msg.args[1].replace(',', '.')
+        err = not other.is_float(s_N)
+
+    if err:
+        await msg.qanswer(other.comfortable_help([str(silence_f.__doc__)]))
+        return
+
+    name = msg.original[len('!silence_f ') + len(s_N) + 1:]
+    t = max(float(s_N), 0.02)
+
+    await C.client.add_reaction(msg.message, emj.e('ok_hand'))
+    user = await manager.silence_on(name, t, force=True)
+    if user:
+        text = '<@{0}> получает молчанку на {1} ч.'.format(user.id, t)
+        await msg.qanswer(text)
+    else:
+        await msg.qanswer("Не могу найти пользователя " + name + ".")
+        return
+
+
+async def unsilence(msg):
+    """\
+    !unsilence username: выключить молчанку для username\
+    """
+
+    err = len(msg.args) < 2
+    if err:
+        await msg.qanswer(other.comfortable_help([str(unsilence.__doc__)]))
+        return
+
+    name = msg.original[len('!unsilence '):]
+    await C.client.add_reaction(msg.message, emj.e('ok_hand'))
+    user = await manager.silence_off(name)
+    if user:
+        text = 'По решению Примогената, <@{0}> уже может говорить.'.format(user.id)
+        await msg.say(C.main_ch, text)
+    elif user is False:
+        await msg.qanswer("Нет пользователя " + name + " в молчанке.")
+    elif user is None:
+        await msg.qanswer("Не могу найти пользователя " + name + ".")
+        return
+
+
+async def unsilence_all(msg):
+    """\
+    !unsilence_all: выключить запрет на чтения всего для всех пользоателей (не ролей)\
+    """
+    # await msg.qanswer("Начинаем...")
+    await C.client.add_reaction(msg.message, emj.e('ok_hand'))
+    for memb in C.prm_server.members:
+        await manager.turn_silence(memb, False, force=True)
+
+    await msg.qanswer('Молчанка снята со всех.')
+
+
+async def kick(msg):
+    """\
+    !kick username: кикнуть username посредством голосования\
+    """
+    err = len(msg.args) < 2
+    if err:
+        await msg.qanswer(other.comfortable_help([str(kick.__doc__)]))
+        return
+
+    name = msg.original[len('!kick '):]
+    user = other.find_member(C.prm_server, name)
+    if not user:
+        await msg.qanswer("Не могу найти пользователя " + name + ".")
+        return
+
+    if user.top_role >= C.prm_server.me.top_role:
+        await msg.qanswer('<@{0}> имеет слишком высокую роль.'.format(user.id))
+        return
+
+    text = ('<@{0}> вынес на рассмотрение изгнание <@{1}>. Для принятия решения необходимо __ещё 3 голоса__ "за".'
+            '\nНа голосование у вас 10 минут.').format(msg.author, user.id)
+
+    votes = await manager.voting(msg.channel, text=text, timeout=600, votes={msg.author}, count=4)
+    if votes:
+        text1 = 'Голосами от <@{0}> решение о кике <@{1}> **принято**.'.format('>, <@'.join(votes), user.id)
+        await msg.qanswer(text1)
+        text2 = 'По решению Примогената, <@{0}> изгоняется из домена.'.format(user.id)
+        await msg.say(C.main_ch, text2)
+        other.later_coro(15, C.client.kick(user))
+    else:
+        text1 = 'Голосование окончено, решение о кике <@{0}> **не принято**.'.format(user.id)
+        await msg.qanswer(text1)
+
+
+# endregion
+
+
+# region Admin
+async def dominate(msg):
+    """\
+    !dominate usr text: доминирование (✺_✺) \
+    """
+    if len(msg.args) < 2:
+        await msg.qanswer(other.comfortable_help([str(dominate.__doc__)]))
+        return
+    if not msg.admin and msg.author != C.users['Creol']:
+        await msg.answer('Нет у вас доминирования ¯\_(ツ)_/¯')
+        return
+
+    auth = msg.find_member(msg.author)
+    who = msg.find_member(msg.args[1])
+    if not auth or not who:
+        await msg.qanswer(other.comfortable_help([str(dominate.__doc__)]))
+        return
+    emb = discord.Embed(title=msg.original[len('!dominate ' + msg.args[1] + ' '):], color=auth.color)
+    emb.set_author(name=auth.nick or auth.name, icon_url=auth.avatar_url)
+    emb.set_image(url='https://cdn.discordapp.com/attachments/420056219068399617/450428811725766667/dominate.gif')
+    #emb.set_footer(text='')
+    await msg.type2sent(C.main_ch, text=who.mention, emb=emb)
+    #await C.client.send_message(ch, content=who.mention, embed=emb)
+
+
+async def get_offtime(msg):
+    """\
+    !get_offtime username: узнать, как долго пользователь ничего не пишет
+    """
+    if len(msg.args) < 2:
+        await msg.qanswer(other.comfortable_help([str(get_offtime.__doc__)]))
+        return
+    name = msg.original[len('!get_offtime '):]
+    usr = other.find_member(C.vtm_server, name)
+    if not usr:
+        await msg.qanswer('Пользователь не найден.')
+        return
+    await msg.qanswer('{0} последний раз писал(а) {1} назад.'
+                      .format(usr.mention, other.sec2str(people.offline(usr.id))))
+
+
+async def get_offlines(msg):
+    """\
+    !get_offlines d: узнать, кто не пишет уже в течении d дней
+    """
+    s_ds = msg.original[len('!get_offlines '):].replace(',', '.').replace(' ', '')
+    if len(msg.args) < 2 or not other.is_float(s_ds):
+        await msg.qanswer(other.comfortable_help([str(get_offlines.__doc__)]))
+        return
+    r_users = {}
+    for r in C.vtm_server.role_hierarchy:
+        r_users[r.name] = {}
+    ds = float(s_ds)
+    check_t = int(ds * 24 * 3600)
+    count = 0
+    for uid, usr in people.usrs.items():
+        t_off = people.offline(usr.id)
+        if t_off >= check_t:
+            count += 1
+            u = other.find_member(C.vtm_server, uid)
+            r_users[u.top_role.name][usr.last_m] = ('{0} - писал(а) {1} назад.'
+                                       .format(u.mention, other.sec2str(t_off)))
+    s_num = str(ds if ds != int(ds) else int(ds))
+    if count:
+        s_users = 'Пользователи[{0}] не пишущие'.format(count) if count > 1 else 'Уникум не пишущий'
+        s_days = ['дней', 'день', 'дня', 'дня', 'дня']
+        end_s_num = int(s_num[-1])
+        ans = ['{0} уже {1} {2}:'.format(s_users, s_num, s_days[end_s_num < 5 and end_s_num])]
+        r_users['Без ролей'] = r_users.pop('@everyone')
+        for r in r_users:
+            if r_users[r]:
+                sorted_users = [r_users[r][key] for key in sorted(r_users[r])]
+                ans.append('**```{0}[{1}]:```**{2}'.format(r, len(r_users[r]), sorted_users[0]))
+                ans += sorted_users[1:]
+        ans_20 = other.split_list(ans, 20)
+        ans = ['\n'.join(v) for v in ans_20]
+        await msg.qanswer(ans)
+    else:
+        await msg.qanswer('Пользователей не пишущих уже {0} дней нет :slight_smile:.'.format(s_num))
+
+
+# region Interaction commands
 async def channel(msg):
     """\
     !channel ch*: сохраняет список каналов для !mute, !deny, !purge
@@ -289,51 +541,6 @@ async def purge_bet(msg):
     await msg.purge(ch, 1000000, check=check, aft=msg1, bef=msg2)
 
 
-async def delete(msg):
-    """
-    !delete ch msg*: стереть сообщения в указанном канале
-    """
-
-    #await msg.answer(other.comfortable_help([str(purge_after.__doc__)]))
-    # await msg.answer("```css\n" + str(delete.__doc__) + "```")
-    #return
-    err = len(msg.args) < 3
-    ch = None
-    if not err:
-        ch = other.get_channel(msg.args[1]) #C.client.get_channel(msg.args[1])
-        err = not ch
-
-    if err:
-        await msg.qanswer(other.comfortable_help([str(delete.__doc__)]))
-        return
-
-    done = False
-    for mess_id in msg.args[2:]:
-        try:
-            mess = await C.client.get_message(ch, mess_id)
-            await C.client.delete_message(mess)
-            done = True
-        except discord.Forbidden:
-            log.jW("Bot haven't permissions here.")
-        except discord.NotFound:
-            log.jW("Bot can't find message.")
-
-    if done:
-        await msg.qanswer(":ok_hand:")
-
-
-async def ignore(msg): # TODO more phrases here
-    """\
-    !ignore: вкл/выкл комментирования Беккетом своих сообщений \
-    """
-    if msg.author in ram.ignore_users:
-        ram.ignore_users.remove(msg.author)
-        await msg.answer("Что, кто-то по мне соскучился :relaxed:?")
-    else:
-        ram.ignore_users.add(msg.author)
-        await msg.answer("Не хочешь разговаривать, ну и не надо :confused:.")
-
-
 async def embrace(msg):
     """\
     !embrace username: случайно (если нет клана) обратить пользователя, выдать сира, сообщить в !reports
@@ -368,33 +575,15 @@ async def embrace(msg):
         else:
             name = msg.original[len('!embrace '):]
     user = other.find_member(C.vtm_server, name)
-    text = await other.do_embrace(user, clan)
+    text = await manager.do_embrace(user, clan)
     if text:
         await msg.report(text)
     else:
         await msg.qanswer("Не могу найти такого пользователя.")
 
-
-async def clear_clans(msg):
-    if len(msg.args) < 2:
-        # get help
-        return
-
-    user = other.find_member(C.vtm_server, msg.original[len('!clear_clans '):])
-    if user:
-        #C.clan_names
-        rls = []
-        for clan in C.clan_names:   #TODO check for existing role on server
-            rls.append(other.find(C.vtm_server.roles, id=C.roles[clan]))
-        rls.append(other.find(C.vtm_server.roles, id=C.roles['Sabbat']))
-        await C.client.remove_roles(user, *rls)
-
-    else:
-        await msg.qanswer("Не могу найти такого пользователя.")
-
 # endregion
 
-    # region Deny commands
+# region Deny commands
 
 
 async def deny(msg):
@@ -487,50 +676,9 @@ async def undeny(msg):
             members) < 2 else '**Сородичам {0} даровано помилование в {1} и они могут там общаться.**')
         await msg.report(mess.format(', '.join(members), s_domains))
 
-
-async def kick(msg):
-    if len(msg.args) < 2:
-        return
-
-    name = msg.original[len('!kick '):]
-    usr = msg.find_member(name)
-    if not usr:
-        await msg.qanswer('Пользователь не найден.')
-    else:
-        if other.issuper(usr):
-            await msg.qanswer('Пользователя нельзя кикнуть.')
-        else:
-            await C.client.kick(usr)
-
-
-async def ban(msg):
-    if len(msg.args) < 2:
-        return
-
-    name = msg.original[len('!ban '):]
-    usr = msg.find_member(name)
-    if not usr:
-        await msg.qanswer('Пользователь не найден.')
-    else:
-        if other.issuper(usr):
-            await msg.qanswer('Пользователя нельзя банить.')
-        else:
-            await C.client.ban(usr, delete_message_days=0)
-
-
-async def unban(msg):
-    if len(msg.args) < 2:
-        return
-
-    usr = await other.get_ban_user(msg.cmd_server, msg.original[len('!unban '):])
-    if not usr:
-        await msg.qanswer('Пользователь не найден.')
-    else:
-        await C.client.unban(msg.cmd_server, usr)
-
 # endregion
 
-    # region Mute commands
+# region Mute commands
 # TODO Becketts comments to *mute commands
 
 
@@ -570,6 +718,7 @@ async def mute_list(msg):
     """
     await msg.qanswer(('<#' + '>, <#'.join(ram.mute_channels) + '>') if ram.mute_channels else 'None')
 
+
 async def mute_l(msg):
     """\
     !mute_l: список каналов "выключенного" Беккета-комментатора без упоминания
@@ -606,99 +755,50 @@ async def mute_l_list(msg):
     """
     await msg.qanswer(('<#' + '>, <#'.join(ram.mute_light_channels) + '>') if ram.mute_light_channels else 'None')
 # endregion
+# endregion
+
+# region Super
 
 
-async def test(msg):
-    ram.game = not ram.game
-    await other.test_status(ram.game)
-
-    #await msg.answer('test!')
-    # ch = C.client.get_channel('419968987112275979') #398645007944384513
-    # mess = await C.client.get_message(ch, msg.args[1])
-    # await C.client.purge_from(channel=ch, limit=5, after=mess)
-
-    # if len(msg.args)>1:
-    #     N = int(msg.args[1])
-    # else:
-    #     N = 10
-    # for i in range(0,N):
-    #     await msg.qanswer('Тест ' + str(i+1))
-
-
-async def tst(msg):
-    err = len(msg.args) < 3
-
-    ch = {}
-    if not err:
-        ch = other.get_channel(msg.args[1])  # C.client.get_channel(msg.args[1])
-        err = not ch
-
-    msg1 = {}
-    if not err:
-        msg1 = await C.client.get_message(ch, msg.args[2])
-        err = not msg1
-
-    if err:
-        msg.qanswer('Error')
-
-    pass
-    print(await log.format_mess(msg1, time=True, date=False))
-    pass
-
-
-async def tst2(msg):
+async def kick_f(msg):
     if len(msg.args) < 2:
-        await msg.qanswer(other.comfortable_help([str(dominate.__doc__)]))
-        return
-    if not msg.super and msg.author != C.users['Creol']:
-        await msg.answer('Нет у вас доминирования ¯\_(ツ)_/¯')
         return
 
-    auth = msg.find_member(msg.author)
-    who = msg.find_member(msg.args[1])
-    if not auth or not who:
-        await msg.qanswer(other.comfortable_help([str(dominate.__doc__)]))
-        return
-    emb = discord.Embed(title=msg.original[len('!dominate ' + msg.args[1] + ' '):], color=auth.color)
-    emb.set_author(name=auth.nick or auth.name, icon_url=auth.avatar_url)
-    emb.set_image(url='https://cdn.discordapp.com/attachments/420056219068399617/450428811725766667/dominate.gif')
-    emb.add_field(name='f1', value='it is f1')
-    emb.add_field(name='f2', value='it is f2')
-    emb.set_footer(text='it is footer', icon_url=msg.cmd_server.me.avatar_url)
-    #emb.set_footer(text='')
-    await msg.answer(text=who.mention, emb=emb)
-    # ch = C.client.get_channel('398645007944384513')
-    # await C.client.send_typing(ch)
-    # await C.client.send_typing(ch)
-    # await C.client.send_file(ch, 'pic/mushroom spores.jpg',content=
-    # '*Беккет нынче по лесу гулял,\nГрибочки по тихому он собирал,'
-    # '\nНочь вся прошла - Бекки устал,\nИ споры грибные он тут услыхал...*')
-
-
-async def roles(msg):
-    #await msg.answer(', '.join(msg.roles))
-    return
-
-
-async def roll(msg):
-    """\
-    !roll хdу: кинуть x кубиков-y \
-    """
-    if len(msg.args) < 2:
-        msg.args.append('1d10')
-    rollrange = msg.args[1].split('d')
-    if len(rollrange) == 2 and all(i.isdigit() for i in rollrange):
-        count, dice = int(rollrange[0]), int(rollrange[1])
-        if count > 21:
-            await msg.answer('Перебор, я выиграл :slight_smile:')
-            return
-
-        dices = []
-        for i in range(0, count):
-            dices += ['{:02d}'.format(i + 1), 'd:\t', str(random.randint(1, dice)), '\n']
-        await msg.qanswer("```" + ''.join(dices) + "```")
+    name = msg.original[len('!kick_f '):]
+    usr = msg.find_member(name)
+    if not usr:
+        await msg.qanswer('Пользователь не найден.')
     else:
-        await msg.qanswer(other.comfortable_help([str(roll.__doc__)]))
+        if other.issuper(usr):
+            await msg.qanswer('Пользователя нельзя кикнуть.')
+        else:
+            await C.client.kick(usr)
+
+
+async def ban(msg):
+    if len(msg.args) < 2:
+        return
+
+    name = msg.original[len('!ban '):]
+    usr = msg.find_member(name)
+    if not usr:
+        await msg.qanswer('Пользователь не найден.')
+    else:
+        if other.issuper(usr):
+            await msg.qanswer('Пользователя нельзя банить.')
+        else:
+            await C.client.ban(usr, delete_message_days=0)
+
+
+async def unban(msg):
+    if len(msg.args) < 2:
+        return
+
+    usr = await other.get_ban_user(msg.cmd_server, msg.original[len('!unban '):])
+    if not usr:
+        await msg.qanswer('Пользователь не найден.')
+    else:
+        await C.client.unban(msg.cmd_server, usr)
 
 
 async def pin(msg):
@@ -743,60 +843,37 @@ async def unpin(msg):
             log.jW("Bot can't find message.")
 
 
-async def dominate(msg):
-    """\
-    !dominate usr text: доминирование, только для избранных \
+async def delete(msg):
     """
-    if len(msg.args) < 2:
-        await msg.qanswer(other.comfortable_help([str(dominate.__doc__)]))
+    !delete ch msg*: стереть сообщения в указанном канале
+    """
+
+    #await msg.answer(other.comfortable_help([str(purge_after.__doc__)]))
+    # await msg.answer("```css\n" + str(delete.__doc__) + "```")
+    #return
+    err = len(msg.args) < 3
+    ch = None
+    if not err:
+        ch = other.get_channel(msg.args[1]) #C.client.get_channel(msg.args[1])
+        err = not ch
+
+    if err:
+        await msg.qanswer(other.comfortable_help([str(delete.__doc__)]))
         return
-    if not msg.super and msg.author != C.users['Creol']:
-        await msg.answer('Нет у вас доминирования ¯\_(ツ)_/¯')
-        return
 
-    auth = msg.find_member(msg.author)
-    who = msg.find_member(msg.args[1])
-    if not auth or not who:
-        await msg.qanswer(other.comfortable_help([str(dominate.__doc__)]))
-        return
-    emb = discord.Embed(title=msg.original[len('!dominate ' + msg.args[1] + ' '):], color=auth.color)
-    emb.set_author(name=auth.nick or auth.name, icon_url=auth.avatar_url)
-    emb.set_image(url='https://cdn.discordapp.com/attachments/420056219068399617/450428811725766667/dominate.gif')
-    #emb.set_footer(text='')
-    await msg.type2sent(C.main_ch, text=who.mention, emb=emb)
-    #await C.client.send_message(ch, content=who.mention, embed=emb)
+    done = False
+    for mess_id in msg.args[2:]:
+        try:
+            mess = await C.client.get_message(ch, mess_id)
+            await C.client.delete_message(mess)
+            done = True
+        except discord.Forbidden:
+            log.jW("Bot haven't permissions here.")
+        except discord.NotFound:
+            log.jW("Bot can't find message.")
 
-
-async def people_clear(msg):
-    ans = await msg.question('ВЫ СОБИРАЕТЕСЬ СТЕРЕТЬ ВСЕ ТАБЛИЦЫ ПОЛЬЗОВАТЕЛЕЙ. ЭТО ДЕЙСТВИЕ НЕВОЗМОЖНО ОТМЕНИТЬ.'
-                             'ВЫ ТОЧНО ЖЕЛАЕТЕ ПРОДОЛЖИТЬ?')
-    if ans:
-        people.clear()
+    if done:
         await msg.qanswer(":ok_hand:")
-    else:
-        await msg.qanswer("Отмена people_clear.")
-
-
-async def people_sync(msg):
-    ans = await msg.question('Это займёт некоторое время и полностью перезапишет Базу Данных пользователей. '
-                             'Вы **точно** уверены, что *действительно желаете* продолжить?')
-    if ans:
-        await msg.qanswer("Хорошо, начинаем, наберитесь терпения...")
-        await people.sync()
-        await msg.qanswer(":ok_hand:")
-    else:
-        await msg.qanswer("Отмена people_sync.")
-
-
-async def people_time_sync(msg):
-    ans = await msg.question('Это займёт некоторое время и перезапишет время последних сообщений пользователей. '
-                             'Вы **точно** уверены, что *действительно желаете* продолжить?')
-    if ans:
-        await msg.qanswer("Хорошо, начинаем, наберитесь терпения...")
-        await people.time_sync()
-        await msg.qanswer(":ok_hand:")
-    else:
-        await msg.qanswer("Отмена people_time_sync.")
 
 
 # Delete msgs from private channel:
@@ -807,49 +884,17 @@ async def people_time_sync(msg):
     #     if message.author.id == C.users['bot']:
     #         await C.client.delete_message(message)
 
-# Voice
-
-async def connect(msg):
-    """
-    !connect ch: подсоедениться к войсу
-    """
+async def nickname(msg):
     if len(msg.args) > 1:
-        ch = other.get_channel(' '.join(msg.args[1:]))
-        if ch:
-            if ch.type == discord.ChannelType.voice:
-                if C.voice and C.voice.is_connected():
-                    await C.voice.move_to(ch)
-                else:
-                    try:
-                        C.voice = await C.client.join_voice_channel(ch)
-                    except Exception as e:
-                        other.pr_error(e, 'connect')
-                        C.voice = C.client.voice_client_in(msg.cmd_server)
-            else:
-                await msg.qanswer("Канал - не войс")
-        else:
-            await msg.qanswer("Не найден канал")
+        name = msg.original[len('!nickname '):]
     else:
-        await msg.qanswer(other.comfortable_help([str(connect.__doc__)]))
+        name = 'Beckett'
+    await C.client.change_nickname(msg.cmd_server.me, name)  # Beckett
 
 
-async def disconnect(msg):
-    """
-    !disconnect: отлючится от войса
-    """
-    if C.voice and C.voice.is_connected():
-        await C.voice.disconnect()
-
-
-async def haha1(msg):
-    if C.voice and C.voice.is_connected():
-        C.player = C.voice.create_ffmpeg_player('sound/laugh0.mp3')
-        C.player.start()
-
-async def haha2(msg):
-    if C.voice and C.voice.is_connected():
-        C.player = C.voice.create_ffmpeg_player('sound/sabbatlaugh1.mp3')
-        C.player.start()
+async def test(msg):
+    ram.game = not ram.game
+    await other.test_status(ram.game)
 
 
 async def play(msg):
@@ -897,14 +942,6 @@ async def info(msg):
     log.dropbox_send(f_name, f_name, '/Info/')
     log.I('Sending info done.')
     await msg.qanswer(":ok_hand:")
-
-
-async def nickname(msg):
-    if len(msg.args) > 1:
-        name = msg.original[len('!nickname '):]
-    else:
-        name = 'Beckett'
-    await C.client.change_nickname(msg.cmd_server.me, name)  # Beckett
 
 
 async def add_role(msg):
@@ -967,6 +1004,24 @@ async def rem_role(msg):
 
     await C.client.remove_roles(usr, *old_roles)
     await msg.qanswer(":ok_hand:")
+
+
+async def clear_clans(msg):
+    if len(msg.args) < 2:
+        # get help
+        return
+
+    user = other.find_member(C.vtm_server, msg.original[len('!clear_clans '):])
+    if user:
+        #C.clan_names
+        rls = []
+        for clan in C.clan_names:   #TODO check for existing role on server
+            rls.append(other.find(C.vtm_server.roles, id=C.roles[clan]))
+        rls.append(other.find(C.vtm_server.roles, id=C.roles['Sabbat']))
+        await C.client.remove_roles(user, *rls)
+
+    else:
+        await msg.qanswer("Не могу найти такого пользователя.")
 
 
 async def log_channel(msg):
@@ -1091,20 +1146,46 @@ async def info_channels(msg):
         await msg.qanswer('Check log.')
 
 
-async def get_invite(msg):
-    # invs = await C.client.invites_from(msg.server)
-    # await msg.qanswer(msg.server.name + ':\n\t' + '\n\t'.join([inv.code for inv in invs]))
-    inv = await C.client.create_invite(msg.cmd_server) # Not working with server?
-    await msg.qanswer(msg.cmd_server.name + ': ' + inv.code)
-
-
 async def go_timer(msg):
     log.D('Start timer by command.')
-    ev.timer()
+    ev.timer_hour()
     if C.is_test:
         await msg.qanswer('Done, look the log.')
     else:
         await msg.qanswer(":ok_hand:")
+
+
+# region People
+async def people_clear(msg):
+    ans = await msg.question('ВЫ СОБИРАЕТЕСЬ СТЕРЕТЬ ВСЕ ТАБЛИЦЫ ПОЛЬЗОВАТЕЛЕЙ. ЭТО ДЕЙСТВИЕ НЕВОЗМОЖНО ОТМЕНИТЬ.'
+                             'ВЫ ТОЧНО ЖЕЛАЕТЕ ПРОДОЛЖИТЬ?')
+    if ans:
+        people.clear()
+        await msg.qanswer(":ok_hand:")
+    else:
+        await msg.qanswer("Отмена people_clear.")
+
+
+async def people_sync(msg):
+    ans = await msg.question('Это займёт некоторое время и полностью перезапишет Базу Данных пользователей. '
+                             'Вы **точно** уверены, что *действительно желаете* продолжить?')
+    if ans:
+        await msg.qanswer("Хорошо, начинаем, наберитесь терпения...")
+        await people.sync()
+        await msg.qanswer(":ok_hand:")
+    else:
+        await msg.qanswer("Отмена people_sync.")
+
+
+async def people_time_sync(msg):
+    ans = await msg.question('Это займёт некоторое время и перезапишет время последних сообщений пользователей. '
+                             'Вы **точно** уверены, что *действительно желаете* продолжить?')
+    if ans:
+        await msg.qanswer("Хорошо, начинаем, наберитесь терпения...")
+        await people.time_sync()
+        await msg.qanswer(":ok_hand:")
+    else:
+        await msg.qanswer("Отмена people_time_sync.")
 
 
 async def full_update(msg):
@@ -1118,59 +1199,136 @@ async def full_update(msg):
             gn.status = 'upd'
 
     await go_timer(msg)
+# endregion
 
 
-async def get_offtime(msg):
-    """\
-    !get_offtime username: узнать, как долго пользователь ничего не пишет
+# region Voice
+async def connect(msg):
     """
-    if len(msg.args) < 2:
-        await msg.qanswer(other.comfortable_help([str(get_offtime.__doc__)]))
-        return
-    name = msg.original[len('!get_offtime '):]
-    usr = other.find_member(C.vtm_server, name)
-    if not usr:
-        await msg.qanswer('Пользователь не найден.')
-        return
-    await msg.qanswer('{0} последний раз писал(а) {1} назад.'
-                      .format(usr.mention, other.sec2str(people.offline(usr.id))))
-
-
-async def get_offlines(msg):
-    """\
-    !get_offlines d: узнать, кто не пишет уже в течении d дней
+    !connect ch: подсоедениться к войсу
     """
-    s_ds = msg.original[len('!get_offlines '):].replace(',', '.').replace(' ', '')
-    if len(msg.args) < 2 or not other.is_float(s_ds):
-        await msg.qanswer(other.comfortable_help([str(get_offlines.__doc__)]))
-        return
-    r_users = {}
-    for r in C.vtm_server.role_hierarchy:
-        r_users[r.name] = {}
-    ds = float(s_ds)
-    check_t = int(ds * 24 * 3600)
-    count = 0
-    for uid, usr in people.usrs.items():
-        t_off = people.offline(usr.id)
-        if t_off >= check_t:
-            count += 1
-            u = other.find_member(C.vtm_server, uid)
-            r_users[u.top_role.name][usr.last_m] = ('{0} - писал(а) {1} назад.'
-                                       .format(u.mention, other.sec2str(t_off)))
-    s_num = str(ds if ds != int(ds) else int(ds))
-    if count:
-        s_users = 'Пользователи[{0}] не пишущие'.format(count) if count > 1 else 'Уникум не пишущий'
-        s_days = ['дней', 'день', 'дня', 'дня', 'дня']
-        end_s_num = int(s_num[-1])
-        ans = ['{0} уже {1} {2}:'.format(s_users, s_num, s_days[end_s_num < 5 and end_s_num])]
-        r_users['Без ролей'] = r_users.pop('@everyone')
-        for r in r_users:
-            if r_users[r]:
-                sorted_users = [r_users[r][key] for key in sorted(r_users[r])]
-                ans.append('**```{0}[{1}]:```**{2}'.format(r, len(r_users[r]), sorted_users[0]))
-                ans += sorted_users[1:]
-        ans_20 = other.split_list(ans, 20)
-        ans = ['\n'.join(v) for v in ans_20]
-        await msg.qanswer(ans)
+    if len(msg.args) > 1:
+        ch = other.get_channel(' '.join(msg.args[1:]))
+        if ch:
+            if ch.type == discord.ChannelType.voice:
+                if C.voice and C.voice.is_connected():
+                    await C.voice.move_to(ch)
+                else:
+                    try:
+                        C.voice = await C.client.join_voice_channel(ch)
+                    except Exception as e:
+                        other.pr_error(e, 'connect')
+                        C.voice = C.client.voice_client_in(msg.cmd_server)
+            else:
+                await msg.qanswer("Канал - не войс")
+        else:
+            await msg.qanswer("Не найден канал")
     else:
-        await msg.qanswer('Пользователей не пишущих уже {0} дней нет :slight_smile:.'.format(s_num))
+        await msg.qanswer(other.comfortable_help([str(connect.__doc__)]))
+
+
+async def disconnect(msg):
+    """
+    !disconnect: отлючится от войса
+    """
+    if C.voice and C.voice.is_connected():
+        await C.voice.disconnect()
+
+
+async def haha1(msg):
+    if C.voice and C.voice.is_connected():
+        C.player = C.voice.create_ffmpeg_player('sound/laugh0.mp3')
+        C.player.start()
+
+
+async def haha2(msg):
+    if C.voice and C.voice.is_connected():
+        C.player = C.voice.create_ffmpeg_player('sound/sabbatlaugh1.mp3')
+        C.player.start()
+# endregion
+
+
+# region Test
+async def tst(msg):
+    err = len(msg.args) < 3
+
+    ch = {}
+    if not err:
+        ch = other.get_channel(msg.args[1])  # C.client.get_channel(msg.args[1])
+        err = not ch
+
+    msg1 = {}
+    if not err:
+        msg1 = await C.client.get_message(ch, msg.args[2])
+        err = not msg1
+
+    if err:
+        msg.qanswer('Error')
+
+    pass
+    print(await log.format_mess(msg1, time=True, date=False))
+    pass
+
+
+async def tst2(msg):
+    if len(msg.args) < 2:
+        await msg.qanswer(other.comfortable_help([str(dominate.__doc__)]))
+        return
+    if not msg.admin and msg.author != C.users['Creol']:
+        await msg.answer('Нет у вас доминирования ¯\_(ツ)_/¯')
+        return
+
+    auth = msg.find_member(msg.author)
+    who = msg.find_member(msg.args[1])
+    if not auth or not who:
+        await msg.qanswer(other.comfortable_help([str(dominate.__doc__)]))
+        return
+    emb = discord.Embed(title=msg.original[len('!dominate ' + msg.args[1] + ' '):], color=auth.color)
+    emb.set_author(name=auth.nick or auth.name, icon_url=auth.avatar_url)
+    emb.set_image(url='https://cdn.discordapp.com/attachments/420056219068399617/450428811725766667/dominate.gif')
+    emb.add_field(name='f1', value='it is f1')
+    emb.add_field(name='f2', value='it is f2')
+    emb.set_footer(text='it is footer', icon_url=msg.cmd_server.me.avatar_url)
+    #emb.set_footer(text='')
+    await msg.answer(text=who.mention, emb=emb)
+    # ch = C.client.get_channel('398645007944384513')
+    # await C.client.send_typing(ch)
+    # await C.client.send_typing(ch)
+    # await C.client.send_file(ch, 'pic/mushroom spores.jpg',content=
+    # '*Беккет нынче по лесу гулял,\nГрибочки по тихому он собирал,'
+    # '\nНочь вся прошла - Бекки устал,\nИ споры грибные он тут услыхал...*')
+
+
+async def roles(msg):
+    #await msg.answer(', '.join(msg.roles))
+    return
+
+
+async def get_invite(msg):
+    # invs = await C.client.invites_from(msg.server)
+    # await msg.qanswer(msg.server.name + ':\n\t' + '\n\t'.join([inv.code for inv in invs]))
+    inv = await C.client.create_invite(msg.cmd_server) # Not working with server?
+    await msg.qanswer(msg.cmd_server.name + ': ' + inv.code)
+
+'''
+async def song(msg):
+    await C.client.send_message(C.channels['FM'], "+np")
+
+    def check(m):
+        return m.embeds and 'Now Playing ♪' in m.embeds[0]['author']['name']
+
+    message = await C.client.wait_for_message(timeout=5, channel=C.channels['FM'], check=check)
+    if not message: # None
+        await msg.answer('Не играет нынче ничего в данном домене.')
+    else:
+        embed = message.embeds[0]
+        em = C.discord.Embed(**embed)
+        em.set_thumbnail(url=embed['thumbnail']['url'])
+        em.set_author(name=embed['author']['name'], url=embed['author']['url'], icon_url=embed['author']['icon_url'])
+        await msg.answer(emb=em)
+'''
+# endregion
+# endregion
+
+all_cmds = set(key for key in dir(sys.modules[__name__]) if key[0] != '_' and callable(getattr(sys.modules[__name__], key)))
+only_super = all_cmds.difference(admin_cmds.union(primogenat_cmds).union(free_cmds))

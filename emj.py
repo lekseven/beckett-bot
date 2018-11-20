@@ -7,22 +7,18 @@ import random
 import log
 
 
-# Emojis [31.05.2018]:
+# Emojis [20.11.2018]:
 ems_id = {
     '400662865935204363': 'm_drunk',
     '400662865972822026': 'p_Lacr',
-    '400662866044387328': 'p_sad',
     '400662866157502476': 'p_nosferatu',
     '400662866371543040': 'p_janett',
     '400664721155555328': 'p_Lucta_de_Aragon',
     '418877362470518784': 'Ankh',
-    '418882342078119957': 't_torik11',
-    '418882717413933056': 'm_torik12',
     '420657829007982593': 'm_Tarkin_Miliy',
     '421805633281720320': 'm_Tarkin_f',
     '421806514341281792': 't_torik21',
     '421807340233293844': 'm_torik22',
-    '421807808032407565': 't_jiznbol2',
     '421813252251713548': 'Ankh_Sabbat',
     '421813252289462273': 'Logo_Nosferatu',
     '421813252776001547': 'Logo_Followers',
@@ -42,22 +38,32 @@ ems_id = {
     '448227584170524685': 'm_lopata',
     '448231060275462144': 'p_tetjaadmin',
     '448236736154304532': 'p_beckett1',
-    '448237255484506134': 'p_beckett2',
     '448244001703723018': 't_ojwse',
-    '451506010054590464': 'Ankh_Toreador',
-    '451507128004509697': 'Ankh_Anarch',
     '451507784454766603': 'Ankh_Cama',
-    '451510597503287296': 'Ankh_Ashirra',
-    '451513393753620482': 'Ankh_Setite',
-    '451514227971194900': 'Ankh_Davis',
-    '451515142107299850': 'Aankh_GD',
-    '451520926471946242': 'Logo_Caitiff',
     '451520970377789440': 'Logo_Giovanni',
-    '451534670325088287': '0_Demonic_Skeleton',
-    '451537898504716289': '0_GDAbyudG',
-    '452982621509779456': 'p_cthulhu',
     '452985737000910859': 'p_cthulhu_head',
+    '460457996640714762': 's_shchupalko0',
+    '460459149927514122': 's_shchupalko3',
+    '460460257471102976': 's_bita',
+    '460461435928182784': 's_shchupalko4',
+    '460461564882059265': 's_shchupalko1',
+    '460462868756692992': 'obtenebration',
+    '460463331141091359': 's_shchupalko2',
+    '463451501826670604': 't_d_',
+    '463452141831454720': 't_net1',
+    '463453817258770443': 's_dice',
+    '466381128261959713': 'm_wafer',
+    '472535276263047188': 's_blood_cry',
+    '474353439728730112': 't_jiznbol2',
+    '487767072311345172': 'p_jonesy',
+    '490273371116797954': 'm_Tarkin_face',
+    '490287532400050176': 'm_Tilia_fase',
+    '506940161389756426': 'm_r_heart',
+    # test
+    # '453173916517662720': 'z_GDAbyudG2',
 }
+
+extra_em = {}
 
 # to color smile: smile[ok_hand]+skins[1]
 skins = ['', '🏻', '🏼', '🏽', '🏾', '🏿']
@@ -68,20 +74,34 @@ em_set = set()
 em_name = {}
 hearts = {'❤', '💛', '💚', '💙', '💜', '❣', '💕', '💞', '💓', '💗', '💖', '💘', '💝', '💟',} # '💔',
 
+
 def e(name):
     if name in emojis:
         return emojis[name]
-    else:
+    elif not C.is_test:
         log.jW('{e} there no emoji ' + name)
-        return None
+    return None
 
 
 def get_emname(em):
     if em in em_name:
         return em_name[em]
-    else:
+    elif not C.is_test:
         log.jW('{e} there no name of emoji ' + em)
-        return None
+    return None
+
+
+def em2text(text):
+    text_set = set(text)
+    em_text = em_set.intersection(text_set)
+    for em in em_text:
+         text = text.replace(em, ' ' + em_name[em] + ' ')
+
+    for em in extra_em:
+        if em in text:
+            text = text.replace(em, ' ' + extra_em[em] + ' ')
+
+    return text
 
 
 def prepare():
@@ -112,11 +132,13 @@ def save_em():
                'sun_with_face', 'sunny', 'sunrise_over_mountains', 'city_sunset', 'bat', 'Logo_Malkavian',
             'p_tetjaadmin', 't_ojwse', 'm_lopata'}
 
-    for em in C.vtm_server.emojis:  #C.client.get_all_emojis():
-        #print("'{0.id}': {0.name},".format(em))
+    for em in C.prm_server.emojis:  #C.client.get_all_emojis():
+        #print("'{0.id}': '{0.name}',".format(em))
+        extra_em['<:{0}:{1}>'.format(em.name, em.id)] = em.name
         if em.id in ems_id:
             emojis[ems_id[em.id]] = em
-        else:
+            # emojis['<:{0}:{1}>'.format(em.id, ems_id[em.id])] = ems_id[em.id]
+        elif not C.is_test:
             log.jW('{save_em} new smile '+str(em))
 
     for name in special:
@@ -125,14 +147,14 @@ def save_em():
             em = e(e_name)
             if em:
                 name_em[C.users[name]].add(em)
-            else:
+            elif not C.is_test:
                 log.jW("{{save_em}} can't find {0} in emojis (1)".format(e_name))
 
     for e_name in rand:
         em = e(e_name)
         if em:
             rand_em.add(em)
-        else:
+        elif not C.is_test:
             log.jW("{{save_em}} can't find {0} in emojis (2)".format(e_name))
 
 

@@ -11,8 +11,10 @@ import communication as com
 import other
 import emj
 import people
+import manager
 import log
-timer_handle = None
+timer_hour_handle = None
+timer_min_handle = None
 
 
 async def check_server(server, usual_fun, other_fun, *args):
@@ -30,9 +32,39 @@ async def check_server(server, usual_fun, other_fun, *args):
         await other_fun(server, *args)
 
 
+def upd_server():
+    log.I('Update Servers data')
+    C.vtm_server = C.client.get_server(C.VTM_SERVER_ID)  # type: discord.Server
+    C.tst_server = C.client.get_server(C.TST_SERVER_ID)  # type: discord.Server
+    if not C.vtm_server:
+        log.E("Can't find server.")
+        force_exit()
+    if not C.tst_server:
+        log.E("Can't find test server.")
+        force_exit()
+
+    if C.is_test:
+        C.prm_server = C.tst_server
+        C.main_ch = C.client.get_channel(C.TEST_CHANNEL_ID)
+    else:
+        C.prm_server = C.vtm_server
+        C.main_ch = C.client.get_channel(C.WELCOME_CHANNEL_ID)
+
+    if not C.main_ch:
+        log.E("Can't find welcome_channel.")
+        force_exit()
+
+
 # region on_Events
 async def on_member_join_u(member, *args):
     uid = member.id
+
+    if uid in ram.silence_users:
+        t = ram.silence_users[uid]['time'] - other.get_sec_total()
+        if t > 0:
+            log.I(member, ' come, but Silence is on.')
+            await manager.silence_on(uid, t/3600)
+
     if people.Usr.check_new(member):
         await log.pr_news('{0} ({0.mention}) comeback!'.format(member))
         await C.client.send_message(C.main_ch, com.comeback_msg(uid, people.time_out(uid), people.clan(uid)))
@@ -103,26 +135,32 @@ async def on_server_emojis_update_o(server, before, after, *args):
 
 
 async def on_server_role_create_u(role, *args):
+    upd_server()
     await log.pr_news('New Role: ' + role.name + '!')
 
 
 async def on_server_role_create_o(server, role, *args):
+    upd_server()
     await log.pr_other_news(server, 'New Role: ' + role.name + '!')
 
 
 async def on_server_role_delete_u(role, *args):
+    upd_server()
     await log.pr_news('Delete Role: ' + role.name + '!')
 
 
 async def on_server_role_delete_o(server, role, *args):
+    upd_server()
     await log.pr_other_news(server, 'Delete Role: ' + role.name + '!')
 
 
 async def on_server_role_update_u(before, after, *args):
+    upd_server()
     await log.pr_news('Update Role: ' + before.name + '/' + after.name + '!')
 
 
 async def on_server_role_update_o(server, before, after, *args):
+    upd_server()
     await log.pr_other_news(server, 'Update Role: ' + before.name + '/' + after.name + '!')
 # endregion
 
@@ -203,28 +241,61 @@ def save():
     people.upd()
 
 
-def stop_timer():
-    global timer_handle
-    if timer_handle:
-        timer_handle.cancel()
+def stop_hour_timer():
+    global timer_hour_handle
+    if timer_hour_handle:
+        timer_hour_handle.cancel()
 
 
-def start_timer():
-    global timer_handle
+def start_hour_timer():
+    global timer_hour_handle
     t = 3600
-    stop_timer()
-    timer_handle = other.later(t, timer)
+    stop_hour_timer()
+    timer_hour_handle = other.later(t, timer_hour)
     log.I('* Start new timer in {0} seconds.'.format(t))
 
 
-def timer():
-    start_timer()
+def timer_hour():
+    start_hour_timer()
     try:
         log.D('+ Hour timer event!')
         save()
         log.D('+ Timer event finished!')
     except Exception as e:
         other.pr_error(e, 'hour_timer')
+
+
+def stop_min_timer():
+    global timer_min_handle
+    if timer_min_handle:
+        timer_min_handle.cancel()
+
+
+def start_min_timer():
+    global timer_min_handle
+    t = 60
+    stop_min_timer()
+    timer_min_handle = other.later(t, timer_min)
+
+
+def timer_min():
+    start_min_timer()
+    try:
+        for uid, user in ram.silence_users.items():
+            if other.get_sec_total() > user['time']:
+                other.later_coro(1, manager.silence_end(uid))
+    except Exception as e:
+        other.pr_error(e, 'timer_min')
+
+
+def start_timers():
+    start_hour_timer()
+    start_min_timer()
+
+
+def stop_timers():
+    stop_hour_timer()
+    stop_min_timer()
 
 
 def force_exit():

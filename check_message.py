@@ -8,6 +8,7 @@ import local_memory as ram
 import beckett_commands as cmd
 import constants as C
 import emj
+import manager
 import other
 import communication as com
 import people
@@ -28,6 +29,7 @@ class Msg:
                            (C.prm_server if self.personal else message.server))
         self.server_id = None if self.personal else message.server.id
         self.is_vtm = self.server_id == C.vtm_server.id
+        self.is_tst = self.server_id == C.tst_server.id
         self.message = message
         self.original = message.content
         self.text = message.content.lower().replace('ё', 'е')
@@ -36,8 +38,8 @@ class Msg:
         self.channel = message.channel
         self.roles = {role.id for role in self.member.roles[1:]} if (self.member and self.is_vtm) else set()
         self.prince = self.author == C.users['Natali']
-        self.super = self.author in C.superusers or (
-                self.prince or C.roles['Sheriff'] in self.roles or C.roles['Scourge'] in self.roles)
+        self.super = self.author in C.superusers
+        self.admin = self.super or self.prince or self.roles.intersection({C.roles['Sheriff'], C.roles['Scourge']})
         self.torpor = (not self.prince and self.author in ram.torpor_users and (
                 self.channel.id in ram.torpor_users[self.author] or 'All' in ram.torpor_users[self.author]))
         self.cmd_ch = ram.cmd_channels.get(self.author, set())
@@ -161,6 +163,22 @@ class Msg:
     def find_members(self, names):
         return other.find_members(self.cmd_server, names)
 
+    def get_commands(self):
+        #module_attrs = dir(cmd)
+        #cmds = set(key for key in module_attrs if key[0] != '_' and callable(getattr(cmd, key)))
+        cmds = cmd.all_cmds.copy()
+        if self.channel.id == C.channels['primogens']:
+            cmds.intersection_update(cmd.primogenat_cmds)
+        elif self.admin and (not self.super or (not self.personal and not self.is_tst)):
+            cmds.intersection_update(cmd.admin_cmds)
+        elif not self.admin:
+            free = cmd.free_cmds
+            if {self.author}.intersection({C.users['Creol'], C.users['Tony']}):
+                free.add('dominate')
+            cmds.intersection_update(free)
+
+        return cmds
+
 
 async def reaction(message):
     msg = Msg(message)
@@ -185,7 +203,7 @@ async def reaction(message):
         return
 
     # delete messages containing forbidden links
-    if not msg.super:
+    if not msg.admin:
         if any(link in msg.text for link in data.forbiddenLinks):
             await msg.delete()
             await msg.answer(random.choice(data.threats).format(name=msg.author))
@@ -200,12 +218,16 @@ async def reaction(message):
     # if we have !cmd -> doing something
     if msg.text.startswith('!'):
         fun = re.match('!\w*', msg.text).group(0)[1:]
-        if fun and hasattr(cmd, fun):
-            command = getattr(cmd, fun)
-            if callable(command) and (fun in C.free_cmds or msg.super):
-                msg.prepare(fun)
-                await command(msg)
-                return
+        if fun in msg.get_commands():
+            msg.prepare(fun)
+            await getattr(cmd, fun)(msg)
+            return
+        # if fun and hasattr(cmd, fun):
+        #     command = getattr(cmd, fun)
+        #     if callable(command) and (fun in C.free_cmds or msg.admin):
+        #         msg.prepare(fun)
+        #         await command(msg)
+        #         return
 
     embrace_or_return = False
     if (ram.mute_channels.intersection({msg.channel.id, 'all'})
@@ -228,7 +250,7 @@ async def reaction(message):
         clan_keys = list(C.clan_names.intersection(found_keys))
         if clan_keys:
             other.later_coro(random.randrange(30, 90),
-                             other.do_embrace_and_say(msg, msg.author, clan=random.choice(clan_keys)))
+                             manager.do_embrace_and_say(msg, msg.author, clan=random.choice(clan_keys)))
     elif embrace_or_return:
         return
 
@@ -239,7 +261,7 @@ async def reaction(message):
             return
         response = False
 
-        if prob < 0.2 or beckett_reference or (beckett_mention and (prob < 0.9 or msg.super)):
+        if prob < 0.2 or beckett_reference or (beckett_mention and (prob < 0.9 or msg.admin)):
             response = True
 
         if response:
@@ -247,13 +269,16 @@ async def reaction(message):
             await msg.answer(ans_phr['text'])
             return
     else:
-        if '(╯°□°）╯︵ ┻━┻' in msg.original or '(╯°益°)╯彡┻━┻' in msg.original:
+        if '┻' in msg.original and '╯' in msg.original:
             ans = ''
-            if msg.super: # or msg.author == C.users['Buffy']:
-                ans = '(╯°□°）╯︵ ┻━┻'
-            elif msg.author == C.users['Buffy']:
-                ans = '(╯°◡°)╯彡┻━┻'
-            else: #elif prob > 0.2:
+            if msg.admin:
+                ans = other.rand_tableflip()
+            elif msg.channel.id == C.channels['bar']:
+                if {msg.author}.intersection({C.users['Buffy'], C.users['Tilia'],}):
+                    ans = other.rand_tableflip()
+                else:
+                    return
+            else:
                 ans = '┬─┬ ノ( ゜-゜ノ)'
             if ans:
                 await msg.answer(ans)
@@ -270,7 +295,7 @@ async def reaction(message):
                     if msg.author == C.users['Natali']:
                         try:
                             log.I('try get_weather for Natali')
-                            str_weather = '\n:newspaper: ' + other.get_weather()
+                            str_weather = '\n:newspaper: ' + manager.get_weather()
                         except Exception as e:
                             other.pr_error(e, 'get_weather')
 
@@ -302,7 +327,7 @@ async def reaction(message):
                 else:
                     ans = data.tremer_joke
             elif msg.words.intersection(data.sm_resp['bot_dog']):
-                if msg.super or prob > 0.2:
+                if msg.admin or prob > 0.2:
                     ans = other.name_rand_phr(msg.author, data.sm_resp['not_funny'])
                 else:
                     ans = random.choice(data.threats).format(name=msg.author)
@@ -310,7 +335,7 @@ async def reaction(message):
                 ans = random.choice(data.responses['whtasup'])
             # other questuons must be before this
             elif msg.text.endswith('?'):
-                if msg.super:
+                if msg.admin:
                     if (yes == no) or yes:
                         ans = other.name_rand_phr(msg.author, data.sm_resp['yes'])
                     else:
