@@ -396,6 +396,19 @@ async def sayf(msg):
     await msg.say(C.main_ch, msg.original[len('!sayf '):])
 
 
+async def say_wait(msg):
+    """\
+    !say_wait username msg: написать сообщение в ответ на сообщение от username
+    !say_wait role msg: написать сообщение в ответ на сообщение от кого-то с role
+    !say_wait d msg: написать сообщение через d минут в report
+    """
+    if len(msg.args) < 3:
+        await msg.qanswer(other.comfortable_help([str(say_wait.__doc__)]))
+        return
+
+    # user = msg.
+
+
 async def emoji(msg):
     """\
     !emoji: вкл/выкл эмоджи Беккета за пользователя \
@@ -1039,16 +1052,17 @@ async def log_channel(msg):
         await msg.qanswer("No permissions for reading <#{0}>!".format(ch.id))
         return
 
-    ans = await msg.question('Вы запустили создание лога для канала <#{0}> ({0}). '
+    save_links = len(msg.args) > 2
+    ans = await msg.question(('Вы запустили создание лога для канала <#{0}> [{0}] (' +
+        ('**с сохранением** изображений' if save_links else '**без сохранения** изображений') + '). '
                              'Это может занять значительное время, если там много сообщений. '
-                             'Вы *уверены*, что желаете продолжить?'.format(ch.id))
+                             'Вы *уверены*, что желаете продолжить?').format(ch.id))
     if ans:
         await msg.qanswer("Хорошо, начинаем...")
     else:
         await msg.qanswer("Отмена log_channel.")
         return
 
-    save_links = len(msg.args) > 2
     log.D('- log_channel for #{0}({1}) start'.format(ch.name, ch.id))
     count = 0
     messages = []
@@ -1073,12 +1087,12 @@ async def log_channel(msg):
         log.D('- log_channel end scan')
         log.D('- log_channel start update links')
         for message in link_messages:
-            await log.mess_plus(message, save_all_links=save_links, update_links=True)
+            await log.mess_plus(message, save_all_links=True, update_links=True)
         log.D('- log_channel end update links')
     base = {}
     for i, message in enumerate(messages):
-        mess += (await log.mess_plus(message, save_all_links=save_links, other_channel=channel_links))
         mess.append(await log.format_mess(message, date=True, dbase=base))
+        mess += (await log.mess_plus(message, save_all_links=save_links, other_channel=channel_links))
         if (i+1) % 10000 == 0:
             log.D('- - <log_channel> format messages: ', i+1)
     log.D('- log_channel end format messages')

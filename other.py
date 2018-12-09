@@ -5,6 +5,9 @@ import datetime
 import discord
 import random
 import log
+import aiohttp
+from io import BytesIO as io_BytesIO
+
 # for weather
 
 #import local_memory as ram
@@ -363,5 +366,17 @@ def rand_tableflip():
     eye = random.choice(('°', '•', '◕', '~', '・', '￣', 'ᵔ', '^', '-', '❛', 'ಠ', '≖'))
     mouth = random.choice(('□', '◡', 'o', '‿', '\_', '︿', '∀', '▽', '。'))
     wave = random.choice(('彡', '︵', '︵︵', '︵︵︵', ))
-    table = random.choice(('┻━┻', '┻━━┻', '┻━━━┻', '┻━━━━┻', '┻━━━━━┻', '┻━━━━━━┻', '┻━━━━━━━┻' ))
+    table = random.choice(('┻━┻', '┻━━┻', '┻━━━┻', '┻━━━━┻', '┻━━━━━┻', '┻━━━━━━┻', '┻━━━━━━━┻', ))
     return '(╯{0}{1}{0}）╯{2} {3}'.format(eye, mouth, wave, table)
+
+
+async def get_url_files(url_i):
+    """
+    :rtype: asynciterable(file, name, url)
+    :type url_i: iterator
+    """
+    async with aiohttp.ClientSession() as session:
+        for url in url_i:
+            async with session.get(url) as resp:
+                if resp.status == 200:
+                    yield io_BytesIO(await resp.read()), url.rpartition('/')[-1], url

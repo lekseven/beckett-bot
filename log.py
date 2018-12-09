@@ -133,9 +133,10 @@ async def mess_plus(message, save_disc_links=False, save_all_links=False, update
     if message.attachments:
         attachments = []
         for att in message.attachments:
-            attachments.append('\t\t' + att['url'])
-            if save_all_links or (save_disc_links and 'discordapp' in att['url']) and att['url'] not in disc_links:
-                links.append(att['url'])
+            url = att['proxy_url'] or att['url']
+            attachments.append('\t\t' + url)
+            if save_all_links or (save_disc_links and 'discordapp' in url) and url not in disc_links:
+                links.append(url)
         if attachments:
             res.append('Attachments({0}):'.format(len(attachments)))
             res.append('\n'.join(attachments))
@@ -176,13 +177,17 @@ async def mess_plus(message, save_disc_links=False, save_all_links=False, update
         if links:
             disc_links.update(links)
             if not update_links:
-                text = '[{t}]<{ch}> {author} ({desc})\n{links}'.format(
-                    t=other.t2s(message.timestamp, '%d|%m|%y %T'), ch=str(message.channel.name), author=str(message.author),
-                    desc='save_all_links' if save_all_links else 'save_disc_links', links='\n'.join(links))
-                if message.server.id == C.vtm_server.id:
-                    await C.client.send_message(other_channel or C.vtm_links_ch, content=text)
-                else:
-                    await C.client.send_message(other_channel or C.other_links_ch, content=text)
+                text = '[{t}]<{ch}> {author} ({desc})'.format(
+                    t=other.t2s(message.timestamp, '%d|%m|%y %T'),
+                    ch=str(message.channel.name or message.author),
+                    author=str(message.author),
+                    desc='save_all_links' if save_all_links else 'save_disc_links')
+                ch = (other_channel or
+                    (C.vtm_links_ch if (message.server and message.server.id == C.vtm_server.id)
+                    else C.other_links_ch))
+                await C.client.send_message(ch, content=text)
+                async for file, name, url in other.get_url_files(links):
+                    await C.client.send_file(ch, file, filename=name, content='<' + url + '>')
 
     return ['\n'.join(res)] if res else []
 
@@ -197,7 +202,7 @@ async def format_mess(msg, time=False, date=False, dbase=None):
     """
     t_m = other.t2s(msg.timestamp)
     t_n = other.t2s()
-    s_time = '(from {0})'.format(t_m) if (time or (t_n[:-1] != t_m[:-1]) or (int(t_n[-1]) - int(t_m[-1]) > 1) ) else ''
+    s_time = '(from {0})'.format(t_m) if (time or (t_n[:-1] != t_m[:-1]) or (int(t_n[-1]) - int(t_m[-1]) > 1)) else ''
     ch_name = str(msg.channel.user) if msg.channel.is_private else str(msg.channel.name)
     t = ('(from {0})'.format(other.t2s(msg.timestamp, '%d|%m|%y %T')) if date else s_time)
     cont = msg.content.replace('\n', '\n\t')  # type: str

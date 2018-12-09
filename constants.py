@@ -46,7 +46,7 @@ users = {
 channels = {
     'flood': '398645007944384513',
     'f_wood': '461140194532524042',
-    'rules': '419207215472181268',
+    'rules': '519253006726987780',    #'419207215472181268',
     'ask': '398728556424986624',
     '4-sop': '398728854534881280',
     'counsel': '417777460772470785',
@@ -111,6 +111,8 @@ roles = {'Prince': '398223824514056202',
          'Noble Pander': '415642642597019658',
          'Cappadocian': '421278030372012043',
          'Lasombra Antitribu': '420599142218465292',
+         'Котичек': '510161887342624798',
+         'Namaru': '420621473036632064',
          'New World Order': '420327469371883520',
          'Sabbat': '422166674528272384',
          'Anarch': '423408828097363978',
@@ -127,6 +129,7 @@ clan_names = {'Malkavian', 'Toreador', 'Brujah', 'Ventrue', 'Nosferatu', 'Gangre
               'Ravnos', 'Followers of Set', 'Assamite', 'Giovanni',
               'Tzimisce', 'Lasombra', 'Noble Pander',
               'Cappadocian', 'Lasombra Antitribu',
+              'Котичек', 'Namaru',
               # 'Gargoyle',  # test Server
               }
 clan_ids = {key for key in role_by_id if role_by_id[key] in clan_names}

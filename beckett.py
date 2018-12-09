@@ -38,17 +38,6 @@ async def on_ready():
     C.Ready = True
     await other.test_status(ram.game)
 
-    # s = C.vtm_server
-    # ch = other.get_channel('402222682403504138') # type: discord.Channel
-    # if ch:
-    #     user = other.find_user(C.users['Kuro'])
-    #     # await C.client.delete_channel_permissions(ch, user)
-    #     prm = ch.overwrites_for(user)
-    #     prm.manage_channels = False
-    #     prm.manage_roles = False
-    #     prm.read_messages = False
-    #     prm.send_messages = False
-    #     await C.client.edit_channel_permissions(ch, user, overwrite=prm)
 
     pass
     pass
@@ -125,44 +114,52 @@ def prepare_const2():
 # Events with check_server
 # region Ev.check_server
 @C.client.event
+@ev.check_server
 async def on_member_join(member):
-    await ev.check_server(member.server, ev.on_member_join_u, ev.on_member_join_o, member)
+    return member.server
 
 
 @C.client.event
+@ev.check_server
 async def on_member_remove(member):
     # it's triggers on 'go away', kick and ban
-    await ev.check_server(member.server, ev.on_member_remove_u, ev.on_member_remove_o, member)
+    return member.server
 
 
 @C.client.event
+@ev.check_server
 async def on_member_ban(member):
-    await ev.check_server(member.server, ev.on_member_ban_u, ev.on_member_ban_o, member)
+    return member.server
 
 
 @C.client.event
+@ev.check_server
 async def on_member_unban(server, user):
-    await ev.check_server(server, ev.on_member_unban_u, ev.on_member_unban_o, user)
+    return server
 
 
 @C.client.event
+@ev.check_server
 async def on_server_emojis_update(before, after):
-    await ev.check_server(before[0].server, ev.on_server_emojis_update_u, ev.on_server_emojis_update_o, before, after)
+    return before[0].server
 
 
 @C.client.event
+@ev.check_server
 async def on_server_role_create(role):
-    await ev.check_server(role.server, ev.on_server_role_create_u, ev.on_server_role_create_o, role)
+    return role.server
 
 
 @C.client.event
+@ev.check_server
 async def on_server_role_delete(role):
-    await ev.check_server(role.server, ev.on_server_role_delete_u, ev.on_server_role_delete_o, role)
+    return role.server
 
 
 @C.client.event
+@ev.check_server
 async def on_server_role_update(before, after):
-    await ev.check_server(before.server, ev.on_server_role_update_u, ev.on_server_role_update_o, before, after)
+    return before.server
 # endregion
 
 

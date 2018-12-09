@@ -17,19 +17,23 @@ timer_hour_handle = None
 timer_min_handle = None
 
 
-async def check_server(server, usual_fun, other_fun, *args):
-    """
-    :type server: discord.Server
-    :type usual_fun: Function
-    :type other_fun: Function
-    """
-    if not C.Ready:
-        return
+def check_server(fun):
+    name = fun.__name__
 
-    if server.id == C.prm_server.id:
-        await usual_fun(*args)
-    elif server.id != C.vtm_server.id:
-        await other_fun(server, *args)
+    async def new_fun(*args):
+        log.jD('Call Ev ', name)
+        if not C.Ready:
+            print('Not C.Ready, abort ', name, '()')
+            return
+
+        server = await fun(*args)
+        if server.id == C.prm_server.id:
+            await globals()[name + '_u'](*args)
+        elif server.id != C.vtm_server.id:
+            await globals()[name + '_o'](server, *args)
+
+    new_fun.__name__ = name # it's for @C.client.event
+    return new_fun
 
 
 def upd_server():
@@ -56,7 +60,7 @@ def upd_server():
 
 
 # region on_Events
-async def on_member_join_u(member, *args):
+async def on_member_join_u(member):
     uid = member.id
 
     if uid in ram.silence_users:
@@ -73,13 +77,13 @@ async def on_member_join_u(member, *args):
         await C.client.send_message(C.main_ch, com.welcome_msg(uid))
 
 
-async def on_member_join_o(server, member, *args):
+async def on_member_join_o(server, member):
     await log.pr_other_news(server, '{0} ({0.mention}) new!'.format(member))
     def_ch = other.find_def_ch(server)
     await C.client.send_message(def_ch, com.hi(member.id))
 
 
-async def on_member_remove_u(member, *args):
+async def on_member_remove_u(member):
     # it's triggers on 'go away', kick and ban
     if not other.find(await C.client.get_bans(C.prm_server), id=member.id):
         people.Gn.check_new(member)
@@ -87,35 +91,35 @@ async def on_member_remove_u(member, *args):
         await C.client.send_message(C.main_ch, com.bye_msg(member.id, member.display_name))
 
 
-async def on_member_remove_o(server, member, *args):
+async def on_member_remove_o(server, member):
     await log.pr_other_news(server, '{0} ({0.mention}) go away!'.format(member))
     def_ch = other.find_def_ch(server)
     await C.client.send_message(def_ch, com.bye(member.id, member.display_name))
 
 
-async def on_member_ban_u(member, *args):
+async def on_member_ban_u(member):
     await people.on_ban(member)
     await log.pr_news('Ban {0} ({0.mention})!'.format(member))
     await C.client.send_message(C.main_ch, com.ban_msg(member.id, member.display_name))
 
 
-async def on_member_ban_o(server, member, *args):
+async def on_member_ban_o(server, member):
     await log.pr_other_news(server, 'Ban {0} ({0.mention})!'.format(member))
     def_ch = other.find_def_ch(server)
     await C.client.send_message(def_ch, com.bye(member.id, member.display_name))
 
 
-async def on_member_unban_u(user, *args):
+async def on_member_unban_u(server, user):
     people.on_unban(user)
     await C.client.send_message(C.main_ch, com.unban_msg(user.id))
     await log.pr_news('Unban {0} ({0.mention})!'.format(user))
 
 
-async def on_member_unban_o(server, user, *args):
+async def on_member_unban_o(server, server_, user):
     await log.pr_other_news(server, 'Unban {0} ({0.mention})!'.format(user))
 
 
-async def on_server_emojis_update_u(before, after, *args):
+async def on_server_emojis_update_u(before, after):
     la = len(after)
     lb = len(before)
     # before, after - list of server emojis
@@ -125,7 +129,7 @@ async def on_server_emojis_update_u(before, after, *args):
     emj.save_em()
 
 
-async def on_server_emojis_update_o(server, before, after, *args):
+async def on_server_emojis_update_o(server, before, after):
     la = len(after)
     lb = len(before)
     # before, after - list of server emojis
@@ -134,34 +138,43 @@ async def on_server_emojis_update_o(server, before, after, *args):
     await log.pr_other_news(server, 'on_server_emojis_update!')
 
 
-async def on_server_role_create_u(role, *args):
+async def on_server_role_create_u(role):
     upd_server()
-    await log.pr_news('New Role: ' + role.name + '!')
+    await log.pr_news('New Role: ' + role.name + ' {@&' + role.id + '}!')
 
 
-async def on_server_role_create_o(server, role, *args):
+async def on_server_role_create_o(server, role):
     upd_server()
-    await log.pr_other_news(server, 'New Role: ' + role.name + '!')
+    await log.pr_other_news(server, 'New Role: ' + role.name + ' {@&' + role.id + '}!')
 
 
-async def on_server_role_delete_u(role, *args):
+async def on_server_role_delete_u(role):
     upd_server()
     await log.pr_news('Delete Role: ' + role.name + '!')
 
 
-async def on_server_role_delete_o(server, role, *args):
+async def on_server_role_delete_o(server, role):
     upd_server()
     await log.pr_other_news(server, 'Delete Role: ' + role.name + '!')
 
 
-async def on_server_role_update_u(before, after, *args):
+async def on_server_role_update_u(before, after):
     upd_server()
-    await log.pr_news('Update Role: ' + before.name + '/' + after.name + '!')
+    if (after.position == before.position + 1 or after.position == before.position - 1):
+        return
+    names = (before.name + '/' + after.name + ' {@&' + after.id + '}'
+        if before.name != '@everyone' else '`@everyone`')
+
+    await log.pr_news('Update Role: ' + names + '!')
 
 
-async def on_server_role_update_o(server, before, after, *args):
+async def on_server_role_update_o(server, before, after):
     upd_server()
-    await log.pr_other_news(server, 'Update Role: ' + before.name + '/' + after.name + '!')
+    if (after.position == before.position + 1 or after.position == before.position - 1):
+        return
+    names = (before.name + '/' + after.name + ' {@&' + after.id + '}'
+             if before.name != '@everyone' else '`@everyone`')
+    await log.pr_other_news(server, 'Update Role: ' + names + '!')
 # endregion
 
 
