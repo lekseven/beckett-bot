@@ -1,5 +1,4 @@
 # -*- coding: utf8 -*-
-import datetime as dt
 import re
 import random
 import discord
@@ -274,13 +273,13 @@ async def reaction(message):
             if msg.admin:
                 ans = other.rand_tableflip()
             elif msg.channel.id == C.channels['bar']:
-                if {msg.author}.intersection({C.users['Buffy'], C.users['Tilia'],}):
+                if {msg.author}.intersection({C.users['Buffy'], C.users['Tilia'], }):
                     ans = other.rand_tableflip()
                 else:
                     return
             else:
                 ans = '┬─┬ ノ( ゜-゜ノ)'
-        elif msg.original.startswith('/tableflip') or msg.original.startswith(r'\tableflip'):
+        elif msg.original[1:].startswith('tableflip'):
             ans = '* *бросаю за <@{id}>* *\n{table}'.format(id=msg.author, table=other.rand_tableflip())
 
         if ans:
