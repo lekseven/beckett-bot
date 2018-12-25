@@ -245,6 +245,49 @@ def find_channels_or_users(names):
     return res
 
 
+async def get_channel_or_user(name):
+    """
+       :param str name:
+       :rtype: Discord.Channel
+       """
+    s = get_channel(name)
+    if not s:
+        user = find_user(name)
+        if user:
+            try:
+                mess = await C.client.send_message(user, '.')
+                s = mess.channel
+                await C.client.delete_message(mess)
+            except Exception as e:
+                pr_error(e, 'get_channels_or_users', 'send_message error')
+    return s or None
+
+
+async def get_channels_or_users(names):
+    """
+       :param iterator names:
+       :rtype: set
+       """
+    res = set()
+    for name in names:
+        s = get_channel(name)
+        if not s:
+            user = find_user(name)
+            if user:
+                try:
+                    mess = await C.client.send_message(user, '.')
+                    s = mess.channel
+                    await C.client.delete_message(mess)
+                except Exception as e:
+                    pr_error(e, 'get_channels_or_users', 'send_message error')
+                    continue
+
+        if s:
+            res.add(s)
+
+    return res
+
+
 async def test_status(state):
     game = None
     status = discord.Status.online
@@ -364,7 +407,7 @@ def find_def_ch(server):
 def rand_tableflip():
     # (╯°□°）╯︵ ┻━┻
     eye = random.choice(('°', '•', '◕', '~', '・', '￣', 'ᵔ', '^', '-', '❛', 'ಠ', '≖'))
-    mouth = random.choice(('□', '◡', 'o', '‿', '\_', '︿', '∀', '▽', '。'))
+    mouth = random.choice(('□', '◡', 'o', '‿', '\_', '︿', '∀', '▽', '。', 'ᴥ',))
     wave = random.choice(('彡', '︵', '︵︵', '︵︵︵', ))
     table = random.choice(('┻━┻', '┻━━┻', '┻━━━┻', '┻━━━━┻', '┻━━━━━┻', '┻━━━━━━┻', '┻━━━━━━━┻', ))
     return '(╯{0}{1}{0}）╯{2} {3}'.format(eye, mouth, wave, table)

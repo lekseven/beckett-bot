@@ -38,7 +38,6 @@ async def on_ready():
     C.Ready = True
     await other.test_status(ram.game)
 
-
     pass
     pass
     # ev.force_exit()
@@ -57,6 +56,8 @@ def prepare_const():
 
     if C.is_test:
         log.jI('Bot work with Test Server')
+    else:
+        C.ignore_channels.update(C.test_channels)
 
     tst_server_key = 'TEST_SERVER_ID'
     tst_channel_key = 'TEST_CHANNEL_ID'

@@ -137,10 +137,10 @@ class Msg:
             text_mess = 'сообщение' if mess_count == 1 else 'сообшения' if mess_count < 5 else 'сообщений'
             list_auth = other.get_mentions(auth)
             yes = await self.question(
-                'Вы уверены что хотите удалить {count} {text_mess} от {list_auth} с {first} по {last} в <#{channel}>? '
+                'Вы уверены что хотите удалить {count} {text_mess} от {list_auth} с {first} по {last} в {channel}? '
                 .format(
                     count=mess_count, text_mess=text_mess, list_auth=', '.join(list_auth),
-                    first=other.t2s(first, '{%x %X}'), last=other.t2s(last, '{%x %X}'), channel=channel.id))
+                    first=other.t2s(first, '{%x %X}'), last=other.t2s(last, '{%x %X}'), channel=channel))
             if yes:
                 try:
                     await C.client.purge_from(channel, limit=count, check=check, after=aft, before=bef)
@@ -269,8 +269,8 @@ async def reaction(message):
             await msg.answer(ans_phr['text'])
             return
     else:
+        ans = ''
         if '┻' in msg.original and '╯' in msg.original:
-            ans = ''
             if msg.admin:
                 ans = other.rand_tableflip()
             elif msg.channel.id == C.channels['bar']:
@@ -280,9 +280,12 @@ async def reaction(message):
                     return
             else:
                 ans = '┬─┬ ノ( ゜-゜ノ)'
-            if ans:
-                await msg.answer(ans)
-                return
+        elif msg.original.startswith('/tableflip') or msg.original.startswith(r'\tableflip'):
+            ans = '* *бросаю за <@{id}>* *\n{table}'.format(id=msg.author, table=other.rand_tableflip())
+
+        if ans:
+            await msg.answer(ans)
+            return
 
         gt_key = com.f_gt_key(msg.original, msg.text, msg.words.copy(), beckett)
         if gt_key:

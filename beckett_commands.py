@@ -334,10 +334,13 @@ async def channel(msg):
     """
     if len(msg.args) > 1:
         #ram.cmd_channels.setdefault(msg.author, set()).update(set(msg.args[1:]))
-        ram.cmd_channels.setdefault(msg.author, set()).update(other.get_channels(msg.args[1:]))
+        # ram.cmd_channels.setdefault(msg.author, set()).update(other.get_channels(msg.args[1:]))
+        ram.cmd_channels.setdefault(msg.author, set()).update(other.find_channels_or_users(msg.args[1:]))
         msg.cmd_ch = ram.cmd_channels.get(msg.author, set())
 
-    await msg.qanswer(('<#' + '>, <#'.join(msg.cmd_ch) + '>') if msg.cmd_ch else 'All')
+    # await msg.qanswer(('<#' + '>, <#'.join(msg.cmd_ch) + '>') if msg.cmd_ch else 'All')
+    text = other.ch_list(msg.cmd_ch)
+    await msg.qanswer((', '.join(text)) if text else 'All')
 
 
 async def unchannel(msg):
@@ -351,7 +354,9 @@ async def unchannel(msg):
         ram.cmd_channels.setdefault(msg.author, set()).difference_update(other.get_channels(msg.args[1:]))
 
     msg.cmd_ch = ram.cmd_channels.get(msg.author, set())
-    await msg.qanswer(('<#' + '>, <#'.join(msg.cmd_ch) + '>') if msg.cmd_ch else 'All')
+    # await msg.qanswer(('<#' + '>, <#'.join(msg.cmd_ch) + '>') if msg.cmd_ch else 'All')
+    text = other.ch_list(msg.cmd_ch)
+    await msg.qanswer((', '.join(text)) if text else 'All')
 
 
 async def report(msg):
@@ -438,9 +443,9 @@ async def purge(msg):
             return m.author.id in check_set
 
         check = check_user
-
-    for ch in channels:
-        await msg.purge(C.client.get_channel(ch), count, check=check)
+    chs = await other.get_channels_or_users(channels)
+    for ch in chs:
+        await msg.purge(ch, count, check=check)
 
 
 async def purge_aft(msg):
@@ -1035,6 +1040,58 @@ async def clear_clans(msg):
 
     else:
         await msg.qanswer("Не могу найти такого пользователя.")
+
+
+async def read(msg):
+    """
+    !read ch N: прочитать N сообщений в ch
+    """
+    if len(msg.args) < 3:
+        await msg.qanswer(other.comfortable_help([str(read.__doc__)]))
+        return
+
+    ch = await other.get_channel_or_user(msg.args[1])  # type: discord.Channel
+    if not ch:
+        await msg.qanswer("Can't find channel " + msg.args[1])
+        return
+
+    if not ch.is_private:
+        pr = ch.permissions_for(ch.server.me)  # type: discord.Permissions
+        if not pr.read_message_history:
+            await msg.qanswer("No permissions for reading <#{0}>!".format(ch.id))
+            return
+
+    if msg.args[2].isnumeric():
+        num = int(msg.args[2])
+    else:
+        await msg.qanswer(other.comfortable_help([str(read.__doc__)]))
+        return
+
+    log.D('- <read> for {0}({1}) start'.format(ch, ch.id))
+    messages = []
+    count = 0
+    async for message in C.client.logs_from(ch, limit=num):
+        messages.append(message)
+        count += 1
+        if count % 10000 == 0:
+            log.D('- - <read> save messages: ', count)
+    log.D('- <read> end save with {0} messages'.format(count))
+    messages.reverse()
+    log.D('- <read> start format messages')
+    mess = ['Read from {0} ({1}) at [{2}] with {3} messages:\n'
+                .format(ch, ch.id, other.t2utc().strftime('%d|%m|%y %T'), count)]
+    base = {}
+    for i, message in enumerate(messages):
+        mess.append(await log.format_mess(message, date=True, dbase=base))
+        mess += (await log.mess_plus(message, save_all_links=False))
+        if (i+1) % 10000 == 0:
+            log.D('- - <read> format messages: ', i+1)
+    log.D('- <read> end format messages')
+    s = '\n'.join(mess)
+    step = 2000
+    for i in range(0, len(s), step):
+        await msg.qanswer(s[i:i+step])
+    await msg.qanswer(":ok_hand:")
 
 
 async def log_channel(msg):

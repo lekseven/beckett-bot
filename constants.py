@@ -73,6 +73,8 @@ channels = {
     'other_links': '497142885700075540',
     'test_mode_only': '497143071604211743',
     'beckett_ignore': '512952018739134504',
+    'not_log': '527230130448498698',
+    'not_log_test_only': '527230235146453004',
 }
 
 superusers = {users['Kuro'], users['Magdavius'], }  # users['Natali'],  # Manf & Doriana checked by roles
@@ -81,10 +83,12 @@ beckett_refs = {users['bot'], '419975091544391680', }  # last - role_id
 beckett_names = {'беккет', 'бэккет', 'бекетт', 'бэкетт', 'бэккетт', 'беккетт', 'beckett', }
 #beckett_names = {'люсита', 'lucita', }
 silent_channels = {}
+not_log_channels = {channels['not_log'], channels['not_log_test_only']}
 ignore_channels = {
     channels['vtm_news'], channels['vtm_links'], channels['other_news'], channels['other_links'],
                    channels['vtm_links_archive'], channels['vtm_links_info_logs'], channels['beckett_ignore'],
                 }
+test_channels = {channels['test_mode_only'], channels['not_log_test_only']}
 
 punct2space = str.maketrans(string.punctuation + '«»🏻🏼🏽🏾🏿', ' ' * (len(string.punctuation) + 7))  # for translate
 

@@ -122,74 +122,81 @@ def jW(*args):
 
 
 async def mess_plus(message, save_disc_links=False, save_all_links=False, update_links=False, other_channel=None):
-    emb_keys = {
-        'author': ['name', 'icon_url'],
-        'image': ['url'],
-        'fields': ['name', 'value'],
-        'footer': ['icon_url', 'text'],
-    }
-    links = []
-    res = []
-    if message.attachments:
-        attachments = []
-        for att in message.attachments:
-            url = att['proxy_url'] or att['url']
-            attachments.append('\t\t' + url)
-            if save_all_links or (save_disc_links and 'discordapp' in url) and url not in disc_links:
-                links.append(url)
-        if attachments:
-            res.append('Attachments({0}):'.format(len(attachments)))
-            res.append('\n'.join(attachments))
+    try:
+        emb_keys = {
+            'author': ['name', 'icon_url'],
+            'image': ['url'],
+            'fields': ['name', 'value'],
+            'footer': ['icon_url', 'text'],
+        }
+        links = []
+        res = []
+        if message.attachments:
+            attachments = []
+            for att in message.attachments:
+                url = att['proxy_url'] or att['url']
+                attachments.append('\t\t' + url)
+                if save_all_links or (save_disc_links and 'discordapp' in url) and url not in disc_links:
+                    links.append(url)
+            if attachments:
+                res.append('Attachments({0}):'.format(len(attachments)))
+                res.append('\n'.join(attachments))
 
-    if message.embeds:
-        embeds = []
-        i = 1
-        for emb in message.embeds:
-            embed = ['\tEmb_' + str(i) + ':']
-            embed += other.str_keys(emb, ['title', 'url', 'description'], '\t\t')
+        if message.embeds:
+            embeds = []
+            i = 1
+            for emb in message.embeds:
+                embed = ['\tEmb_' + str(i) + ':']
+                embed += other.str_keys(emb, ['title', 'url', 'description'], '\t\t')
 
-            for key in emb_keys:
-                if key in emb:
-                    if isinstance(emb[key], list):
-                        j = 1
-                        for l in emb[key]:
-                            embed += ['\t\t[{0}_{1}]:'.format(key, str(j))]
-                            embed += other.str_keys(l, emb_keys[key], '\t\t\t')
-                            j += 1
-                    else:
-                        embed += ['\t\t[{0}]:'.format(key)]
-                        embed += other.str_keys(emb[key], emb_keys[key], '\t\t\t')
+                for key in emb_keys:
+                    if key in emb:
+                        if isinstance(emb[key], list):
+                            j = 1
+                            for l in emb[key]:
+                                embed += ['\t\t[{0}_{1}]:'.format(key, str(j))]
+                                embed += other.str_keys(l, emb_keys[key], '\t\t\t')
+                                j += 1
+                        else:
+                            embed += ['\t\t[{0}]:'.format(key)]
+                            embed += other.str_keys(emb[key], emb_keys[key], '\t\t\t')
 
-            i += 1
-            if embed:
-                embeds.append('\n'.join(embed))
+                i += 1
+                if embed:
+                    embeds.append('\n'.join(embed))
 
-        if embeds:
-            text_embeds = '\n'.join(embeds)
-            res.append(text_embeds)
-            if save_all_links:
-                links += re.findall('https?://.*\S', text_embeds)
-            elif save_disc_links:
-                links += re.findall('https?://.*discordapp.*\S', text_embeds)
+            if embeds:
+                text_embeds = '\n'.join(embeds)
+                res.append(text_embeds)
+                if save_all_links:
+                    links += re.findall('https?://.*\S', text_embeds)
+                elif save_disc_links:
+                    links += re.findall('https?://.*discordapp.*\S', text_embeds)
 
-    if links:
-        links = list(set(links).difference(disc_links))
         if links:
-            disc_links.update(links)
-            if not update_links:
-                text = '[{t}]<{ch}> {author} ({desc})'.format(
-                    t=other.t2s(message.timestamp, '%d|%m|%y %T'),
-                    ch=str(message.channel.name or message.author),
-                    author=str(message.author),
-                    desc='save_all_links' if save_all_links else 'save_disc_links')
-                ch = (other_channel or
-                    (C.vtm_links_ch if (message.server and message.server.id == C.vtm_server.id)
-                    else C.other_links_ch))
-                await C.client.send_message(ch, content=text)
-                async for file, name, url in other.get_url_files(links):
-                    await C.client.send_file(ch, file, filename=name, content='<' + url + '>')
+            links = list(set(links).difference(disc_links))
+            if links:
+                disc_links.update(links)
+                if not update_links:
+                    text = '[{t}]<{ch}> {author} ({desc})'.format(
+                        t=other.t2s(message.timestamp, '%d|%m|%y %T'),
+                        ch=str(message.channel.name or message.author),
+                        author=str(message.author),
+                        desc='save_all_links' if save_all_links else 'save_disc_links')
+                    ch = (other_channel or
+                        (C.vtm_links_ch if (message.server and message.server.id == C.vtm_server.id)
+                        else C.other_links_ch))
+                    await C.client.send_message(ch, content=text)
+                    async for file, name, url in other.get_url_files(links):
+                        try:
+                            await C.client.send_file(ch, file, filename=name, content='<' + url + '>')
+                        except Exception as e:
+                            other.pr_error(e, 'log.mess_plus', 'send_file error')
 
-    return ['\n'.join(res)] if res else []
+        return ['\n'.join(res)] if res else []
+    except Exception as e:
+        other.pr_error(e, 'log.mess_plus', 'mess_plus[198] error')
+        return []
 
 
 async def format_mess(msg, time=False, date=False, dbase=None):
@@ -200,48 +207,52 @@ async def format_mess(msg, time=False, date=False, dbase=None):
     :type dbase: dict
     :rtype: str
     """
-    t_m = other.t2s(msg.timestamp)
-    t_n = other.t2s()
-    s_time = '(from {0})'.format(t_m) if (time or (t_n[:-1] != t_m[:-1]) or (int(t_n[-1]) - int(t_m[-1]) > 1)) else ''
-    ch_name = str(msg.channel.user) if msg.channel.is_private else str(msg.channel.name)
-    t = ('(from {0})'.format(other.t2s(msg.timestamp, '%d|%m|%y %T')) if date else s_time)
-    cont = msg.content.replace('\n', '\n\t')  # type: str
-    db = dbase if dbase is not None else {}  # we need a=={} if it is
-    if msg.author.id not in db:
-        db[msg.author.id] = msg.author
-    if msg.raw_mentions:
-        for uid in msg.raw_mentions:
-            if uid in db:
-                usr = db[uid]
-            else:
-                usr = other.find_member(msg.server, uid) or other.find_user(uid)
-                if not usr:
-                    usr = await C.client.get_user_info(uid)
-                if usr:
-                    db[uid] = usr
+    try:
+        t_m = other.t2s(msg.timestamp)
+        t_n = other.t2s()
+        s_time = '(from {0})'.format(t_m) if (time or (t_n[:-1] != t_m[:-1]) or (int(t_n[-1]) - int(t_m[-1]) > 1)) else ''
+        ch_name = str(msg.channel.user) if msg.channel.is_private else str(msg.channel.name)
+        t = ('(from {0})'.format(other.t2s(msg.timestamp, '%d|%m|%y %T')) if date else s_time)
+        cont = msg.content.replace('\n', '\n\t')  # type: str
+        db = dbase if dbase is not None else {}  # we need a=={} if it is
+        if msg.author.id not in db:
+            db[msg.author.id] = msg.author
+        if msg.raw_mentions:
+            for uid in msg.raw_mentions:
+                if uid in db:
+                    usr = db[uid]
                 else:
-                    continue
-            usr_name = str(usr) + ('(' + usr.display_name + ')' if usr.name != usr.display_name else '')
-            cont = cont.replace('<@' + usr.id + '>', usr_name).replace('<@!' + usr.id + '>', usr_name)
-    if msg.raw_channel_mentions:
-        for chid in msg.raw_channel_mentions:
-            ch = C.client.get_channel(chid)
-            if ch:
-                cont = cont.replace('<#' + ch.id + '>', '#' + str(ch))
-    if msg.raw_role_mentions:
-        for role_id in msg.raw_role_mentions:
-            role = other.find(msg.server.roles, id=role_id)
-            if not role:
-                for s in C.client.servers:
-                    if s.id == msg.server.id:
+                    usr = other.find_member(msg.server, uid) or other.find_user(uid)
+                    if not usr:
+                        usr = await C.client.get_user_info(uid)
+                    if usr:
+                        db[uid] = usr
+                    else:
                         continue
-                    role = other.find(s.roles, id=role_id)
-                    if role:
-                        break
-            if role:
-                cont = cont.replace('<@&' + role.id + '>', '&' + str(role))
-    a_n = str(msg.author) + ('(' + msg.author.display_name + ')' if msg.author.name != msg.author.display_name else '')
-    return '{t}<{ch}> {author}: {cont}'.format(t=t, ch=ch_name, author=a_n, cont=cont)
+                usr_name = str(usr) + ('(' + usr.display_name + ')' if usr.name != usr.display_name else '')
+                cont = cont.replace('<@' + usr.id + '>', usr_name).replace('<@!' + usr.id + '>', usr_name)
+        if msg.raw_channel_mentions:
+            for chid in msg.raw_channel_mentions:
+                ch = C.client.get_channel(chid)
+                if ch:
+                    cont = cont.replace('<#' + ch.id + '>', '#' + str(ch))
+        if msg.raw_role_mentions and msg.server:
+            for role_id in msg.raw_role_mentions:
+                role = other.find(msg.server.roles, id=role_id)
+                if not role:
+                    for s in C.client.servers:
+                        if s.id == msg.server.id:
+                            continue
+                        role = other.find(s.roles, id=role_id)
+                        if role:
+                            break
+                if role:
+                    cont = cont.replace('<@&' + role.id + '>', '&' + str(role))
+        a_n = str(msg.author) + ('(' + msg.author.display_name + ')' if msg.author.name != msg.author.display_name else '')
+        return '{t}<{ch}> {author}: {cont}'.format(t=t, ch=ch_name, author=a_n, cont=cont)
+    except Exception as e:
+        other.pr_error(e, 'log.format_mess', 'format_mess[253] error')
+        return '<format error> ' + msg.message.content
 
 
 async def on_mess(msg, kind):
@@ -253,10 +264,12 @@ async def on_mess(msg, kind):
     if not C.Ready or msg.channel.id in C.ignore_channels:
         return False
 
+    if msg.channel.id in C.not_log_channels:
+        return True
+
     s_server = ''
     if msg.server:
-        if ((C.is_test and msg.server.id == C.vtm_server.id) or
-                (not C.is_test and msg.channel.id == C.channels['test_mode_only'])):
+        if (C.is_test and msg.server.id == C.vtm_server.id):
             return False
         if msg.server.id != C.prm_server.id:
             s_server = '<{0}>'.format(msg.server.name)
@@ -264,7 +277,6 @@ async def on_mess(msg, kind):
     time = (kind != 'on_message')
     save_all_links = (kind == 'on_message_delete')
     save_disc_links = not save_all_links
-
     time_tpprint('M', s_server, '{{{0}}}'.format(desc[kind]), await format_mess(msg, time))
     pl = await mess_plus(msg, save_disc_links, save_all_links)
     if pl:
@@ -278,10 +290,12 @@ async def on_reaction(reaction, kind, user):
     if not C.Ready or msg.channel.id in C.ignore_channels:
         return False
 
+    if msg.channel.id in C.not_log_channels:
+        return True
+
     s_server = ''
     if msg.server:
-        if ((C.is_test and msg.server.id == C.vtm_server.id) or
-                (not C.is_test and msg.channel.id == C.channels['test_mode_only'])):
+        if (C.is_test and msg.server.id == C.vtm_server.id):
             return False
         if msg.server.id != C.prm_server.id:
             s_server = '<{0}>'.format(msg.server.name)
