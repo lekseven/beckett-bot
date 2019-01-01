@@ -116,6 +116,12 @@ def prepare_const2():
 # region Ev.check_server
 @C.client.event
 @ev.check_server
+async def on_voice_state_update(before, after):
+    return after.server
+
+
+@C.client.event
+@ev.check_server
 async def on_member_join(member):
     return member.server
 

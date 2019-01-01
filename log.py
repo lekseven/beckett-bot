@@ -192,6 +192,11 @@ async def mess_plus(message, save_disc_links=False, save_all_links=False, update
                             await C.client.send_file(ch, file, filename=name, content='<' + url + '>')
                         except Exception as e:
                             other.pr_error(e, 'log.mess_plus', 'send_file error')
+                            try:
+                                await C.client.send_message(ch, content=url)
+                            except Exception as e:
+                                other.pr_error(e, 'log.mess_plus', 'send_just_url error')
+
 
         return ['\n'.join(res)] if res else []
     except Exception as e:

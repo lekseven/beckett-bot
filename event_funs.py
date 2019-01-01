@@ -21,15 +21,16 @@ def check_server(fun):
     name = fun.__name__
 
     async def new_fun(*args):
-        log.jD('Call Ev ', name)
         if not C.Ready:
             print('Not C.Ready, abort ', name, '()')
             return
 
         server = await fun(*args)
         if server.id == C.prm_server.id:
+            log.jD('Call Ev_u ', name)
             await globals()[name + '_u'](*args)
         elif server.id != C.vtm_server.id:
+            log.jD('Call Ev_o ', name)
             await globals()[name + '_o'](server, *args)
 
     new_fun.__name__ = name # it's for @C.client.event
@@ -60,6 +61,52 @@ def upd_server():
 
 
 # region on_Events
+async def on_voice_state_update_u(before, after):
+    v_old = before.voice_channel
+    v_new = after.voice_channel
+
+    if v_old == v_new:
+        return
+
+    if v_old and v_new:
+        log.I('<voice> {0} reconnects from #{1} to #{2}.'.format(after, v_old, v_new))
+    elif v_old:
+        log.I('<voice> {0} disconnects from #{1}.'.format(after, v_old))
+    elif v_new:
+        log.I('<voice> {0} connects to #{1}.'.format(after, v_new))
+        note = com.voice_note(after)
+        if note:
+            log.D('<voice> Note event')
+            await other.type2sent(C.main_ch, note)
+
+    user = None
+    ch = None
+    if after.id in C.voice_alert and v_new and len(v_new.voice_members) == 1:
+        user = after
+        ch = v_new
+    elif v_old and len(v_old.voice_members) == 1 and v_old.voice_members[0].id in C.voice_alert:
+        user = v_old.voice_members[0]
+        ch = v_old
+    if user and ch:
+        log.D('<voice> Event to @here')
+        await other.type2sent(C.main_ch, com.voice_event(user, ch))
+
+
+async def on_voice_state_update_o(server, before, after):
+    v_old = before.voice_channel
+    v_new = after.voice_channel
+
+    if v_old == v_new:
+        return
+
+    if v_old and v_new:
+        log.I('<voice> {0} reconnects from #{1} to #{2}.'.format(after, v_old, v_new))
+    elif v_old:
+        log.I('<voice> {0} disconnects from #{1}.'.format(after, v_old))
+    elif v_new:
+        log.I('<voice> {0} connects to #{1}.'.format(after, v_new))
+
+
 async def on_member_join_u(member):
     uid = member.id
 

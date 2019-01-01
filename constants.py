@@ -41,6 +41,10 @@ users = {
     'Buffy': '297305326665859072',
     'Soul': '391952676771856385',
     'Tilia': '271496862756765698',
+    'Tveyn': '155752265544761344',
+    #test
+    'Dummy': '452303933856153601',
+    'Dracula': '491399986156666893',
 }
 
 channels = {
@@ -141,3 +145,4 @@ clan_ids = {key for key in role_by_id if role_by_id[key] in clan_names}
 sabbat_clans = {'Tzimisce', 'Lasombra', 'Noble Pander'}
 #sabbat_roles = set(roles[i] for i in sabbat_clans)
 not_sir = {'235088799074484224'}  # Радио "Harpy" 66.6FM
+voice_alert = {users['Dummy'], users['Natali']}

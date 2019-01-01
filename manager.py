@@ -14,6 +14,7 @@ import emj
 
 
 async def turn_silence(user, turn=True, server=None, check=None, force=False):
+    change_pr = ('send_messages', 'add_reactions',)
     server = server or C.prm_server
     new_pr = False if turn else None
     check = set(check or ())
@@ -21,10 +22,14 @@ async def turn_silence(user, turn=True, server=None, check=None, force=False):
         if str(ch.type) == 'text':
             bot_prm = ch.permissions_for(server.me)
             if bot_prm.manage_channels:
+                add_ch = False
                 prm = ch.overwrites_for(user)
-                if force or ((turn and prm.send_messages is None) or
-                    (not turn and prm.send_messages is False and not ch.id in check)):
-                    prm.send_messages = new_pr
+                for pr in change_pr:
+                    if force or ((turn and getattr(prm,pr) is None) or
+                                 (not turn and getattr(prm,pr) is False and not ch.id in check)):
+                        setattr(prm, pr, new_pr)
+                        add_ch = True
+                if add_ch:
                     if prm.is_empty():
                         await C.client.delete_channel_permissions(ch, user)
                     else:
@@ -51,9 +56,9 @@ async def silence_on(name, t=1.0, force=False):
     t = max(t, 0.02)
     check = await turn_silence(user, turn=True, force=force)
     ram.silence_users[user.id] = {'time': other.get_sec_total() + t * 3600 - 1, 'check': tuple(check)}
-
-    add_roles = [other.find(s.roles, id=C.roles['Silence'])]
-    await C.client.add_roles(user, *add_roles)
+    if not C.is_test:
+        add_roles = [other.find(s.roles, id=C.roles['Silence'])]
+        await C.client.add_roles(user, *add_roles)
     log.I('Silence on for ', user, ' at ', other.t2s(), ' on ', t, 'h.')
     return user
 
@@ -72,8 +77,9 @@ async def silence_off(name):
     s_user = ram.silence_users.pop(user.id, False)
     if s_user:
         await turn_silence(user, turn=False, check=s_user['check'])
-        rem_roles = [other.find(s.roles, id=C.roles['Silence'])]
-        await C.client.remove_roles(user, *rem_roles)
+        if not C.is_test:
+            rem_roles = [other.find(s.roles, id=C.roles['Silence'])]
+            await C.client.remove_roles(user, *rem_roles)
         log.I('Silence off for ', user, ' at ', other.t2s())
         return user
     else:

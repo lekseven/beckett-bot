@@ -65,16 +65,7 @@ class Msg:
         await C.client.edit_message(self.message, new_msg)
 
     async def type2sent(self, ch, text=None, emb=None, extra=0):
-        if text is None:
-            await C.client.send_message(ch, content=text, embed=emb)
-            return 0
-
-        t = min(1500, len(text)) / 20 + extra
-        await C.client.send_typing(ch)
-        for i in range(1, int(t / 10) + 1):
-            other.later_coro(i * 10, C.client.send_typing(ch))
-        other.later_coro(t, C.client.send_message(ch, content=text, embed=emb))
-        return t
+        return await other.type2sent(ch, text, emb, extra)
 
     async def report(self, text):
         for ch_id in self.rep_ch:

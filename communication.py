@@ -138,7 +138,7 @@ def f_gt_key(orig_phrase, tr_phrase, words, bot_mention):
 
     phr = re.sub('[ ]?' + '|'.join(ignore) + '[ ]?', ' ', tr_phrase)  # delete all words from ignore
     phr = re.sub('[ ]+', ' ', phr)  # replace more than one spaces with only one
-    smiles = re.findall('[:][\w_]*[:]', orig_phrase)
+    smiles = re.findall(r'[:][\w_]*[:]', orig_phrase)
     count_sm = len(smiles) + ''.join(smiles).count('_')
     simple = len(words) < (count_sm + 2 + bot_mention)
 
@@ -205,7 +205,7 @@ def bye(uid, name=''):
 
 
 def bye_msg(uid, name=''):
-    return '{bye}\n{phrase}'.format(bye=bye(uid,name), phrase=R.choice(D.bye_phrase))
+    return '{bye}\n{phrase}'.format(bye=bye(uid, name), phrase=R.choice(D.bye_phrase))
 
 
 def ban_msg(uid, nick=''):
@@ -225,3 +225,15 @@ def make_words(words, endings):
             s.add(w + end)
 
     return s
+
+
+def voice_event(user, channel):
+    return R.choice(D.voice_alone_messages).format(user='<@'+user.id+'>', voice='<#'+channel.id+'>')
+
+
+def voice_note(user):
+    if user.id in D.voice_notions:
+        return R.choice(D.voice_notions[user.id]).format(user='<@' + user.id + '>')
+    else:
+        return False
+
