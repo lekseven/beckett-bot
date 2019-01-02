@@ -21,7 +21,7 @@ async def turn_silence(user, turn=True, server=None, check=None, force=False):
     for ch in server.channels:  # type: discord.Channel
         if str(ch.type) == 'text':
             bot_prm = ch.permissions_for(server.me)
-            if bot_prm.manage_channels:
+            if bot_prm.manage_roles:
                 add_ch = False
                 prm = ch.overwrites_for(user)
                 for pr in change_pr:

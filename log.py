@@ -91,7 +91,8 @@ def time_tpprint(kind, *args):  #time_type_print
 
 
 def D(*args):
-    time_tpprint('D', ' ', *args)
+    if C.is_test:
+        time_tpprint('D', ' ', *args)
 
 
 def I(*args):
@@ -108,7 +109,8 @@ def E(*args):
 
 def jD(*args):
     # without time
-    tpprint('D', ' ', *args)
+    if C.is_test:
+        tpprint('D', ' ', *args)
 
 
 def jI(*args):
