@@ -54,7 +54,10 @@ async def silence_on(name, t=1.0, force=False):
         return False
 
     t = max(t, 0.02)
-    check = await turn_silence(user, turn=True, force=force)
+    if user.id in ram.silence_users:
+        check = ram.silence_users[user.id]['check']
+    else:
+        check = await turn_silence(user, turn=True, force=force)
     ram.silence_users[user.id] = {'time': other.get_sec_total() + t * 3600 - 1, 'check': tuple(check)}
     if not C.is_test:
         add_roles = [other.find(s.roles, id=C.roles['Silence'])]
