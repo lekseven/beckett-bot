@@ -209,7 +209,7 @@ def get_dices(count=1, dtype=10, rel='ge', diff=6, par_keys='', wr='long', simpl
         dices.append(d)
     if wr == 'long':
         if simple:
-            text = ['{:02d}d:\t{val}\n'.format(i, val=dice) for i, dice in enumerate(dices)]
+            text = ['{:02d}d:\t{val}\n'.format(i+1, val=dice) for i, dice in enumerate(dices)]
         else:
             for i, dice in enumerate(dices):
                 succ = getattr(operator, rel)(dice, diff)

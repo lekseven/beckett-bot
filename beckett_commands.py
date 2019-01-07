@@ -219,7 +219,7 @@ async def rollw(msg):
             await msg.qanswer(''.join(text))
 
     if error:
-        await msg.qanswer(other.comfortable_help([str(roll.__doc__)]))
+        await msg.qanswer(other.comfortable_help([str(rollw.__doc__)]))
         return
 
 # endregion
