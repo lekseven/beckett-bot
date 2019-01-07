@@ -2,6 +2,7 @@ import re
 
 import discord
 import random
+import operator
 import lxml.html
 import requests
 
@@ -25,8 +26,8 @@ async def turn_silence(user, turn=True, server=None, check=None, force=False):
                 add_ch = False
                 prm = ch.overwrites_for(user)
                 for pr in change_pr:
-                    if force or ((turn and getattr(prm,pr) is None) or
-                                 (not turn and getattr(prm,pr) is False and not ch.id in check)):
+                    if force or ((turn and getattr(prm, pr) is None) or
+                                 (not turn and getattr(prm, pr) is False and ch.id not in check)):
                         setattr(prm, pr, new_pr)
                         add_ch = True
                 if add_ch:
@@ -43,6 +44,7 @@ async def silence_on(name, t=1.0, force=False):
     """
     :param name: string
     :param t: float
+    :param force: bool
     :rtype: discord.Member
     """
     s = C.prm_server
@@ -134,7 +136,7 @@ def get_weather():
     t_max = tr_ch[3].getchildren()[0].getchildren()[0].text_content()
     t_min = tr_ch[3].getchildren()[0].getchildren()[2].text_content()
     rain = tr_ch[4].text_content()
-    wind = re.search('\d+', tr_ch[5].text_content())[0] # км/ч
+    wind = re.search(r'\d+', tr_ch[5].text_content())[0] # км/ч
     hum = tr_ch[6].text_content()
     t_desc = ''
     if t_min != '--' or t_max != '--':
@@ -193,3 +195,56 @@ async def do_embrace(user, clan=None):
 
     else:
         return False  #await msg.qanswer("Не могу найти такого пользователя.")
+
+
+def get_dices(count=1, dtype=10, rel='ge', diff=6, par_keys='', wr='long', simple=False, add_d=False):
+    text = []
+    dices = []
+    was_success = False
+    add_dices = 0
+    double_ten = False
+    res = 0
+    for i in range(0, count):
+        d = random.randint(1, dtype)
+        dices.append(d)
+    if wr == 'long':
+        if simple:
+            text = ['{:02d}d:\t{val}\n'.format(i, val=dice) for i, dice in enumerate(dices)]
+        else:
+            for i, dice in enumerate(dices):
+                succ = getattr(operator, rel)(dice, diff)
+                aft = ''
+                if succ:
+                    res += 1
+                    symb = '+'
+                    was_success = True
+                    if dice == dtype and par_keys:
+                        if 'd' in par_keys:
+                            aft = double_ten and ' (+)' or ''
+                            res += int(double_ten)
+                            double_ten = not double_ten
+                        elif 'sp' in par_keys:
+                            res += 1
+                            aft = ' (+)'
+                        elif 's' in par_keys:
+                            add_dices += 1
+                            aft = ' (*)'
+                else:
+                    symb = '•'
+                    if dice == 1 and ('w' in par_keys or 'f' in par_keys):
+                        res -= 1
+                        symb = '-'
+                text.append('{} {:02d}d:\t{val}{aft}\n'.format(symb, i+1, val=dice, aft=aft))
+            if add_d:
+                return res, text, add_dices
+            while add_dices:
+                text.append('* Специализация({}):\n'.format(add_dices))
+                (add_res, add_text, add_dices) = get_dices(add_dices, dtype, rel, diff, par_keys, wr, add_d=True)
+                res += add_res
+                text += add_text
+
+            conclusion = ('! Успех ({})' if res > 0 else
+                          '• Неудача' if (was_success or res == 0) else '- Провал ({})').format(res)
+            text.append(conclusion)
+
+    return text

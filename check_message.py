@@ -85,14 +85,18 @@ class Msg:
                 t += await self.type2sent(self.channel, text=s, emb=emb, extra=t)
         else:
             #await C.client.send_message(self.channel, content=text, embed=emb)
-            await self.type2sent(self.channel, text=text, emb=emb)
+            step = 2000
+            for i in range(0, len(text), step):
+                await self.type2sent(self.channel, text=text[i:i + step], emb=emb)
 
     async def qanswer(self, text):
         if isinstance(text, list):
             for s in text:
                 await C.client.send_message(self.channel, s)
         else:
-            await C.client.send_message(self.channel, text)
+            step = 2000
+            for i in range(0, len(text), step):
+                await C.client.send_message(self.channel, text[i:i + step])
 
     async def say(self, channel, text):
         #await C.client.send_message(channel, text)

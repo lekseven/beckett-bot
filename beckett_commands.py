@@ -6,6 +6,7 @@
 import discord
 import sys
 import random
+import re
 import other
 import constants as C
 import local_memory as ram
@@ -16,7 +17,7 @@ import manager
 import emj
 #import data
 
-free_cmds = {'roll', 'help', 'ignore',}
+free_cmds = {'roll', 'rollw', 'help', 'ignore',}
 admin_cmds = { 'roll', 'help', 'ignore', 'unsilence_all',
     'channel', 'unchannel', 'report', 'unreport', 'say', 'sayf', 'emoji', 'dominate',
     'purge', 'purge_aft', 'purge_ere', 'purge_bet', 'embrace', 'get_offtime', 'get_offlines',
@@ -91,25 +92,135 @@ async def ignore(msg): # TODO more phrases here
         await msg.answer("Не хочешь разговаривать, ну и не надо :confused:.")
 
 
+# async def roll(msg):
+#     """\
+#     !roll хdу: кинуть x кубиков-y \
+#     """
+#     if len(msg.args) < 2:
+#         msg.args.append('1d10')
+#     rollrange = msg.args[1].split('d')
+#     if len(rollrange) == 2 and all(i.isdigit() for i in rollrange):
+#         count, dice = int(rollrange[0]), int(rollrange[1])
+#         if count > 21:
+#             await msg.answer('Перебор, я выиграл :slight_smile:')
+#             return
+#
+#         dices = []
+#         for i in range(0, count):
+#             dices += ['{:02d}'.format(i + 1), 'd:\t', str(random.randint(1, dice)), '\n']
+#         await msg.qanswer("```" + ''.join(dices) + "```")
+#     else:
+#         await msg.qanswer(other.comfortable_help([str(roll.__doc__)]))
+roll_patt = re.compile(r'''
+        [ ]*(?P<key1>[a-zA-Z_]+)?
+        [ ]*(?P<count>\d+)(?:[ ]*d[ ]*(?P<type>\d+))?
+        [ ]*(?P<rel>(
+            (?P<ge>(>=|=>))|(?P<le>(<=|=<))|(?P<ne>(!=|=!|~=|=~|<>|><|~+|!+))|(?P<eq>[=]+)|(?P<gt>[>]+)|(?P<lt>[<]+)
+        ))?
+        [ ]*(?P<diff>[-+]?\d+[.,]?\d*)?
+        [ ]*(?P<key2>[a-zA-Z_]+)?
+        ''', re.X)
+
+
 async def roll(msg):
     """\
-    !roll хdу: кинуть x кубиков-y \
+    !roll х: кинуть x d10
+    !roll хdу: кинуть x кубиков-y
+    !roll хdу f: кинуть x d10 больше или равно сложности 6 с вычитом единиц
+    !roll хdу s: кинуть x d10 к сложности 6 c доп бросками при десятках
+    !roll хdу sp: кинуть x d10 к сложности 6 с доп успехами при десятках
+    !roll хdу d: кинуть x d10 к сложности 6 с вычитом единиц и доп успехами при паре десяток
+    !roll хdу diff [f/s/sp/d]: кинуть x кубиков-y >= (больше или равно) к сложности diff
+    !roll хdу rel [f/s/sp/d]: кинуть x кубиков-y rel(>,<,==, etc) к сложности (y/2+1)
+    !roll хdу rel diff [f/s/sp/d]: кинуть x кубиков-y по отношению rel(>,<,==, etc) к сложности diff
     """
-    if len(msg.args) < 2:
-        msg.args.append('1d10')
-    rollrange = msg.args[1].split('d')
-    if len(rollrange) == 2 and all(i.isdigit() for i in rollrange):
-        count, dice = int(rollrange[0]), int(rollrange[1])
-        if count > 21:
-            await msg.answer('Перебор, я выиграл :slight_smile:')
-            return
+    s_text = msg.text
+    m = roll_patt.search(s_text)
+    rel_keys = ('ge', 'le', 'ne', 'eq', 'gt', 'lt')
+    error = not m or False
+    if not error:
+        group = m.groupdict()
+        error = not group['count']
 
-        dices = []
-        for i in range(0, count):
-            dices += ['{:02d}'.format(i + 1), 'd:\t', str(random.randint(1, dice)), '\n']
-        await msg.qanswer("```" + ''.join(dices) + "```")
-    else:
+        if not error:
+            par_keys = (group['key1'] or '') + (group['key2'] or '')
+            count = int(group['count']) or 1
+            dtype = int(group['type']) if group['type'] else 10
+            simple = not (group['rel'] or group['diff'])
+            if not simple or ('s' in par_keys or 'w' in par_keys or 'f' in par_keys):
+                simple = False
+                rel = [key for key in rel_keys if group[key]][0] if group['rel'] else 'ge'
+                diff = int(group['diff']) if group['diff'] else int(dtype / 2 + 1)
+            else:
+                rel, diff = None, None
+
+            if count > 21:
+                await msg.answer('Перебор, я выиграл :slight_smile:')
+                return
+
+            if dtype > 1000:
+                await msg.answer('Ну, **таких** дайсов мне не завезли :confused:')
+                return
+
+            text = ['<@{}>, \n```diff\n'.format(msg.author)]
+            text += manager.get_dices(count, dtype, rel, diff, par_keys, 'long', simple, add_d=False)
+            text.append('```')
+
+            await msg.qanswer(''.join(text))
+
+    if error:
         await msg.qanswer(other.comfortable_help([str(roll.__doc__)]))
+        return
+
+
+async def rollw(msg):
+    """\
+    !rollw х: кинуть x d10
+    !rollw хdу: кинуть x кубиков-y
+    !rollw хdу s: кинуть x d10 к сложности 6 c доп бросками при десятках
+    !rollw хdу sp: кинуть x d10 к сложности 6 с доп успехами при десятках
+    !rollw хdу d: кинуть x d10 к сложности 6 с вычитом единиц и доп успехами при паре десяток
+    !rollw хdу diff [s/sp/d]: кинуть x кубиков-y >= (больше или равно) к сложности diff
+    !rollw хdу rel [s/sp/d]: кинуть x кубиков-y rel(>,<,==, etc) к сложности (y/2+1)
+    !rollw хdу rel diff [s/sp/d]: кинуть x кубиков-y по отношению rel(>,<,==, etc) к сложности diff
+    """
+    s_text = msg.text
+    m = roll_patt.search(s_text)
+    rel_keys = ('ge', 'le', 'ne', 'eq', 'gt', 'lt')
+    error = not m or False
+    if not error:
+        group = m.groupdict()
+        error = not group['count']
+
+        if not error:
+            par_keys = (group['key1'] or '') + (group['key2'] or '') + 'f'
+            count = int(group['count']) or 1
+            dtype = int(group['type']) if group['type'] else 10
+            simple = not (group['rel'] or group['diff'])
+            if not simple or ('s' in par_keys or 'w' in par_keys or 'f' in par_keys):
+                simple = False
+                rel = [key for key in rel_keys if group[key]][0] if group['rel'] else 'ge'
+                diff = int(group['diff']) if group['diff'] else int(dtype / 2 + 1)
+            else:
+                rel, diff = None, None
+
+            if count > 21:
+                await msg.answer('Перебор, я выиграл :slight_smile:')
+                return
+
+            if dtype > 1000:
+                await msg.answer('Ну, **таких** дайсов мне не завезли :confused:')
+                return
+
+            text = ['<@{}>, \n```diff\n'.format(msg.author)]
+            text += manager.get_dices(count, dtype, rel, diff, par_keys, 'long', simple, add_d=False)
+            text.append('```')
+
+            await msg.qanswer(''.join(text))
+
+    if error:
+        await msg.qanswer(other.comfortable_help([str(roll.__doc__)]))
+        return
 
 # endregion
 
@@ -257,8 +368,8 @@ async def dominate(msg):
         await msg.answer('Нет у вас доминирования ¯\_(ツ)_/¯')
         return
 
-    auth = msg.find_member(msg.author)
-    who = msg.find_member(msg.args[1])
+    auth = other.find_member(C.vtm_server, msg.author)
+    who = other.find_member(C.vtm_server, msg.args[1])
     if not auth or not who:
         await msg.qanswer(other.comfortable_help([str(dominate.__doc__)]))
         return
@@ -266,6 +377,7 @@ async def dominate(msg):
     emb.set_author(name=auth.nick or auth.name, icon_url=auth.avatar_url)
     emb.set_image(url='https://cdn.discordapp.com/attachments/420056219068399617/450428811725766667/dominate.gif')
     #emb.set_footer(text='')
+    # ch = other.get_channel(C.channels['sabbat'])
     await msg.type2sent(C.main_ch, text=who.mention, emb=emb)
     #await C.client.send_message(ch, content=who.mention, embed=emb)
 

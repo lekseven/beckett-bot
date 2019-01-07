@@ -106,6 +106,14 @@ async def on_voice_state_update_o(server, before, after):
     elif v_new:
         log.I('<voice> {0} connects to #{1}.'.format(after, v_new))
 
+    if server.id == C.servers['Tilia']:
+        if v_new and len(v_new.voice_members) == 1:
+            user = after
+            ch = v_new
+            if user and ch:
+                log.D('<voice other> Event to @here')
+                await other.type2sent(other.get_channel('Tilia_main'), com.voice_event(user, ch))
+
 
 async def on_member_join_u(member):
     uid = member.id

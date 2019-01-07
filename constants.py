@@ -47,6 +47,13 @@ users = {
     'Dracula': '491399986156666893',
 }
 
+servers = {
+    'vtm': vtm_server,
+    'test': tst_server,
+    'Sabbat': '425523547297808384',
+    'Tilia': '493452777519841280',
+}
+
 channels = {
     'flood': '398645007944384513',
     'f_wood': '461140194532524042',
@@ -58,10 +65,18 @@ channels = {
     'stuff': '411647652246323200',
     'test': '419968987112275979',
     'rpg': '458975748611375104',
-    'chantry': '402222682403504138',
-    'bar': '415646441730474007',
     #
     'primogens': '417777460772470785',
+    # clan
+    'chantry': '402222682403504138',
+    'bar': '415646441730474007',
+    'parlor': '402224879123955712',
+    'gallery': '407155181050920962',
+    'malknet': '402223047307952149',
+    'shreknet': '402223998999461894',
+    'gangrel_clan': '430309455553626123',
+    'independent': '402224715844026380',
+    'sabbat': '402224499480854548',
     # voice channels
     'voice': '422157208017436673',
     'garden': '423559892759085072',
@@ -79,6 +94,8 @@ channels = {
     'beckett_ignore': '512952018739134504',
     'not_log': '527230130448498698',
     'not_log_test_only': '527230235146453004',
+    #
+    'Tilia_main': '493452778145054731',
 }
 
 superusers = {users['Kuro'], users['Magdavius'], }  # users['Natali'],  # Manf & Doriana checked by roles
