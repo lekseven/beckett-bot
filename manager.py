@@ -5,6 +5,7 @@ import random
 import operator
 import lxml.html
 import requests
+import re
 
 import data
 import other
@@ -196,14 +197,20 @@ async def do_embrace(user, clan=None):
     else:
         return False  #await msg.qanswer("Не могу найти такого пользователя.")
 
+roll_patt = re.compile(r'''
+        [ ]*(?P<key1>[a-zA-Z_]+)?
+        [ ]*(?P<count>\d+)(?:[ ]*d[ ]*(?P<type>\d+))?
+        [ ]*(?P<rel>(
+            (?P<ge>(>=|=>))|(?P<le>(<=|=<))|(?P<ne>(!=|=!|~=|=~|<>|><|~+|!+))|(?P<eq>[=]+)|(?P<gt>[>]+)|(?P<lt>[<]+)
+        ))?
+        [ ]*(?P<diff>[-+]?\d+[.,]?\d*)?
+        [ ]*(?P<key2>[a-zA-Z_]+)?
+        ''', re.X)
+
 
 def get_dices(count=1, dtype=10, rel='ge', diff=6, par_keys='', wr='long', simple=False, add_d=False):
     text = []
     dices = []
-    was_success = False
-    add_dices = 0
-    double_ten = False
-    res = 0
     for i in range(0, count):
         d = random.randint(1, dtype)
         dices.append(d)
@@ -211,6 +218,10 @@ def get_dices(count=1, dtype=10, rel='ge', diff=6, par_keys='', wr='long', simpl
         if simple:
             text = ['{:02d}d:\t{val}\n'.format(i+1, val=dice) for i, dice in enumerate(dices)]
         else:
+            was_success = False
+            add_dices = 0
+            double_ten = False
+            res = 0
             for i, dice in enumerate(dices):
                 succ = getattr(operator, rel)(dice, diff)
                 aft = ''
@@ -247,4 +258,77 @@ def get_dices(count=1, dtype=10, rel='ge', diff=6, par_keys='', wr='long', simpl
                           '• Неудача' if (was_success or res == 0) else '- Провал ({})').format(res)
             text.append(conclusion)
 
+    return text
+
+
+v5_patt = re.compile(r'''
+        [ ]*(?P<count>\d+)?
+        ([ ]+(?P<diff>\d+))?
+        ([ ]+(?P<hung>\d+))?
+        ''', re.X)
+
+
+def get_val_v5(dice, hunger=False):
+    if dice == 10:
+        return hunger and '☿' or '☘'
+    elif dice > 5:
+        return '☥'
+    elif hunger and dice == 1:
+        return '☠'
+    else:
+        return '●'
+
+
+def get_dices_v5(count=1, diff=0, hung=0, wr='long', simple=False):
+    text = []
+    dices = []
+    count_tens = 0
+    for i in range(0, count):
+        d = random.randint(1, 10)
+        dices.append(d)
+        count_tens += 1 if d == 10 else 0
+    if wr == 'long':
+        if simple:
+            text = ['{:02d}d:\t{val}\n'.format(i+1, val=get_val_v5(dice)) for i, dice in enumerate(dices)]
+        else:
+            was_h1 = False
+            was_h10 = False
+            res = 0
+            crit_tens = int(count_tens/2)*2
+            norm_dices = max(count - hung, 0) # other: hung_dices
+            for i, dice in enumerate(dices):
+                hunger = i >= norm_dices
+                succ = dice > 5
+                aft = ''
+                if succ:
+                    res += 1
+                    if dice == 10:
+                        if crit_tens > 0:
+                            aft = ' (+)'
+                            res += 1
+                            crit_tens -= 1
+                        symb = '!'
+                        was_h10 = hunger or was_h10
+                    else:
+                        symb = '+'
+                else:
+                    symb = '•'
+                    was_h1 = was_h1 or (hunger and dice == 1)
+                symb = '-' if hunger else symb
+                text.append('{} {:02d}d:\t{val}{aft}\n'.format(symb, i+1, val=get_val_v5(dice, hunger), aft=aft))
+
+            if res >= diff:
+                if count_tens > 1:
+                    conclusion = '- Messy Critical' if was_h10 else '! Critical Win'
+                else:
+                    conclusion = '+ Success' #'+ Win'
+                conclusion = '{} (margin: {})'.format(conclusion, res - diff)
+            else:
+                if was_h1:
+                    conclusion = '- Bestial Failure'
+                elif res > 0:
+                    conclusion = '• Failure (win at a cost: {})'.format(diff - res)
+                else:
+                    conclusion = '● Total Failure'
+            text.append(conclusion)
     return text

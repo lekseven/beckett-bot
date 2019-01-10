@@ -5,8 +5,6 @@
 """
 import discord
 import sys
-import random
-import re
 import other
 import constants as C
 import local_memory as ram
@@ -15,9 +13,8 @@ import log
 import event_funs as ev
 import manager
 import emj
-#import data
 
-free_cmds = {'roll', 'rollw', 'help', 'ignore',}
+free_cmds = {'roll', 'rollw', 'rollv', 'help', 'ignore',}
 admin_cmds = { 'roll', 'help', 'ignore', 'unsilence_all',
     'channel', 'unchannel', 'report', 'unreport', 'say', 'sayf', 'emoji', 'dominate',
     'purge', 'purge_aft', 'purge_ere', 'purge_bet', 'embrace', 'get_offtime', 'get_offlines',
@@ -111,15 +108,6 @@ async def ignore(msg): # TODO more phrases here
 #         await msg.qanswer("```" + ''.join(dices) + "```")
 #     else:
 #         await msg.qanswer(other.comfortable_help([str(roll.__doc__)]))
-roll_patt = re.compile(r'''
-        [ ]*(?P<key1>[a-zA-Z_]+)?
-        [ ]*(?P<count>\d+)(?:[ ]*d[ ]*(?P<type>\d+))?
-        [ ]*(?P<rel>(
-            (?P<ge>(>=|=>))|(?P<le>(<=|=<))|(?P<ne>(!=|=!|~=|=~|<>|><|~+|!+))|(?P<eq>[=]+)|(?P<gt>[>]+)|(?P<lt>[<]+)
-        ))?
-        [ ]*(?P<diff>[-+]?\d+[.,]?\d*)?
-        [ ]*(?P<key2>[a-zA-Z_]+)?
-        ''', re.X)
 
 
 async def roll(msg):
@@ -134,8 +122,8 @@ async def roll(msg):
     !roll хdу rel [f/s/sp/d]: кинуть x кубиков-y rel(>,<,==, etc) к сложности (y/2+1)
     !roll хdу rel diff [f/s/sp/d]: кинуть x кубиков-y по отношению rel(>,<,==, etc) к сложности diff
     """
-    s_text = msg.text
-    m = roll_patt.search(s_text)
+    s_text = msg.text[len('!roll '):]
+    m = manager.roll_patt.search(s_text)
     rel_keys = ('ge', 'le', 'ne', 'eq', 'gt', 'lt')
     error = not m or False
     if not error:
@@ -184,8 +172,8 @@ async def rollw(msg):
     !rollw хdу rel [s/sp/d]: кинуть x кубиков-y rel(>,<,==, etc) к сложности (y/2+1)
     !rollw хdу rel diff [s/sp/d]: кинуть x кубиков-y по отношению rel(>,<,==, etc) к сложности diff
     """
-    s_text = msg.text
-    m = roll_patt.search(s_text)
+    s_text = msg.text[len('!rollw '):]
+    m = manager.roll_patt.search(s_text)
     rel_keys = ('ge', 'le', 'ne', 'eq', 'gt', 'lt')
     error = not m or False
     if not error:
@@ -220,6 +208,44 @@ async def rollw(msg):
 
     if error:
         await msg.qanswer(other.comfortable_help([str(rollw.__doc__)]))
+        return
+
+
+async def rollv(msg):
+    """\
+    !rollv х: просто кинуть x дайсов v5
+    !rollv х diff: кинуть x дайсов v5 против сложности diff
+    !rollv х diff hunger: кинуть x дайсов v5 против сложности diff с голодом hunger
+    """
+    s_text = msg.text[len('!rollv '):]
+    m = manager.v5_patt.search(s_text)
+
+    error = not m or False
+    if not error:
+        group = m.groupdict()
+        error = not group['count']
+
+        if not error:
+            count = int(group['count']) or 1
+            simple = not group['diff']
+            if not simple:
+                diff = int(group['diff']) if group['diff'] else 0
+                hung = int(group['hung']) if group['hung'] else 0
+            else:
+                diff, hung = 0, 0
+
+            if count > 21:
+                await msg.answer('Перебор, я выиграл :slight_smile:')
+                return
+
+            text = ['<@{}>, \n```diff\n'.format(msg.author)]
+            text += manager.get_dices_v5(count, diff, hung, 'long', simple)
+            text.append('```')
+
+            await msg.qanswer(''.join(text))
+
+    if error:
+        await msg.qanswer(other.comfortable_help([str(rollv.__doc__)]))
         return
 
 # endregion
@@ -365,7 +391,7 @@ async def dominate(msg):
         await msg.qanswer(other.comfortable_help([str(dominate.__doc__)]))
         return
     if not msg.admin and msg.author != C.users['Creol']:
-        await msg.answer('Нет у вас доминирования ¯\_(ツ)_/¯')
+        await msg.answer(r'Нет у вас доминирования ¯\_(ツ)_/¯')
         return
 
     auth = other.find_member(C.vtm_server, msg.author)
