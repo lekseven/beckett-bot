@@ -15,11 +15,12 @@ import manager
 import emj
 
 free_cmds = {'roll', 'rollw', 'rollv', 'help', 'ignore',}
-admin_cmds = { 'roll', 'help', 'ignore', 'unsilence_all',
+admin_cmds = { 'unsilence_all',
     'channel', 'unchannel', 'report', 'unreport', 'say', 'sayf', 'emoji', 'dominate',
     'purge', 'purge_aft', 'purge_ere', 'purge_bet', 'embrace', 'get_offtime', 'get_offlines',
     'deny', 'undeny', 'mute', 'unmute', 'mute_list', 'mute_l', 'unmute_l', 'mute_l_list',
 }
+admin_cmds.update(free_cmds)
 primogenat_cmds = {'roll', 'help', 'silence', 'unsilence', 'kick'}
 
 
