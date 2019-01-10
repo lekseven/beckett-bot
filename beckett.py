@@ -37,6 +37,15 @@ async def on_ready():
     log.p('------ ------ ------')
     C.Ready = True
     await other.test_status(ram.game)
+    server = C.vtm_server
+    # ch = other.get_channel('chantry')
+    # prm = ch.permissions_for(C.vtm_server.me)
+    # prm2 = ch.overwrites_for(C.vtm_server.me)
+    # for ch in server.channels:
+    #     bot_prm = ch.permissions_for(server.me)
+    #     if bot_prm.manage_roles:
+    #         print(ch)
+
 
     pass
     pass
