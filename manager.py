@@ -1,5 +1,3 @@
-import re
-
 import discord
 import random
 import operator
@@ -208,78 +206,168 @@ roll_patt = re.compile(r'''
         ''', re.X)
 
 
-def get_dices(count=1, dtype=10, rel='ge', diff=6, par_keys='', wr='long', simple=False, add_d=False):
+def get_dice_param(text, add_keys=''):
+    count, dtype, rel, diff, par_keys, simple = None, None, None, None, None, None
+    m = roll_patt.search(text)
+    rel_keys = ('ge', 'le', 'ne', 'eq', 'gt', 'lt')
+    error = not m or False
+    if not error:
+        group = m.groupdict()
+        error = not group['count']
+
+        if not error:
+            par_keys = (group['key1'] or '') + (group['key2'] or '') + add_keys
+            count = int(group['count']) or 1
+            dtype = (int(group['type']) or 10) if group['type'] else 10
+            simple = not (group['rel'] or group['diff'])
+            if not simple or set(par_keys).intersection({'s', 'sp', 'd', 'v', 'w', 'f'}):
+                simple = False
+                rel = [key for key in rel_keys if group[key]][0] if group['rel'] else 'ge'
+                diff = int(group['diff']) if group['diff'] else int(dtype / 2 + 1)
+
+    return error, count, dtype, rel, diff, par_keys, simple
+
+
+def r_get_symb(change_val, short=False):
+
+    if short:
+        if change_val > 0:
+            symb = '`'
+        elif change_val < 0:
+            symb = '**'
+        else:
+            symb = '~~'
+    else:
+        if change_val > 0:
+            symb = '+'
+        elif change_val < 0:
+            symb = '-'
+        else:
+            symb = '•'
+    return symb
+
+
+def get_dices(count=1, dtype=10, rel='ge', diff=6, par_keys='', simple=False, short=False, add_d=False):
     text = []
     dices = []
     for i in range(0, count):
         d = random.randint(1, dtype)
         dices.append(d)
-    if wr == 'long':
-        if simple:
-            text = ['{:02d}d:\t{val}\n'.format(i+1, val=dice) for i, dice in enumerate(dices)]
-        else:
-            was_success = False
-            add_dices = 0
-            double_ten = False
-            res = 0
-            for i, dice in enumerate(dices):
-                succ = getattr(operator, rel)(dice, diff)
-                aft = ''
-                if succ:
-                    res += 1
-                    symb = '+'
-                    was_success = True
-                    if dice == dtype and par_keys:
-                        if 'd' in par_keys:
-                            aft = double_ten and ' (+)' or ''
-                            res += int(double_ten)
-                            double_ten = not double_ten
-                        elif 'sp' in par_keys:
-                            res += 1
-                            aft = ' (+)'
-                        elif 's' in par_keys:
-                            add_dices += 1
-                            aft = ' (*)'
-                else:
-                    symb = '•'
-                    if dice == 1 and ('w' in par_keys or 'f' in par_keys):
-                        res -= 1
-                        symb = '-'
-                text.append('{} {:02d}d:\t{val}{aft}\n'.format(symb, i+1, val=dice, aft=aft))
-            if add_d:
-                return res, text, add_dices
-            while add_dices:
-                text.append('* Специализация({}):\n'.format(add_dices))
-                (add_res, add_text, add_dices) = get_dices(add_dices, dtype, rel, diff, par_keys, wr, add_d=True)
-                res += add_res
-                text += add_text
 
+    if simple:
+        if short:
+            text = [str(dice) for dice in dices]
+        else:
+            text = ['{:02d}d:\t{val}\n'.format(i + 1, val=dice) for i, dice in enumerate(dices)]
+    else:
+        if short and not add_d:
+            text.append('(')
+        was_success = False
+        add_dices = 0
+        double_ten = False
+        res = 0
+        for i, dice in enumerate(dices):
+            succ = getattr(operator, rel)(dice, diff)
+            aft = ''
+            if succ:
+                res += 1
+                change_val = +1
+                was_success = True
+                if dice == dtype and dtype > 1 and par_keys:
+                    if 'v' in par_keys:
+                        aft = double_ten and '(++)' or ''
+                        res += 2 * int(double_ten)
+                        double_ten = not double_ten
+                    elif 'd' in par_keys:
+                        aft = double_ten and '(+)' or ''
+                        res += int(double_ten)
+                        double_ten = not double_ten
+                    elif 'sp' in par_keys:
+                        res += 1
+                        aft = '(+)'
+                    elif 's' in par_keys:
+                        add_dices += 1
+                        aft = '(*)'
+            else:
+                change_val = 0
+                if dice == 1 and ('w' in par_keys or 'f' in par_keys):
+                    res -= 1
+                    change_val = -1
+            if short:
+                symb = r_get_symb(change_val, True)
+                symb2 = '__**' if aft else ''
+                text.append('{symb2_1}{symb}{val}{symb}{symb2_2}'.
+                            format(symb=symb, val=dice, symb2_1=symb2, symb2_2=symb2[::-1]))
+            else:
+                aft = ' ' + aft if aft else ''
+                symb = r_get_symb(change_val)
+                text.append('{} {:02d}d:\t{val}{aft}\n'.format(symb, i+1, val=dice, aft=aft))
+        if add_d:
+            return res, text, add_dices
+        while add_dices:
+            if short:
+                text.append(r'\|\| \*__{{{}}}__:'.format(add_dices))
+            else:
+                text.append('* Специализация({}):\n'.format(add_dices))
+            (add_res, add_text, add_dices) = get_dices(add_dices, dtype, rel, diff, par_keys, short=short, add_d=True)
+            res += add_res
+            text += add_text
+        if short:
+            text.append('):')
+            conclusion = ('**`успех ({})`**' if res > 0 else
+                          'неудача' if (was_success or res == 0) else '**провал ({})**').format(res)
+        else:
             conclusion = ('! Успех ({})' if res > 0 else
-                          '• Неудача' if (was_success or res == 0) else '- Провал ({})').format(res)
-            text.append(conclusion)
+                      '• Неудача' if (was_success or res == 0) else '- Провал ({})').format(res)
+        text.append(conclusion)
 
     return text
 
 
 v5_patt = re.compile(r'''
+        [ ]*(?P<key1>[a-zA-Z_]+)?
         [ ]*(?P<count>\d+)?
         ([ ]+(?P<diff>\d+))?
         ([ ]+(?P<hung>\d+))?
+        [ ]*(?P<key2>[a-zA-Z_]+)?
         ''', re.X)
 
 
-def get_val_v5(dice, hunger=False):
+def get_v5_param(text, add_keys=''):
+    count, diff, hung, par_keys, simple = None, 0, 0, None, None
+    m = v5_patt.search(text)
+    error = not m or False
+    if not error:
+        group = m.groupdict()
+        error = not group['count']
+
+        if not error:
+            par_keys = (group['key1'] or '') + (group['key2'] or '') + add_keys
+            count = int(group['count']) or 1
+            simple = not group['diff']
+            if not simple:
+                diff = int(group['diff']) if group['diff'] else 0
+                hung = int(group['hung']) if group['hung'] else 0
+
+    return error, count, diff, hung, par_keys, simple
+
+
+def r_get_val_v5(dice, hunger=False, short=False):
     if dice == 10:
-        return hunger and '☿' or '☘'
+        symb = (('☘', '\🍀'), ('☿', '👹'))[hunger][short]
     elif dice > 5:
-        return '☥'
+        symb = '☥'
     elif hunger and dice == 1:
-        return '☠'
+        symb = ('☠', '💀')[short]
     else:
-        return '●'
+        symb = ('●', '•')[short]
+
+    if hunger:
+        symb = '`' + symb + '`'
+    return symb
 
 
-def get_dices_v5(count=1, diff=0, hung=0, wr='long', simple=False):
+def get_dices_v5(count=1, diff=0, hung=0, simple=False, short=False):
     text = []
     dices = []
     count_tens = 0
@@ -287,48 +375,63 @@ def get_dices_v5(count=1, diff=0, hung=0, wr='long', simple=False):
         d = random.randint(1, 10)
         dices.append(d)
         count_tens += 1 if d == 10 else 0
-    if wr == 'long':
-        if simple:
-            text = ['{:02d}d:\t{val}\n'.format(i+1, val=get_val_v5(dice)) for i, dice in enumerate(dices)]
-        else:
-            was_h1 = False
-            was_h10 = False
-            res = 0
-            crit_tens = int(count_tens/2)*2
-            norm_dices = max(count - hung, 0) # other: hung_dices
-            for i, dice in enumerate(dices):
-                hunger = i >= norm_dices
-                succ = dice > 5
-                aft = ''
-                if succ:
-                    res += 1
-                    if dice == 10:
-                        if crit_tens > 0:
-                            aft = ' (+)'
-                            res += 1
-                            crit_tens -= 1
-                        symb = '!'
-                        was_h10 = hunger or was_h10
-                    else:
-                        symb = '+'
-                else:
-                    symb = '•'
-                    was_h1 = was_h1 or (hunger and dice == 1)
-                symb = '-' if hunger else symb
-                text.append('{} {:02d}d:\t{val}{aft}\n'.format(symb, i+1, val=get_val_v5(dice, hunger), aft=aft))
 
-            if res >= diff:
-                if count_tens > 1:
-                    conclusion = '- Messy Critical' if was_h10 else '! Critical Win'
+    if simple:
+        if short:
+            text = ['{val}'.format(val=r_get_val_v5(dice, short=True)) for dice in dices]
+        else:
+            text = ['{:02d}d:\t{val}\n'.format(i + 1, val=r_get_val_v5(dice)) for i, dice in enumerate(dices)]
+    else:
+        if short:
+            text.append('(')
+        was_h1 = False
+        was_h10 = False
+        res = 0
+        crit_tens = int(count_tens/2)*2
+        norm_dices = max(count - hung, 0) # other: hung_dices
+        for i, dice in enumerate(dices):
+            hunger = i >= norm_dices
+            succ = dice > 5
+            aft = ''
+            if succ:
+                res += 1
+                if dice == 10:
+                    if crit_tens > 0:
+                        aft = ' (+)'
+                        res += 1
+                        crit_tens -= 1
+                    symb = '!'
+                    was_h10 = hunger or was_h10
                 else:
-                    conclusion = '+ Success' #'+ Win'
-                conclusion = '{} (margin: {})'.format(conclusion, res - diff)
+                    symb = '+'
             else:
-                if was_h1:
-                    conclusion = '- Bestial Failure'
-                elif res > 0:
-                    conclusion = '• Failure (win at a cost: {})'.format(diff - res)
-                else:
-                    conclusion = '● Total Failure'
-            text.append(conclusion)
+                symb = '•'
+                was_h1 = was_h1 or (hunger and dice == 1)
+            symb = '-' if hunger else symb
+            if short:
+                if hunger and i == norm_dices:
+                    text.append(r'\|\|')
+                frm = '__' if aft else ''
+                text.append('{frm}{val}{frm}'.format(val=r_get_val_v5(dice, hunger, short=True), frm=frm))
+            else:
+                text.append('{} {:02d}d:\t{val}{aft}\n'.format(symb, i + 1, val=r_get_val_v5(dice, hunger), aft=aft))
+
+        if res >= diff:
+            if count_tens > 1:
+                conclusion = (('- {}', '**__`{}`__**')[short].format('Messy Critical')
+                              if was_h10 else ('! {}', '**__{}__**')[short].format('Critical Win'))
+            else:
+                conclusion = ('+ {}', '**{}**')[short].format('Success') #'+ Win'
+            conclusion = ('{} ({} {})', '{} *({} {})*')[short].format(conclusion, 'margin:', res - diff)
+        else:
+            if was_h1:
+                conclusion = ('- {}', '**`{}`**')[short].format('Bestial Failure')
+            elif res > 0:
+                conclusion = ('• {} ({} {})', '{} *({} {})*')[short].format('Failure', 'win at a cost:', diff - res)
+            else:
+                conclusion = ('● {}', '{}')[short].format('Total Failure')
+
+        if short:
+            text.append('):')
+        text.append(conclusion)
     return text

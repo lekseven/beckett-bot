@@ -14,14 +14,18 @@ import event_funs as ev
 import manager
 import emj
 
-free_cmds = {'roll', 'rollw', 'rollv', 'help', 'ignore',}
+roll_cmds = {'roll', 'rollw', 'rollv', 'r', 'rw', 'rv',}
+
+free_cmds = {'help', 'ignore',}
+free_cmds.update(roll_cmds)
+
 admin_cmds = { 'unsilence_all',
     'channel', 'unchannel', 'report', 'unreport', 'say', 'sayf', 'emoji', 'dominate',
     'purge', 'purge_aft', 'purge_ere', 'purge_bet', 'embrace', 'get_offtime', 'get_offlines',
     'deny', 'undeny', 'mute', 'unmute', 'mute_list', 'mute_l', 'unmute_l', 'mute_l_list',
 }
 admin_cmds.update(free_cmds)
-primogenat_cmds = {'roll', 'help', 'silence', 'unsilence', 'kick'}
+primogenat_cmds = {'help', 'silence', 'unsilence', 'kick'}
 
 
 # region Free
@@ -38,7 +42,8 @@ async def help(msg):
 
     cmds = msg.get_commands()
     flt = {'free': free_cmds, 'admin': admin_cmds, 'super': only_super,
-           'primogenat': primogenat_cmds, 'primogen': primogenat_cmds, }
+           'primogenat': primogenat_cmds, 'primogen': primogenat_cmds,
+           'r': {'r', 'rw', 'rv'}, }
     if len(msg.args) > 1:
         ln = 1
         if msg.args[1] in flt:
@@ -66,6 +71,37 @@ async def help(msg):
                 * - бесконечно повторение последнего аргумента разделённого пробелом
                 (например ch* = ch1 ch2 ch3...; usr* = usr1 usr2 usr3...);
             ```''').replace('            ', ''))
+        if cmds.intersection(roll_cmds):
+            texts.append((r'''```css
+            Хелп по броскам дайсов (!roll, !rollw, !rollv, !r, !rw, !rv):
+                !roll, !rollw, !rollv - выводят результат бросков в столбец;
+                !r, !rw, !rv - имеют тот же синтаксис, что и команды выше, 
+                    но выводят кубы в строку, что позволяет бросать кубов больше за раз;
+                !команда хdу - прости кинет x кубов y, без подсчёта результатов
+                    (если ну указан dу - берётся d10)
+                • если указана сложность, тип сравнения или некоторые доп параметры,
+                то будут подсчитываться успехи (по умолчанию сложность y/2+1,
+                сравнение - '>=')
+                Доп парметры указываются первыми (сразу после команды) или последними.
+                Между собой смешиваются в любом порядке, без пробелов,
+                например: 'sh', 'fsph', 'df', 'hdf', 'fv' и прочее;
+                s/sp/d/v - 'бонусы' при макс грани куба (10 для d10) если это успех:
+                    s - доп броски (рекурсивно), специализация в МТ
+                    sp - +1 доп успех
+                    d - +1 доп успех за каждую пару (для d10 - всего 3 успеха за две 10)
+                    v - +2 доп успеха за каждую пару, механника V5
+                    • любой из них вкл подсчёт успехов, даже если указано лишь кол-во кубов
+                    • из всех них за раз работает лишь один доп параметр
+                f   - отнимает успехи за '1'; вкл подсчёт успехов;
+                    • !rollw (!rw) идёт с вкл 'f' по умолчанию
+                h   - вывод кубов с тэгом @here 
+                    (что включит жёлтую подсветку для всех - удобно для строчных команд);
+                !rollw (!rw) полностью индетична !roll (!r), но уже со включенным 'f'
+                    (и потому всегда будет считать успехи)
+                !rollv (!rv) бросает кубы по правилам V5 (пиктограммы вместо цифр),
+                    потому все доп параметры кроме 'h' не имеют для неё смысла
+                !команда (без других параметров) - выведет хелп только по этой команде
+            ```''').replace('            ', ''))
         docs = [getattr(module, cmd).__doc__ for cmd in cmds]
         comf_help = other.comfortable_help(docs)
 
@@ -84,10 +120,16 @@ async def ignore(msg): # TODO more phrases here
     """
     if msg.author in ram.ignore_users:
         ram.ignore_users.remove(msg.author)
-        await msg.answer("Что, кто-то по мне соскучился :relaxed:?")
+        if msg.author == C.users['cycl0ne']:
+            await msg.answer("Мяв, время амнистии 😺?")
+        else:
+            await msg.answer("Что, кто-то по мне соскучился :relaxed:?")
     else:
         ram.ignore_users.add(msg.author)
-        await msg.answer("Не хочешь разговаривать, ну и не надо :confused:.")
+        if msg.author == C.users['cycl0ne']:
+            await msg.answer("Я к тебе со всей душой, а ты... 😿")
+        else:
+            await msg.answer("Не хочешь разговаривать, ну и не надо :confused:.")
 
 
 # async def roll(msg):
@@ -113,46 +155,32 @@ async def ignore(msg): # TODO more phrases here
 
 async def roll(msg):
     """\
-    !roll х: кинуть x d10
+    !roll х: кинуть x кубов d10
     !roll хdу: кинуть x кубиков-y
-    !roll хdу f: кинуть x d10 больше или равно сложности 6 с вычитом единиц
-    !roll хdу s: кинуть x d10 к сложности 6 c доп бросками при десятках
-    !roll хdу sp: кинуть x d10 к сложности 6 с доп успехами при десятках
-    !roll хdу d: кинуть x d10 к сложности 6 с вычитом единиц и доп успехами при паре десяток
-    !roll хdу diff [f/s/sp/d]: кинуть x кубиков-y >= (больше или равно) к сложности diff
-    !roll хdу rel [f/s/sp/d]: кинуть x кубиков-y rel(>,<,==, etc) к сложности (y/2+1)
-    !roll хdу rel diff [f/s/sp/d]: кинуть x кубиков-y по отношению rel(>,<,==, etc) к сложности diff
+    !roll х diff: кинуть x кубов d10 >= (больше или равно) к сложности diff
+    !roll хdу diff: кинуть x кубов y >= (больше или равно) к сложности diff
+    !roll хdу rel: кинуть x кубов y rel(>,<,==, etc) к сложности (y/2+1)
+    !roll хdу rel diff: кинуть x кубов y по отношению rel(>,<,==, etc) к сложности diff
+    !roll -//- [spdvfh]: кинуть кубы с доп параметрами (см. !help roll)
     """
-    s_text = msg.text[len('!roll '):]
-    m = manager.roll_patt.search(s_text)
-    rel_keys = ('ge', 'le', 'ne', 'eq', 'gt', 'lt')
-    error = not m or False
-    if not error:
-        group = m.groupdict()
-        error = not group['count']
 
-        if not error:
-            par_keys = (group['key1'] or '') + (group['key2'] or '')
-            count = int(group['count']) or 1
-            dtype = int(group['type']) if group['type'] else 10
-            simple = not (group['rel'] or group['diff'])
-            if not simple or ('s' in par_keys or 'w' in par_keys or 'f' in par_keys):
-                simple = False
-                rel = [key for key in rel_keys if group[key]][0] if group['rel'] else 'ge'
-                diff = int(group['diff']) if group['diff'] else int(dtype / 2 + 1)
-            else:
-                rel, diff = None, None
+    error, count, dtype, rel, diff, par_keys, simple = manager.get_dice_param(msg.text[len('!roll '):])
+
+    if not error:
 
             if count > 21:
-                await msg.answer('Перебор, я выиграл :slight_smile:')
+                if count > 121:
+                    await msg.answer('<@{}>, у тебя перебор, я выиграл 🙂'.format(msg.author))
+                else:
+                    await msg.answer('Так много кубов... может стоит `!r` попробовать, <@{}>? 🤔'.format(msg.author))
                 return
 
-            if dtype > 1000:
-                await msg.answer('Ну, **таких** дайсов мне не завезли :confused:')
+            if dtype > C.i10__42:
+                await msg.answer('Ну, <@{}>, **таких** дайсов мне не завезли 😕'.format(msg.author))
                 return
 
-            text = ['<@{}>, \n```diff\n'.format(msg.author)]
-            text += manager.get_dices(count, dtype, rel, diff, par_keys, 'long', simple, add_d=False)
+            text = [('<@{}>, @here,\n```diff\n' if 'h' in par_keys else '<@{}>,\n```diff\n').format(msg.author)]
+            text += manager.get_dices(count, dtype, rel, diff, par_keys, simple)
             text.append('```')
 
             await msg.qanswer(''.join(text))
@@ -162,47 +190,111 @@ async def roll(msg):
         return
 
 
-async def rollw(msg):
+async def r(msg):
     """\
-    !rollw х: кинуть x d10
-    !rollw хdу: кинуть x кубиков-y
-    !rollw хdу s: кинуть x d10 к сложности 6 c доп бросками при десятках
-    !rollw хdу sp: кинуть x d10 к сложности 6 с доп успехами при десятках
-    !rollw хdу d: кинуть x d10 к сложности 6 с вычитом единиц и доп успехами при паре десяток
-    !rollw хdу diff [s/sp/d]: кинуть x кубиков-y >= (больше или равно) к сложности diff
-    !rollw хdу rel [s/sp/d]: кинуть x кубиков-y rel(>,<,==, etc) к сложности (y/2+1)
-    !rollw хdу rel diff [s/sp/d]: кинуть x кубиков-y по отношению rel(>,<,==, etc) к сложности diff
+    !r х: кинуть x кубов d10
+    !r хdу: кинуть x кубиков-y
+    !r х diff: кинуть x кубов d10 >= (больше или равно) к сложности diff
+    !r хdу diff: кинуть x кубов y >= (больше или равно) к сложности diff
+    !r хdу rel: кинуть x кубов y rel(>,<,==, etc) к сложности (y/2+1)
+    !r хdу rel diff: кинуть x кубов y по отношению rel(>,<,==, etc) к сложности diff
+    !r -//- [spdvfh]: кинуть кубы с доп параметрами (см. !help r)
     """
-    s_text = msg.text[len('!rollw '):]
-    m = manager.roll_patt.search(s_text)
-    rel_keys = ('ge', 'le', 'ne', 'eq', 'gt', 'lt')
-    error = not m or False
+    error, count, dtype, rel, diff, par_keys, simple = manager.get_dice_param(msg.text[len('!r '):])
+
     if not error:
-        group = m.groupdict()
-        error = not group['count']
 
-        if not error:
-            par_keys = (group['key1'] or '') + (group['key2'] or '') + 'f'
-            count = int(group['count']) or 1
-            dtype = int(group['type']) if group['type'] else 10
-            simple = not (group['rel'] or group['diff'])
-            if not simple or ('s' in par_keys or 'w' in par_keys or 'f' in par_keys):
-                simple = False
-                rel = [key for key in rel_keys if group[key]][0] if group['rel'] else 'ge'
-                diff = int(group['diff']) if group['diff'] else int(dtype / 2 + 1)
-            else:
-                rel, diff = None, None
-
-            if count > 21:
-                await msg.answer('Перебор, я выиграл :slight_smile:')
+            if count > 121:
+                await msg.answer(r'Увы, <@{}>, столько дайсов у меня нет ¯\_(ツ)_/¯'.format(msg.author))
                 return
 
             if dtype > 1000:
-                await msg.answer('Ну, **таких** дайсов мне не завезли :confused:')
+                if dtype > C.i10__42:
+                    await msg.answer('Ну, <@{}>, **таких** дайсов мне не завезли 😕'.format(msg.author))
+                else:
+                    await msg.answer('Ого, какие кубища... может `!roll` попробовать, <@{}>? 🤔'.format(msg.author))
                 return
 
-            text = ['<@{}>, \n```diff\n'.format(msg.author)]
-            text += manager.get_dices(count, dtype, rel, diff, par_keys, 'long', simple, add_d=False)
+            text = ['<@{}>:'.format(msg.author)]
+            text += manager.get_dices(count, dtype, rel, diff, par_keys, simple, short=True)
+            if 'h' in par_keys:
+                text.append('@here')
+
+            await msg.qanswer(' '.join(text))
+
+    if error:
+        await msg.qanswer(other.comfortable_help([str(r.__doc__)]))
+        return
+
+    pass
+
+
+async def rw(msg):
+    """\
+    !rw х: кинуть x кубов d10 к сложности 6 с вычетом единиц
+    !rw хdу: кинуть x кубиков-y к сложности (y/2+1) с вычетом единиц
+    !rw х diff: кинуть x кубов d10 >= (больше или равно) к сложности diff с вычетом единиц
+    !rw хdу diff: кинуть x кубов y >= (больше или равно) к сложности diff с вычетом единиц
+    !rw хdу rel: кинуть x кубов y rel(>,<,==, etc) к сложности (y/2+1) с вычетом единиц
+    !rw хdу rel diff: -//- к сложности diff с вычетом единиц
+    !rw -//- [spdvh]: кинуть кубы с вычетом единиц и с доп параметрами (см. !help rw)
+    """
+    error, count, dtype, rel, diff, par_keys, simple = manager.get_dice_param(msg.text[len('!rw '):], 'f')
+
+    if not error:
+
+            if count > 121:
+                await msg.answer(r'Увы, <@{}>, столько дайсов у меня нет ¯\_(ツ)_/¯'.format(msg.author))
+                return
+
+            if dtype > 1000:
+                if dtype > C.i10__42:
+                    await msg.answer('Ну, <@{}>, **таких** дайсов мне не завезли 😕'.format(msg.author))
+                else:
+                    await msg.answer('Ого, какие кубища... может `!rollw` попробовать, <@{}>? 🤔'.format(msg.author))
+                return
+
+            text = ['<@{}>:'.format(msg.author)]
+            text += manager.get_dices(count, dtype, rel, diff, par_keys, simple, short=True)
+            if 'h' in par_keys:
+                text.append('@here')
+
+            await msg.qanswer(' '.join(text))
+
+    if error:
+        await msg.qanswer(other.comfortable_help([str(rw.__doc__)]))
+        return
+
+    pass
+
+
+async def rollw(msg):
+    """\
+    !rollw х: кинуть x кубов d10 к сложности 6 с вычетом единиц
+    !rollw хdу: кинуть x кубиков-y к сложности (y/2+1) с вычетом единиц
+    !rollw х diff: кинуть x кубов d10 >= (больше или равно) к сложности diff с вычетом единиц
+    !rollw хdу diff: кинуть x кубов y >= (больше или равно) к сложности diff с вычетом единиц
+    !rollw хdу rel: кинуть x кубов y rel(>,<,==, etc) к сложности (y/2+1) с вычетом единиц
+    !rollw хdу rel diff: -//- к сложности diff с вычетом единиц
+    !rollw -//- [spdvh]: кинуть кубы с вычетом единиц и с доп параметрами (см. !help rw)
+    """
+
+    error, count, dtype, rel, diff, par_keys, simple = manager.get_dice_param(msg.text[len('!rollw '):], 'f')
+    if not error:
+
+            if count > 21:
+                if count > 121:
+                    await msg.answer('<@{}>, у тебя перебор, я выиграл 🙂'.format(msg.author))
+                else:
+                    await msg.answer('Так много кубов... может стоит `!rw` попробовать, <@{}>? 🤔'.format(msg.author))
+                return
+
+            if dtype > C.i10__42:
+                await msg.answer('Ну, <@{}>, **таких** дайсов мне не завезли 😕'.format(msg.author))
+                return
+
+            text = [('<@{}>, @here,\n```diff\n' if 'h' in par_keys else '<@{}>,\n```diff\n').format(msg.author)]
+            text += manager.get_dices(count, dtype, rel, diff, par_keys)
             text.append('```')
 
             await msg.qanswer(''.join(text))
@@ -218,35 +310,50 @@ async def rollv(msg):
     !rollv х diff: кинуть x дайсов v5 против сложности diff
     !rollv х diff hunger: кинуть x дайсов v5 против сложности diff с голодом hunger
     """
-    s_text = msg.text[len('!rollv '):]
-    m = manager.v5_patt.search(s_text)
+    error, count, diff, hung, par_keys, simple = manager.get_v5_param(msg.text[len('!rollv '):])
 
-    error = not m or False
     if not error:
-        group = m.groupdict()
-        error = not group['count']
-
-        if not error:
-            count = int(group['count']) or 1
-            simple = not group['diff']
-            if not simple:
-                diff = int(group['diff']) if group['diff'] else 0
-                hung = int(group['hung']) if group['hung'] else 0
-            else:
-                diff, hung = 0, 0
-
             if count > 21:
-                await msg.answer('Перебор, я выиграл :slight_smile:')
+                if count > 121:
+                    await msg.answer('<@{}>, у тебя перебор, я выиграл 🙂'.format(msg.author))
+                else:
+                    await msg.answer('Так много кубов... может стоит `!rv` попробовать, <@{}>? 🤔'.format(msg.author))
                 return
 
-            text = ['<@{}>, \n```diff\n'.format(msg.author)]
-            text += manager.get_dices_v5(count, diff, hung, 'long', simple)
+            text = [('<@{}>, @here,\n```diff\n' if 'h' in par_keys else '<@{}>,\n```diff\n').format(msg.author)]
+            text += manager.get_dices_v5(count, diff, hung, simple)
             text.append('```')
 
             await msg.qanswer(''.join(text))
 
     if error:
         await msg.qanswer(other.comfortable_help([str(rollv.__doc__)]))
+        return
+
+
+async def rv(msg):
+    """\
+    !rv х: просто кинуть x дайсов v5
+    !rv х diff: кинуть x дайсов v5 против сложности diff
+    !rv х diff hunger: кинуть x дайсов v5 против сложности diff с голодом hunger
+    !rv х diff hunger h: кинуть x дайсов v5 против сложности diff с голодом hunger и @here;
+    """
+    error, count, diff, hung, par_keys, simple = manager.get_v5_param(msg.text[len('!rv '):])
+
+    if not error:
+            if count > 121:
+                await msg.answer('<@{}>, у тебя перебор, я выиграл 🙂'.format(msg.author))
+                return
+
+            text = ['<@{}>:'.format(msg.author)]
+            text += manager.get_dices_v5(count, diff, hung, simple, short=True)
+            if 'h' in par_keys:
+                text.append('@here')
+
+            await msg.qanswer(' '.join(text))
+
+    if error:
+        await msg.qanswer(other.comfortable_help([str(rv.__doc__)]))
         return
 
 # endregion
@@ -1226,10 +1333,7 @@ async def read(msg):
         if (i+1) % 10000 == 0:
             log.D('- - <read> format messages: ', i+1)
     log.D('- <read> end format messages')
-    s = '\n'.join(mess)
-    step = 2000
-    for i in range(0, len(s), step):
-        await msg.qanswer(s[i:i+step])
+    await msg.qanswer('\n'.join(mess))
     await msg.qanswer(":ok_hand:")
 
 
@@ -1460,23 +1564,8 @@ async def haha2(msg):
 
 # region Test
 async def tst(msg):
-    err = len(msg.args) < 3
-
-    ch = {}
-    if not err:
-        ch = other.get_channel(msg.args[1])  # C.client.get_channel(msg.args[1])
-        err = not ch
-
-    msg1 = {}
-    if not err:
-        msg1 = await C.client.get_message(ch, msg.args[2])
-        err = not msg1
-
-    if err:
-        msg.qanswer('Error')
-
-    pass
-    print(await log.format_mess(msg1, time=True, date=False))
+    text = '\n'.join([str(i*10) + ') ' + (('1234 ' * 20) * 30) for i in range(3)])
+    await msg.qanswer(text)
     pass
 
 

@@ -42,6 +42,7 @@ users = {
     'Soul': '391952676771856385',
     'Tilia': '271496862756765698',
     'Tveyn': '155752265544761344',
+    'cycl0ne': '415648652539723787',
     #test
     'Dummy': '452303933856153601',
     'Dracula': '491399986156666893',
@@ -163,3 +164,4 @@ sabbat_clans = {'Tzimisce', 'Lasombra', 'Noble Pander'}
 #sabbat_roles = set(roles[i] for i in sabbat_clans)
 not_sir = {'235088799074484224'}  # Радио "Harpy" 66.6FM
 voice_alert = {users['Dummy'], users['Natali']}
+i10__42 = 10**42

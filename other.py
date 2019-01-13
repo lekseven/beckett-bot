@@ -5,6 +5,7 @@ import datetime
 import discord
 import random
 import log
+import manager
 import aiohttp
 from io import BytesIO as io_BytesIO
 
@@ -407,10 +408,18 @@ def find_def_ch(server):
 def rand_tableflip():
     # (╯°□°）╯︵ ┻━┻
     eye = random.choice(('°', '•', '◕', '~', '・', '￣', 'ᵔ', '^', '-', '❛', 'ಠ', '≖'))
-    mouth = random.choice(('□', '◡', 'o', '‿', '\_', '︿', '∀', '▽', '。', 'ᴥ',))
+    mouth = random.choice(('□', '◡', 'o', '‿', r'\_', '︿', '∀', '▽', '。', 'ᴥ',))
     wave = random.choice(('彡', '︵', '︵︵', '︵︵︵', ))
     table = random.choice(('┻━┻', '┻━━┻', '┻━━━┻', '┻━━━━┻', '┻━━━━━┻', '┻━━━━━━┻', '┻━━━━━━━┻', ))
     return '(╯{0}{1}{0}）╯{2} {3}'.format(eye, mouth, wave, table)
+
+
+def rand_diceflip(count=1):
+    eye = random.choice(('°', '•', '◕', '~', '・', '￣', 'ᵔ', '^', '-', '❛', 'ಠ', '≖'))
+    mouth = random.choice(('□', '◡', 'o', '‿', r'\_', '︿', '∀', '▽', '。', 'ᴥ',))
+    wave = random.choice(('彡', '︵', '︵︵', '︵︵︵',))
+    dices = '`' + '` `'.join(manager.get_dices(count, simple=True, short=True)) + '`'
+    return '(╯{0}{1}{0}）╯{2} {3}'.format(eye, mouth, wave, dices)
 
 
 async def get_url_files(url_i):
@@ -440,3 +449,46 @@ async def type2sent(ch, text=None, emb=None, extra=0):
         later_coro(i * 10, C.client.send_typing(ch))
     later_coro(t, C.client.send_message(ch, content=text, embed=emb))
     return t
+
+
+def split_text(text, pre_split=''):
+    MAX_LEN = 2000
+
+    if not text:
+        return []
+
+    if isinstance(text, list):
+        if pre_split:
+            if len(text[0]) >= MAX_LEN:
+                yield from split_text(text[0])
+                yield from split_text(text[1:], pre_split)
+            elif sum((len(t)+1 for t in text)) <= MAX_LEN:
+                yield pre_split.join(text)
+            else:
+                new_text = [text[0]]
+                new_len = len(text[0])
+                ln_spl = len(pre_split)
+                i = 1
+                for i, t in enumerate(text[1:], 1):
+                    if (new_len + len(t) + ln_spl) >= MAX_LEN:
+                        break
+                    else:
+                        new_text.append(t)
+                        new_len += len(t) + ln_spl
+
+                yield pre_split.join(new_text)
+                yield from split_text(text[i:], pre_split)
+        else:
+            for t in text:
+                yield from split_text(t)
+    elif len(text) < MAX_LEN:
+        yield text
+    else:
+        spls = ('\n', '. ', ' ')
+        for spl in spls:
+            if spl in text:
+                yield from split_text(text.split(spl), spl)
+                break
+        else:
+            for i in range(0, len(text), MAX_LEN):
+                yield text[i:i + MAX_LEN]

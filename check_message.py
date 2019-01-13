@@ -78,25 +78,14 @@ class Msg:
             await self.type2sent(self.channel, text)
 
     async def answer(self, text=None, emb=None):
-        if isinstance(text, list):
-            t = 0
-            for s in text:
-                #await C.client.send_message(self.channel, content=s, embed=emb)
-                t += await self.type2sent(self.channel, text=s, emb=emb, extra=t)
-        else:
-            #await C.client.send_message(self.channel, content=text, embed=emb)
-            step = 2000
-            for i in range(0, len(text), step):
-                await self.type2sent(self.channel, text=text[i:i + step], emb=emb)
+        t = 0
+        for txt in other.split_text(text):
+            t += await self.type2sent(self.channel, text=txt, emb=emb, extra=t)
+        return t
 
     async def qanswer(self, text):
-        if isinstance(text, list):
-            for s in text:
-                await C.client.send_message(self.channel, s)
-        else:
-            step = 2000
-            for i in range(0, len(text), step):
-                await C.client.send_message(self.channel, text[i:i + step])
+        for t in other.split_text(text):
+            await C.client.send_message(self.channel, t)
 
     async def say(self, channel, text):
         #await C.client.send_message(channel, text)
@@ -264,17 +253,22 @@ async def reaction(message):
             return
     else:
         ans = ''
-        if '┻' in msg.original and '╯' in msg.original:
-            if msg.admin:
-                ans = other.rand_tableflip()
-            elif msg.channel.id == C.channels['bar']:
-                if {msg.author}.intersection({C.users['Buffy'], C.users['Tilia'], }):
+        if '╯' in msg.original:
+            if '┻' in msg.original:
+                if msg.admin:
                     ans = other.rand_tableflip()
+                elif msg.channel.id == C.channels['bar']:
+                    if {msg.author}.intersection({C.users['Buffy'], C.users['Tilia'], }):
+                        ans = other.rand_tableflip()
+                    else:
+                        return
                 else:
-                    return
+                    ans = '┬─┬ ノ( ゜-゜ノ)'
             else:
-                ans = '┬─┬ ノ( ゜-゜ノ)'
-        elif msg.original[1:].startswith('tableflip'):
+                dice_count = msg.original.count('dice') + msg.original.count('🎲')
+                if dice_count > 0:
+                    ans = other.rand_diceflip(dice_count)
+        elif msg.original[1:].startswith('tableflip') and (msg.admin or msg.channel.id == C.channels['bar']):
             ans = '* *бросаю за <@{id}>* *\n{table}'.format(id=msg.author, table=other.rand_tableflip())
 
         if ans:
@@ -329,7 +323,7 @@ async def reaction(message):
                 else:
                     ans = random.choice(data.threats).format(name=msg.author)
             elif msg.words.intersection({'как'}) and msg.words.intersection({'дела', 'ты'}):
-                ans = random.choice(data.responses['whtasup'])
+                ans = random.choice(data.responses['whatsup'])
             # other questuons must be before this
             elif msg.text.endswith('?'):
                 if msg.admin:
@@ -337,7 +331,7 @@ async def reaction(message):
                         ans = other.name_rand_phr(msg.author, data.sm_resp['yes'])
                     else:
                         ans = other.name_rand_phr(msg.author, data.sm_resp['no'])
-                else:
+                elif len(msg.args) > 3:
                     ans = random.choice(data.responses['question'])
             elif msg.words.intersection({'скучал', 'скучала', 'скучаль'}):
                 ans = other.name_phr(msg.author, 'я тоже')
