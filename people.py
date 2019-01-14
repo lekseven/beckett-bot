@@ -9,7 +9,7 @@ import log
 usrs = {} # type: dict[id, Usr]
 gone = {} # type: dict[id, Gn]
 bans = [] # type: list[discord.User]
-bans_id = set() # type: set(discord.User.id)
+bans_id = set() # type: {discord.User.id}
 other_usrs = {}
 
 

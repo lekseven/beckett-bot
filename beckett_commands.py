@@ -5,6 +5,7 @@
 """
 import discord
 import sys
+
 import other
 import constants as C
 import local_memory as ram
@@ -14,12 +15,12 @@ import event_funs as ev
 import manager
 import emj
 
-roll_cmds = {'roll', 'rollw', 'rollv', 'r', 'rw', 'rv',}
-
-free_cmds = {'help', 'ignore',}
+_Msg = manager.Msg
+roll_cmds = {'roll', 'rollw', 'rollv', 'r', 'rw', 'rv', }
+free_cmds = {'help', 'ignore', }
 free_cmds.update(roll_cmds)
-
-admin_cmds = { 'unsilence_all',
+admin_cmds = {
+    'unsilence_all',
     'channel', 'unchannel', 'report', 'unreport', 'say', 'sayf', 'emoji', 'dominate',
     'purge', 'purge_aft', 'purge_ere', 'purge_bet', 'embrace', 'get_offtime', 'get_offlines',
     'deny', 'undeny', 'mute', 'unmute', 'mute_list', 'mute_l', 'unmute_l', 'mute_l_list',
@@ -29,7 +30,7 @@ primogenat_cmds = {'help', 'silence', 'unsilence', 'kick'}
 
 
 # region Free
-async def help(msg):
+async def help(msg: _Msg):
     """\
     !help: выводит данный хелп
     !help cmd*: поиск хелпа по категориям и командам \
@@ -39,7 +40,6 @@ async def help(msg):
     # cmds = set(key for key in module_attrs if key[0] != '_' and callable(getattr(module, key)))
     # if not msg.admin:
     #     cmds.intersection_update(free_cmds)
-
     cmds = msg.get_commands()
     flt = {'free': free_cmds, 'admin': admin_cmds, 'super': only_super,
            'primogenat': primogenat_cmds, 'primogen': primogenat_cmds,
@@ -57,7 +57,7 @@ async def help(msg):
     comf_help = ''
     docs = []
     if cmds:
-        if msg.admin and any((cmds == all_cmds, cmds == only_super, cmds == admin_cmds)):    #len(msg.args) < 2 and msg.admin:
+        if msg.admin and any((cmds == all_cmds, cmds == only_super, cmds == admin_cmds)):
             texts.append(('''```css
             Условные обозначения аргументов:
                 ch - id, обращение (#channel) или имя канала без пробелов;
@@ -110,11 +110,10 @@ async def help(msg):
     else:
         texts += other.comfortable_help(docs)
 
-
     await msg.qanswer(texts)
 
 
-async def ignore(msg): # TODO more phrases here
+async def ignore(msg: _Msg): # TODO more phrases here
     """\
     !ignore: вкл/выкл комментирования Беккетом своих сообщений \
     """
@@ -132,7 +131,7 @@ async def ignore(msg): # TODO more phrases here
             await msg.answer("Не хочешь разговаривать, ну и не надо :confused:.")
 
 
-# async def roll(msg):
+# async def roll(msg: _msg):
 #     """\
 #     !roll хdу: кинуть x кубиков-y \
 #     """
@@ -153,7 +152,7 @@ async def ignore(msg): # TODO more phrases here
 #         await msg.qanswer(other.comfortable_help([str(roll.__doc__)]))
 
 
-async def roll(msg):
+async def roll(msg: _Msg):
     """\
     !roll х: кинуть x кубов d10
     !roll хdу: кинуть x кубиков-y
@@ -190,7 +189,7 @@ async def roll(msg):
         return
 
 
-async def r(msg):
+async def r(msg: _Msg):
     """\
     !r х: кинуть x кубов d10
     !r хdу: кинуть x кубиков-y
@@ -229,7 +228,7 @@ async def r(msg):
     pass
 
 
-async def rw(msg):
+async def rw(msg: _Msg):
     """\
     !rw х: кинуть x кубов d10 к сложности 6 с вычетом единиц
     !rw хdу: кинуть x кубиков-y к сложности (y/2+1) с вычетом единиц
@@ -268,7 +267,7 @@ async def rw(msg):
     pass
 
 
-async def rollw(msg):
+async def rollw(msg: _Msg):
     """\
     !rollw х: кинуть x кубов d10 к сложности 6 с вычетом единиц
     !rollw хdу: кинуть x кубиков-y к сложности (y/2+1) с вычетом единиц
@@ -304,7 +303,7 @@ async def rollw(msg):
         return
 
 
-async def rollv(msg):
+async def rollv(msg: _Msg):
     """\
     !rollv х: просто кинуть x дайсов v5
     !rollv х diff: кинуть x дайсов v5 против сложности diff
@@ -331,7 +330,7 @@ async def rollv(msg):
         return
 
 
-async def rv(msg):
+async def rv(msg: _Msg):
     """\
     !rv х: просто кинуть x дайсов v5
     !rv х diff: кинуть x дайсов v5 против сложности diff
@@ -360,7 +359,7 @@ async def rv(msg):
 
 
 # region Primogenat
-async def silence(msg):
+async def silence(msg: _Msg):
     """\
     !silence N username: включить молчанку username на N часов \
     """
@@ -391,7 +390,7 @@ async def silence(msg):
         return
 
 
-async def silence_f(msg):
+async def silence_f(msg: _Msg):
     """\
     !silence_f N username: включить молчанку username на N часов, тихая и игнорит уровень роли \
     """
@@ -418,7 +417,7 @@ async def silence_f(msg):
         return
 
 
-async def unsilence(msg):
+async def unsilence(msg: _Msg):
     """\
     !unsilence username: выключить молчанку для username\
     """
@@ -441,7 +440,7 @@ async def unsilence(msg):
         return
 
 
-async def unsilence_all(msg):
+async def unsilence_all(msg: _Msg):
     """\
     !unsilence_all: выключить запрет на чтения всего для всех пользоателей (не ролей)\
     """
@@ -453,7 +452,7 @@ async def unsilence_all(msg):
     await msg.qanswer('Молчанка снята со всех.')
 
 
-async def kick(msg):
+async def kick(msg: _Msg):
     """\
     !kick username: кикнуть username посредством голосования\
     """
@@ -491,7 +490,7 @@ async def kick(msg):
 
 
 # region Admin
-async def dominate(msg):
+async def dominate(msg: _Msg):
     """\
     !dominate usr text: доминирование (✺_✺) \
     """
@@ -516,7 +515,7 @@ async def dominate(msg):
     #await C.client.send_message(ch, content=who.mention, embed=emb)
 
 
-async def get_offtime(msg):
+async def get_offtime(msg: _Msg):
     """\
     !get_offtime username: узнать, как долго пользователь ничего не пишет
     """
@@ -532,7 +531,7 @@ async def get_offtime(msg):
                       .format(usr.mention, other.sec2str(people.offline(usr.id))))
 
 
-async def get_offlines(msg):
+async def get_offlines(msg: _Msg):
     """\
     !get_offlines d: узнать, кто не пишет уже в течении d дней
     """
@@ -541,8 +540,8 @@ async def get_offlines(msg):
         await msg.qanswer(other.comfortable_help([str(get_offlines.__doc__)]))
         return
     r_users = {}
-    for r in C.vtm_server.role_hierarchy:
-        r_users[r.name] = {}
+    for role_ in C.vtm_server.role_hierarchy:
+        r_users[role_.name] = {}
     ds = float(s_ds)
     check_t = int(ds * 24 * 3600)
     count = 0
@@ -560,10 +559,10 @@ async def get_offlines(msg):
         end_s_num = int(s_num[-1])
         ans = ['{0} уже {1} {2}:'.format(s_users, s_num, s_days[end_s_num < 5 and end_s_num])]
         r_users['Без ролей'] = r_users.pop('@everyone')
-        for r in r_users:
-            if r_users[r]:
-                sorted_users = [r_users[r][key] for key in sorted(r_users[r])]
-                ans.append('**```{0}[{1}]:```**{2}'.format(r, len(r_users[r]), sorted_users[0]))
+        for role_ in r_users:
+            if r_users[role_]:
+                sorted_users = [r_users[role_][key] for key in sorted(r_users[role_])]
+                ans.append('**```{0}[{1}]:```**{2}'.format(role_, len(r_users[role_]), sorted_users[0]))
                 ans += sorted_users[1:]
         ans_20 = other.split_list(ans, 20)
         ans = ['\n'.join(v) for v in ans_20]
@@ -573,7 +572,7 @@ async def get_offlines(msg):
 
 
 # region Interaction commands
-async def channel(msg):
+async def channel(msg: _Msg):
     """\
     !channel ch*: сохраняет список каналов для !mute, !deny, !purge
     !channel: выводит список сохранённых каналов \
@@ -589,7 +588,7 @@ async def channel(msg):
     await msg.qanswer((', '.join(text)) if text else 'All')
 
 
-async def unchannel(msg):
+async def unchannel(msg: _Msg):
     """\
     !unchannel ch* : удаляет каналы из сохранённого списка
     !unchannel: отчищает список сохранённых каналов \
@@ -605,7 +604,7 @@ async def unchannel(msg):
     await msg.qanswer((', '.join(text)) if text else 'All')
 
 
-async def report(msg):
+async def report(msg: _Msg):
     """\
     !report ch* : сохраняет каналы для вывода сообщений (!say !deny !embrace)
     !report: выводит список сохранённых каналов \
@@ -618,7 +617,7 @@ async def report(msg):
     await msg.qanswer((', '.join(text)) if text else 'None')
 
 
-async def unreport(msg):
+async def unreport(msg: _Msg):
     """\
     !unreport ch* : удаляет каналы из сохранённого списка
     !unreport: отчищает список сохранённых каналов \
@@ -633,21 +632,21 @@ async def unreport(msg):
     await msg.qanswer((', '.join(text)) if text else 'None')
 
 
-async def say(msg):
+async def say(msg: _Msg):
     """\
     !say text: сказать Беккетом text на каналах из !report \
     """
     await msg.report(msg.original[len('!say '):])
 
 
-async def sayf(msg):
+async def sayf(msg: _Msg):
     """\
     !sayf text: сказать Беккетом text во #flood \
     """
     await msg.say(C.main_ch, msg.original[len('!sayf '):])
 
 
-async def say_wait(msg):
+async def say_wait(msg: _Msg):
     """\
     !say_wait username msg: написать сообщение в ответ на сообщение от username
     !say_wait role msg: написать сообщение в ответ на сообщение от кого-то с role
@@ -660,7 +659,7 @@ async def say_wait(msg):
     # user = msg.
 
 
-async def emoji(msg):
+async def emoji(msg: _Msg):
     """\
     !emoji: вкл/выкл эмоджи Беккета за пользователя \
     """
@@ -672,7 +671,7 @@ async def emoji(msg):
         await msg.qanswer('Emoji mode on')
 
 
-async def purge(msg):
+async def purge(msg: _Msg):
     """\
     !purge: стереть последнее сообщение в каналах из !channels
     !purge N: стереть N последних сообщений в каждом из каналов из !channel
@@ -694,7 +693,7 @@ async def purge(msg):
         await msg.purge(ch, count, check=check)
 
 
-async def purge_aft(msg):
+async def purge_aft(msg: _Msg):
     """\
     !purge_aft ch msg: стереть миллион сообщений после msg в ch
     !purge_aft ch msg N: стереть N сообщений после msg в ch
@@ -730,7 +729,7 @@ async def purge_aft(msg):
     await msg.purge(ch, count, check=check, aft=mess)
 
 
-async def purge_ere(msg):
+async def purge_ere(msg: _Msg):
     """\
     !purge_ere ch msg: стереть одно сообщение перед msg в ch
     !purge_ere ch msg N: стереть N сообщений перед msg в ch
@@ -766,7 +765,7 @@ async def purge_ere(msg):
     await msg.purge(ch, count, check=check, bef=mess)
 
 
-async def purge_bet(msg):
+async def purge_bet(msg: _Msg):
     """\
     !purge_bet ch msg1 msg2: стереть сообщения между msg1 и msg2 в ch
     !purge_bet ch msg1 msg2 usr*: стереть сообщения юзеров между msg1 и msg2 в ch \
@@ -805,7 +804,7 @@ async def purge_bet(msg):
     await msg.purge(ch, 1000000, check=check, aft=msg1, bef=msg2)
 
 
-async def embrace(msg):
+async def embrace(msg: _Msg):
     """\
     !embrace username: случайно (если нет клана) обратить пользователя, выдать сира, сообщить в !reports
     !embrace role username: обратить пользователя в role, выдать сира, сообщить в !report
@@ -821,10 +820,10 @@ async def embrace(msg):
         role = other.find(C.vtm_server.roles, id=msg.args[1])
         ln = 0
         if not role:
-            for r in C.vtm_server.roles:
-                if r.name in msg.original:
-                    if not role or len(r.name) > len(role.name):
-                        role = r
+            for role_ in C.vtm_server.roles:
+                if role_.name in msg.original:
+                    if not role or len(role_.name) > len(role.name):
+                        role = role_
             if role:
                 ln = len('!embrace ') + len(role.name) + 1
         else:
@@ -850,7 +849,7 @@ async def embrace(msg):
 # region Deny commands
 
 
-async def deny(msg):
+async def deny(msg: _Msg):
     """\
     !deny: список замьютенных юзеров
     !deny usr* : замьютить указанных юзеров в каналах из !channel \
@@ -889,7 +888,7 @@ async def deny(msg):
         await msg.report(mess.format(', '.join(members), s_domains))
 
 
-async def undeny(msg):
+async def undeny(msg: _Msg):
     """\
     !undeny: размьютить всех
     !undeny usr* : размьютить указанных юзеров в каналах из !channel \
@@ -946,7 +945,7 @@ async def undeny(msg):
 # TODO Becketts comments to *mute commands
 
 
-async def mute(msg):
+async def mute(msg: _Msg):
     """\
     !mute: список каналов "выключенного" Беккета-комментатора
     !mute all: выключить комменты Беккета во всех каналах
@@ -960,7 +959,7 @@ async def mute(msg):
     await mute_list(msg)
 
 
-async def unmute(msg):
+async def unmute(msg: _Msg):
     """\
     !unmute all: включить комменты Беккета для остальных каналов
     !unmute: включить комменты Беккета вообще во всех каналах
@@ -976,14 +975,14 @@ async def unmute(msg):
     await mute_list(msg)
 
 
-async def mute_list(msg):
+async def mute_list(msg: _Msg):
     """\
     !mute_list: список каналов "выключенного" Беккета-комментатора \
     """
     await msg.qanswer(('<#' + '>, <#'.join(ram.mute_channels) + '>') if ram.mute_channels else 'None')
 
 
-async def mute_l(msg):
+async def mute_l(msg: _Msg):
     """\
     !mute_l: список каналов "выключенного" Беккета-комментатора без упоминания
     !mute_l all: выключить комменты Беккета без упоминания во всех каналах
@@ -997,7 +996,7 @@ async def mute_l(msg):
     await mute_l_list(msg)
 
 
-async def unmute_l(msg):
+async def unmute_l(msg: _Msg):
     """\
     !unmute_l all: включить комменты Беккета без упоминания для остальных каналов
     !unmute_l: включить комменты Беккета без упоминания вообще во всех каналах
@@ -1013,7 +1012,7 @@ async def unmute_l(msg):
     await mute_l_list(msg)
 
 
-async def mute_l_list(msg):
+async def mute_l_list(msg: _Msg):
     """\
     !mute_light_list: список каналов "выключенного" Беккета-комментатора без упоминания \
     """
@@ -1024,7 +1023,7 @@ async def mute_l_list(msg):
 # region Super
 
 
-async def kick_f(msg):
+async def kick_f(msg: _Msg):
     if len(msg.args) < 2:
         return
 
@@ -1039,7 +1038,7 @@ async def kick_f(msg):
             await C.client.kick(usr)
 
 
-async def ban(msg):
+async def ban(msg: _Msg):
     if len(msg.args) < 2:
         return
 
@@ -1054,7 +1053,7 @@ async def ban(msg):
             await C.client.ban(usr, delete_message_days=0)
 
 
-async def unban(msg):
+async def unban(msg: _Msg):
     if len(msg.args) < 2:
         return
 
@@ -1065,7 +1064,7 @@ async def unban(msg):
         await C.client.unban(msg.cmd_server, usr)
 
 
-async def pin(msg):
+async def pin(msg: _Msg):
     err = len(msg.args) < 3
     ch = None
     if not err:
@@ -1086,7 +1085,7 @@ async def pin(msg):
             log.jW("Bot can't find message.")
 
 
-async def unpin(msg):
+async def unpin(msg: _Msg):
     err = len(msg.args) < 3
     ch = None
     if not err:
@@ -1107,7 +1106,7 @@ async def unpin(msg):
             log.jW("Bot can't find message.")
 
 
-async def delete(msg):
+async def delete(msg: _Msg):
     """
     !delete ch msg*: стереть сообщения в указанном канале
     """
@@ -1148,7 +1147,7 @@ async def delete(msg):
     #     if message.author.id == C.users['bot']:
     #         await C.client.delete_message(message)
 
-async def nickname(msg):
+async def nickname(msg: _Msg):
     if len(msg.args) > 1:
         name = msg.original[len('!nickname '):]
     else:
@@ -1156,12 +1155,12 @@ async def nickname(msg):
     await C.client.change_nickname(msg.cmd_server.me, name)  # Beckett
 
 
-async def test(msg):
+async def test(msg: _Msg):
     ram.game = not ram.game
     await other.test_status(ram.game)
 
 
-async def play(msg):
+async def play(msg: _Msg):
     game = None
     if len(msg.args) > 1:
         ram.game = msg.original[len('!play '):]
@@ -1172,15 +1171,15 @@ async def play(msg):
     await C.client.change_presence(game=game, status=discord.Status.online, afk=False)
 
 
-async def info(msg):
+async def info(msg: _Msg):
     ans = []
     for s in C.client.servers:  # type: discord.Server
         ans.append(s.name + ' {' + s.id + '}')
         ans.append('\tOwner: ' + str(s.owner) + ' (' + s.owner.mention + ')')
         ans.append('\tCount: ' + str(s.member_count))
         ans.append('\tRoles: ')
-        for r in s.role_hierarchy:
-            ans.append('\t\t' + r.name + ' {' + r.mention + '}')
+        for role_ in s.role_hierarchy:
+            ans.append('\t\t' + role_.name + ' {' + role_.mention + '}')
         v = {}
         t = {}
         for ch in s.channels: # type: discord.Channel
@@ -1208,7 +1207,7 @@ async def info(msg):
     await msg.qanswer(":ok_hand:")
 
 
-async def add_role(msg):
+async def add_role(msg: _Msg):
     if len(msg.args) < 3:
         await msg.qanswer("!add_role user role1 role2 ...")
         return
@@ -1239,7 +1238,7 @@ async def add_role(msg):
     await msg.qanswer(":ok_hand:")
 
 
-async def rem_role(msg):
+async def rem_role(msg: _Msg):
     if len(msg.args) < 3:
         await msg.qanswer("!rem_role user role1 role2 ...")
         return
@@ -1270,7 +1269,7 @@ async def rem_role(msg):
     await msg.qanswer(":ok_hand:")
 
 
-async def clear_clans(msg):
+async def clear_clans(msg: _Msg):
     if len(msg.args) < 2:
         # get help
         return
@@ -1288,7 +1287,7 @@ async def clear_clans(msg):
         await msg.qanswer("Не могу найти такого пользователя.")
 
 
-async def read(msg):
+async def read(msg: _Msg):
     """
     !read ch N: прочитать N сообщений в ch
     """
@@ -1337,7 +1336,7 @@ async def read(msg):
     await msg.qanswer(":ok_hand:")
 
 
-async def log_channel(msg):
+async def log_channel(msg: _Msg):
     if len(msg.args) < 2:
         await msg.qanswer("!log_channel channel")
         return
@@ -1407,7 +1406,7 @@ async def log_channel(msg):
     await msg.qanswer(":ok_hand:")
 
 
-async def server(msg):
+async def server(msg: _Msg):
     ans = ['All servers:']
     for s in C.client.servers:  # type: discord.Server
         ans.append('\t{0.name} [{0.id}] ({0.owner} [{0.owner.id}])'.format(s))
@@ -1435,7 +1434,7 @@ async def server(msg):
     await msg.qanswer('\n'.join(ans))
 
 
-async def info_channels(msg):
+async def info_channels(msg: _Msg):
     ans = []
     servs = (msg.author in ram.cmd_server and [C.client.get_server(ram.cmd_server[msg.author])]) or C.client.servers
     for s in servs:  # type: discord.Server
@@ -1456,11 +1455,12 @@ async def info_channels(msg):
     try:
         await msg.qanswer(res)
     except Exception as e:
+        other.pr_error(e, 'info_channels', 'error')
         print(res)
         await msg.qanswer('Check log.')
 
 
-async def go_timer(msg):
+async def go_timer(msg: _Msg):
     log.D('Start timer by command.')
     ev.timer_hour()
     if C.is_test:
@@ -1470,7 +1470,7 @@ async def go_timer(msg):
 
 
 # region People
-async def people_clear(msg):
+async def people_clear(msg: _Msg):
     ans = await msg.question('ВЫ СОБИРАЕТЕСЬ СТЕРЕТЬ ВСЕ ТАБЛИЦЫ ПОЛЬЗОВАТЕЛЕЙ. ЭТО ДЕЙСТВИЕ НЕВОЗМОЖНО ОТМЕНИТЬ.'
                              'ВЫ ТОЧНО ЖЕЛАЕТЕ ПРОДОЛЖИТЬ?')
     if ans:
@@ -1480,7 +1480,7 @@ async def people_clear(msg):
         await msg.qanswer("Отмена people_clear.")
 
 
-async def people_sync(msg):
+async def people_sync(msg: _Msg):
     ans = await msg.question('Это займёт некоторое время и полностью перезапишет Базу Данных пользователей. '
                              'Вы **точно** уверены, что *действительно желаете* продолжить?')
     if ans:
@@ -1491,7 +1491,7 @@ async def people_sync(msg):
         await msg.qanswer("Отмена people_sync.")
 
 
-async def people_time_sync(msg):
+async def people_time_sync(msg: _Msg):
     ans = await msg.question('Это займёт некоторое время и перезапишет время последних сообщений пользователей. '
                              'Вы **точно** уверены, что *действительно желаете* продолжить?')
     if ans:
@@ -1502,7 +1502,7 @@ async def people_time_sync(msg):
         await msg.qanswer("Отмена people_time_sync.")
 
 
-async def full_update(msg):
+async def full_update(msg: _Msg):
     log.D('Start full update of people by command.')
     for usr in people.usrs.values():
         if {'add', 'upd', 'del'}.difference(usr.status):
@@ -1517,7 +1517,7 @@ async def full_update(msg):
 
 
 # region Voice
-async def connect(msg):
+async def connect(msg: _Msg):
     """
     !connect ch: подсоедениться к войсу
     """
@@ -1541,7 +1541,7 @@ async def connect(msg):
         await msg.qanswer(other.comfortable_help([str(connect.__doc__)]))
 
 
-async def disconnect(msg):
+async def disconnect(msg: _Msg):
     """
     !disconnect: отлючится от войса
     """
@@ -1549,13 +1549,13 @@ async def disconnect(msg):
         await C.voice.disconnect()
 
 
-async def haha1(msg):
+async def haha1(msg: _Msg):
     if C.voice and C.voice.is_connected():
         C.player = C.voice.create_ffmpeg_player('sound/laugh0.mp3')
         C.player.start()
 
 
-async def haha2(msg):
+async def haha2(msg: _Msg):
     if C.voice and C.voice.is_connected():
         C.player = C.voice.create_ffmpeg_player('sound/sabbatlaugh1.mp3')
         C.player.start()
@@ -1563,18 +1563,18 @@ async def haha2(msg):
 
 
 # region Test
-async def tst(msg):
+async def tst(msg: _Msg):
     text = '\n'.join([str(i*10) + ') ' + (('1234 ' * 20) * 30) for i in range(3)])
     await msg.qanswer(text)
     pass
 
 
-async def tst2(msg):
+async def tst2(msg: _Msg):
     if len(msg.args) < 2:
         await msg.qanswer(other.comfortable_help([str(dominate.__doc__)]))
         return
     if not msg.admin and msg.author != C.users['Creol']:
-        await msg.answer('Нет у вас доминирования ¯\_(ツ)_/¯')
+        await msg.answer(r'Нет у вас доминирования ¯\_(ツ)_/¯')
         return
 
     auth = msg.find_member(msg.author)
@@ -1598,19 +1598,19 @@ async def tst2(msg):
     # '\nНочь вся прошла - Бекки устал,\nИ споры грибные он тут услыхал...*')
 
 
-async def roles(msg):
+async def roles(msg: _Msg):
     #await msg.answer(', '.join(msg.roles))
     return
 
 
-async def get_invite(msg):
+async def get_invite(msg: _Msg):
     # invs = await C.client.invites_from(msg.server)
     # await msg.qanswer(msg.server.name + ':\n\t' + '\n\t'.join([inv.code for inv in invs]))
     inv = await C.client.create_invite(msg.cmd_server) # Not working with server?
     await msg.qanswer(msg.cmd_server.name + ': ' + inv.code)
 
 '''
-async def song(msg):
+async def song(msg: _msg):
     await C.client.send_message(C.channels['FM'], "+np")
 
     def check(m):

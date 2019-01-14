@@ -215,7 +215,7 @@ async def on_server_role_delete_o(server, role):
 
 async def on_server_role_update_u(before, after):
     upd_server()
-    if (after.position == before.position + 1 or after.position == before.position - 1):
+    if after.position == before.position + 1 or after.position == before.position - 1:
         return
     names = (before.name + '/' + after.name + ' {@&' + after.id + '}'
         if before.name != '@everyone' else '`@everyone`')
@@ -225,7 +225,7 @@ async def on_server_role_update_u(before, after):
 
 async def on_server_role_update_o(server, before, after):
     upd_server()
-    if (after.position == before.position + 1 or after.position == before.position - 1):
+    if after.position == before.position + 1 or after.position == before.position - 1:
         return
     names = (before.name + '/' + after.name + ' {@&' + after.id + '}'
              if before.name != '@everyone' else '`@everyone`')

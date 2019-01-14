@@ -72,7 +72,7 @@ rand_em = set()
 name_em = {}
 em_set = set()
 em_name = {}
-hearts = {'❤', '💛', '💚', '💙', '💜', '❣', '💕', '💞', '💓', '💗', '💖', '💘', '💝', '💟',} # '💔',
+hearts = {'❤', '💛', '💚', '💙', '💜', '❣', '💕', '💞', '💓', '💗', '💖', '💘', '💝', '💟', } # '💔',
 
 
 def e(name):
@@ -95,7 +95,7 @@ def em2text(text):
     text_set = set(text)
     em_text = em_set.intersection(text_set)
     for em in em_text:
-         text = text.replace(em, ' ' + em_name[em] + ' ')
+        text = text.replace(em, ' ' + em_name[em] + ' ')
 
     for em in extra_em:
         if em in text:

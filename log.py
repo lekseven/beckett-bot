@@ -171,9 +171,9 @@ async def mess_plus(message, save_disc_links=False, save_all_links=False, update
                 text_embeds = '\n'.join(embeds)
                 res.append(text_embeds)
                 if save_all_links:
-                    links += re.findall('https?://.*\S', text_embeds)
+                    links += re.findall(r'https?://.*\S', text_embeds)
                 elif save_disc_links:
-                    links += re.findall('https?://.*discordapp.*\S', text_embeds)
+                    links += re.findall(r'https?://.*discordapp.*\S', text_embeds)
 
         if links:
             links = list(set(links).difference(disc_links))
@@ -199,7 +199,6 @@ async def mess_plus(message, save_disc_links=False, save_all_links=False, update
                             except Exception as e:
                                 other.pr_error(e, 'log.mess_plus', 'send_just_url error')
 
-
         return ['\n'.join(res)] if res else []
     except Exception as e:
         other.pr_error(e, 'log.mess_plus', 'mess_plus[198] error')
@@ -217,7 +216,8 @@ async def format_mess(msg, time=False, date=False, dbase=None):
     try:
         t_m = other.t2s(msg.timestamp)
         t_n = other.t2s()
-        s_time = '(from {0})'.format(t_m) if (time or (t_n[:-1] != t_m[:-1]) or (int(t_n[-1]) - int(t_m[-1]) > 1)) else ''
+        s_time = ('(from {0})'.format(t_m) if (time or (t_n[:-1] != t_m[:-1]) or
+                                               (int(t_n[-1]) - int(t_m[-1]) > 1)) else '')
         ch_name = str(msg.channel.user) if msg.channel.is_private else str(msg.channel.name)
         t = ('(from {0})'.format(other.t2s(msg.timestamp, '%d|%m|%y %T')) if date else s_time)
         cont = msg.content.replace('\n', '\n\t')  # type: str
@@ -255,7 +255,7 @@ async def format_mess(msg, time=False, date=False, dbase=None):
                             break
                 if role:
                     cont = cont.replace('<@&' + role.id + '>', '&' + str(role))
-        a_n = str(msg.author) + ('(' + msg.author.display_name + ')' if msg.author.name != msg.author.display_name else '')
+        a_n = str(msg.author) + ('('+msg.author.display_name+')' if msg.author.name != msg.author.display_name else '')
         return '{t}<{ch}> {author}: {cont}'.format(t=t, ch=ch_name, author=a_n, cont=cont)
     except Exception as e:
         other.pr_error(e, 'log.format_mess', 'format_mess[253] error')
@@ -276,7 +276,7 @@ async def on_mess(msg, kind):
 
     s_server = ''
     if msg.server:
-        if (C.is_test and msg.server.id == C.vtm_server.id):
+        if C.is_test and msg.server.id == C.vtm_server.id:
             return False
         if msg.server.id != C.prm_server.id:
             s_server = '<{0}>'.format(msg.server.name)
@@ -302,7 +302,7 @@ async def on_reaction(reaction, kind, user):
 
     s_server = ''
     if msg.server:
-        if (C.is_test and msg.server.id == C.vtm_server.id):
+        if C.is_test and msg.server.id == C.vtm_server.id:
             return False
         if msg.server.id != C.prm_server.id:
             s_server = '<{0}>'.format(msg.server.name)

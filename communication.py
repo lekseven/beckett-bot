@@ -82,13 +82,12 @@ def prepare():
                 h = hashlib.md5(phr.encode('utf-8')).hexdigest()
                 resp_data[h] = {'text': phr}
                 resp_values[key] += [h]
+            elif not (isinstance(phr, dict) and 'text' in phr):
+                log.jW('fail phrase in response data: ', phr)
             else:
-                if not (isinstance(phr, dict) and 'text' in phr):
-                    log.jW('fail phrase in response data: ', phr)
-                else:
-                    h = hashlib.md5(phr['text'].encode('utf-8')).hexdigest()
-                    resp_data[h] = phr
-                    resp_values[key] += [h]
+                h = hashlib.md5(phr['text'].encode('utf-8')).hexdigest()
+                resp_data[h] = phr
+                resp_values[key] += [h]
 
     log.I('Prepare communication done.')
 
@@ -236,4 +235,3 @@ def voice_note(user):
         return R.choice(D.voice_notions[user.id]).format(user='<@' + user.id + '>')
     else:
         return False
-
