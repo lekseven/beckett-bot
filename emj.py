@@ -64,6 +64,7 @@ ems_id = {
 }
 
 extra_em = {}
+anim_em = {}
 
 # to color smile: smile[ok_hand]+skins[1]
 skins = ['', '🏻', '🏼', '🏽', '🏾', '🏿']
@@ -83,11 +84,13 @@ def e(name):
     return None
 
 
-def get_emname(em):
-    if em in em_name:
-        return em_name[em]
+def e_str(name):
+    if name in extra_em:
+        return extra_em[name]
+    elif name in em_name:
+        return em_name[name]
     elif not C.is_test:
-        log.jW('{e} there no name of emoji ' + em)
+        log.jW('{e} there no emoji ' + name)
     return None
 
 
@@ -95,11 +98,11 @@ def em2text(text):
     text_set = set(text)
     em_text = em_set.intersection(text_set)
     for em in em_text:
-        text = text.replace(em, ' ' + em_name[em] + ' ')
+        text = text.replace(em, f':{em_name[em]}:')
 
-    for em in extra_em:
-        if em in text:
-            text = text.replace(em, ' ' + extra_em[em] + ' ')
+    # for em in extra_em:
+    #     if em in text:
+    #         text = text.replace(em, e(extra_em[em]))
 
     return text
 
@@ -132,14 +135,25 @@ def save_em():
                'sun_with_face', 'sunny', 'sunrise_over_mountains', 'city_sunset', 'bat', 'Logo_Malkavian',
             'p_tetjaadmin', 't_ojwse', 'm_lopata'}
 
-    for em in C.prm_server.emojis:  #C.client.get_all_emojis():
-        #print("'{0.id}': '{0.name}',".format(em))
-        extra_em['<:{0}:{1}>'.format(em.name, em.id)] = em.name
-        if em.id in ems_id:
-            emojis[ems_id[em.id]] = em
-            # emojis['<:{0}:{1}>'.format(em.id, ems_id[em.id])] = ems_id[em.id]
-        elif not C.is_test:
-            log.jW('{save_em} new smile '+str(em))
+    for s in C.client.servers: #type: discord.Server
+        for em in s.emojis:  #type: discord.Emoji
+            pre = 'a' if em.name.startswith('a_') else ''
+            em_str = '<{1}:{0.name}:{0.id}>'.format(em, pre)
+            extra_em[em_str] = em_str
+            if pre:
+                extra_em[str(em)] = em_str
+                anim_em[str(em)] = em
+            if em.id in ems_id:
+                emojis[ems_id[em.id]] = em
+                extra_em[ems_id[em.id]] = em_str
+                # emojis['<:{0}:{1}>'.format(em.id, ems_id[em.id])] = ems_id[em.id]
+            if not em.name in emojis:
+                emojis[em.name] = em
+                extra_em[em.name] = em_str
+            emojis[em.id] = em
+            extra_em[em.id] = em_str
+            # if not C.is_test:
+            #     log.jW('{save_em} new smile '+str(em))
 
     for name in special:
         name_em[C.users[name]] = set()

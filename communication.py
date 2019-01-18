@@ -1,11 +1,13 @@
 import re
-import hashlib
-import data as D
 import random as R
+import hashlib
+
+import data as D
 import constants as C
 import emj
 import other
 import log
+import local_memory as ram
 
 
 good_time = {}
@@ -109,10 +111,53 @@ def check_phrase(phr, words):
 
 
 def get_resp(keys):
-    key = R.choice(keys)
-    answers = resp_values[key]
-    ans_phr = resp_data[R.choice(answers)]
-    return ans_phr
+    if not keys:
+        log.E('<com.get_resp> There are no keys!')
+        return ''
+
+    key = keys if isinstance(keys, str) else R.choice(tuple(keys))
+    if key not in resp_values:
+        if not isinstance(keys, str):
+            new_keys = tuple(k for k in keys if k in resp_values)
+            log.E(f'<com.get_resp> There are no key "{key}" try one from {len(new_keys)} keys (all: {len(keys)}).')
+            return get_resp(new_keys)
+        else:
+            log.E(f'<com.get_resp> There are no key "{key}"!')
+            return ''
+    elif not resp_values[key]:
+        log.E(f'<com.get_resp> resp_values["{key}"] is empty!')
+        return ''
+
+    if len(resp_values[key]) == 1:
+        return resp_data[resp_values[key][0]]
+
+    answers = set(resp_values[key])
+    answers.difference_update(ram.data_used)
+
+    if not answers:
+        # in normal way this block will never execute
+        log.W(f'<com.get_resp> answers for ["{key}"] is empty '
+              f'(all_vals: {len(resp_values[key])}, data_used:{len(ram.data_used)} )!')
+        ram.data_used = [k for k in ram.data_used if k not in resp_values[key]]
+        return get_resp(key)
+
+    # if left one phrase -> free all of used
+    if len(answers) < 2:
+        ram.data_used = [k for k in ram.data_used if k not in resp_values[key]]
+    # if left less then 1/4 of phrases -> free half (early) of used
+    elif len(answers)-1 < len(resp_values[key]) >> 2:
+        # cycle by data_used, because we need order by time of adding
+        old_data = [k for k in ram.data_used if k in resp_values[key]]
+        free_data = old_data[0:len(old_data) >> 1]
+        ram.data_used = [k for k in ram.data_used if k not in free_data]
+
+    ans = R.choice(tuple(answers))
+    ram.data_used.append(ans)
+    return resp_data[ans]
+    #
+    # answers = resp_values[key]
+    # ans_phr = resp_data[R.choice(answers)]
+    # return ans_phr
 
 
 def f_gt_key(orig_phrase, tr_phrase, words, bot_mention):
@@ -226,8 +271,8 @@ def make_words(words, endings):
     return s
 
 
-def voice_event(user, channel):
-    return R.choice(D.voice_alone_messages).format(user='<@'+user.id+'>', voice='<#'+channel.id+'>')
+def voice_event(user, channel, here='@here'):
+    return R.choice(D.voice_alone_messages).format(user='<@'+user.id+'>', voice='<#'+channel.id+'>', here=here)
 
 
 def voice_note(user):

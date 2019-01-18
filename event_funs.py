@@ -15,6 +15,7 @@ import manager
 import log
 timer_hour_handle = None
 timer_min_handle = None
+voice_alert = {}
 
 
 def check_server(fun):
@@ -62,6 +63,7 @@ def upd_server():
 
 # region on_Events
 async def on_voice_state_update_u(before, after):
+    global voice_alert
     v_old = before.voice_channel
     v_new = after.voice_channel
 
@@ -79,17 +81,37 @@ async def on_voice_state_update_u(before, after):
             log.D('<voice> Note event')
             await other.type2sent(C.main_ch, note)
 
+    if after.id in C.voice_alert:
+        if after.id in voice_alert:
+            try:
+                await C.client.delete_message(voice_alert.pop(after.id))
+            except Exception as e:
+                other.pr_error(e, 'on_voice_state_update_u', 'delete_message error')
+
     user = None
     ch = None
-    if after.id in C.voice_alert and v_new and len(v_new.voice_members) == 1:
+    if C.is_test or (after.id in C.voice_alert and v_new and len(v_new.voice_members) == 1):
         user = after
-        ch = v_new
+        ch = v_new # type: discord.Channel
     elif v_old and len(v_old.voice_members) == 1 and v_old.voice_members[0].id in C.voice_alert:
         user = v_old.voice_members[0]
-        ch = v_old
+        ch = v_old # type: discord.Channel
+
     if user and ch:
         log.D('<voice> Event to @here')
-        await other.type2sent(C.main_ch, com.voice_event(user, ch))
+        every_prm = ch.overwrites_for(ch.server.default_role)
+        if every_prm.connect or (every_prm.connect is None and ch.server.default_role.permissions.connect):
+            call = ['@here']
+        else:
+            call = []
+            for obj, perm in ch.overwrites:
+                if perm.connect:
+                    call.append(obj.mention)
+        if call:
+            s_call = ', '.join(call)
+            mess = await C.client.send_message(C.main_ch, com.voice_event(user, ch, s_call))
+            voice_alert[user.id] = mess
+            # await other.type2sent(C.main_ch, com.voice_event(user, ch, s_call))
 
 
 async def on_voice_state_update_o(server, before, after):

@@ -31,7 +31,7 @@ class Msg:
         self.is_vtm = self.server_id == C.vtm_server.id
         self.is_tst = self.server_id == C.tst_server.id
         self.message = message
-        self.original = message.content
+        self.original = message.content or ('≤System≥ ' + message.system_content)
         self.text = message.content.lower().replace('ё', 'е')
         self.args = []
         self.words = set()
@@ -263,14 +263,14 @@ async def silence_end(name):
 
 async def voting(channel, text='', timeout=60, votes=None, count=3):
     votes = votes or set()
-    text = text + '\n*(для согласия введите за/y/yes/д/да/+/1/:ok_hand:/:thumbsup:)*'
-    yes = {'за', '1', 'y', 'yes', 'д', 'да', 'у', '+', 't_d_', 'ok_hand', 'thumbsup', '+1', 'thumbup'}
+    text = text + '\n*(для согласия введите за/y/yes/ok//д/да/+/1/:ok_hand:/:thumbsup:)*'
+    yes = {'за', '1', 'y', 'yes', 'д', 'да', 'ок', 'у', '+', 't_d_', 'ok_hand', 'ok', 'thumbsup', '+1', 'thumbup'}
     await C.client.send_message(channel, text)
     time_end = other.get_sec_total() + timeout
 
     def check(msg):
         return (msg.author.id not in votes.union({C.users['bot']}) and
-                    yes.intersection(emj.em2text(msg.content).lower().replace('.', '').split()))
+                    yes.intersection(emj.em2text(msg.content).lower().replace('.', '').replace(':', ' ').split()))
 
     while len(votes) < count:
         time_left = time_end - other.get_sec_total()
@@ -516,6 +516,8 @@ def get_v5_param(text, add_keys=''):
 
 
 def _get_val_v5(dice, hunger=False, short=False):
+    hunger = bool(hunger)
+    short = bool(short)
     if dice == 10:
         symb = (('☘', r'\🍀'), ('☿', '👹'))[hunger][short]
     elif dice > 5:
@@ -525,7 +527,7 @@ def _get_val_v5(dice, hunger=False, short=False):
     else:
         symb = ('●', '•')[short]
 
-    if hunger:
+    if hunger and short:
         symb = '`' + symb + '`'
     return symb
 
