@@ -15,7 +15,8 @@ import manager
 import log
 timer_hour_handle = None
 timer_min_handle = None
-voice_alert = {}
+voice_alert_msg = {}
+voice_alert_ids = {}
 
 
 def check_server(fun):
@@ -63,7 +64,7 @@ def upd_server():
 
 # region on_Events
 async def on_voice_state_update_u(before, after):
-    global voice_alert
+    global voice_alert_msg
     v_old = before.voice_channel
     v_new = after.voice_channel
 
@@ -82,11 +83,14 @@ async def on_voice_state_update_u(before, after):
             await other.type2sent(C.main_ch, note)
 
     if after.id in C.voice_alert:
-        if after.id in voice_alert:
-            try:
-                await C.client.delete_message(voice_alert.pop(after.id))
-            except Exception as e:
-                other.pr_error(e, 'on_voice_state_update_u', 'delete_message error')
+        com.rem_from_queue(C.main_ch.id, voice_alert_ids.setdefault(after.id, []))
+        voice_alert_ids.pop(after.id)
+        if after.id in voice_alert_msg:
+            while voice_alert_msg[after.id]:
+                try:
+                    await C.client.delete_message(voice_alert_msg[after.id].pop())
+                except Exception as e:
+                    other.pr_error(e, 'on_voice_state_update_u', 'delete_message error')
 
     user = None
     ch = None
@@ -109,8 +113,11 @@ async def on_voice_state_update_u(before, after):
                     call.append(obj.mention)
         if call:
             s_call = ', '.join(call)
-            mess = await C.client.send_message(C.main_ch, com.voice_event(user, ch, s_call))
-            voice_alert[user.id] = mess
+            va_ids = voice_alert_ids.setdefault(user.id, [])
+            va_msg = voice_alert_msg.setdefault(user.id, [])
+            va_ids.append(com.write_msg(C.main_ch, text=com.voice_event(user, ch, s_call), save_obj=va_msg))
+            # mess = await C.client.send_message(C.main_ch, com.voice_event(user, ch, s_call))
+            # voice_alert_msg[user.id] = mess
             # await other.type2sent(C.main_ch, com.voice_event(user, ch, s_call))
 
 

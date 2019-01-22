@@ -31,7 +31,7 @@ class Msg:
         self.is_vtm = self.server_id == C.vtm_server.id
         self.is_tst = self.server_id == C.tst_server.id
         self.message = message
-        self.original = message.content or ('≤System≥ ' + message.system_content)
+        self.original = message.content or (('≤System≥ ' + message.system_content) if message.system_content else '')
         self.text = message.content.lower().replace('ё', 'е')
         self.args = []
         self.words = set()

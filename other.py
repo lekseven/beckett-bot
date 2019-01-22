@@ -457,17 +457,17 @@ def split_text(text, pre_split=''):
     if not text:
         return []
 
-    if isinstance(text, list):
+    if not isinstance(text, str):
         if pre_split:
             if len(text[0]) >= MAX_LEN:
                 yield from split_text(text[0])
                 yield from split_text(text[1:], pre_split)
-            elif sum((len(t)+1 for t in text)) <= MAX_LEN:
+            elif sum((len(t)+len(pre_split) for t in text)) <= MAX_LEN:
                 yield pre_split.join(text)
             else:
                 new_text = [text[0]]
-                new_len = len(text[0])
                 ln_spl = len(pre_split)
+                new_len = len(text[0]) + ln_spl
                 i = 1
                 for i, t in enumerate(text[1:], 1):
                     if (new_len + len(t) + ln_spl) >= MAX_LEN:
@@ -476,7 +476,7 @@ def split_text(text, pre_split=''):
                         new_text.append(t)
                         new_len += len(t) + ln_spl
 
-                yield pre_split.join(new_text)
+                yield pre_split.join(new_text) + (pre_split[0] if len(pre_split) > 1 else '')
                 yield from split_text(text[i:], pre_split)
         else:
             for t in text:

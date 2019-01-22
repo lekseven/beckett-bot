@@ -16,6 +16,10 @@ resp_keys = {}
 resp_values = {}
 resp_data = {}
 
+msg_queue = {}
+msg_args = {}
+msg_type_count = {}
+
 
 def prepare():
     log.I('Prepare communication:')
@@ -111,9 +115,10 @@ def check_phrase(phr, words):
 
 
 def get_resp(keys):
+    error_ans = {'text': '', 'last_key': ''}
     if not keys:
         log.E('<com.get_resp> There are no keys!')
-        return ''
+        return error_ans
 
     key = keys if isinstance(keys, str) else R.choice(tuple(keys))
     if key not in resp_values:
@@ -123,13 +128,15 @@ def get_resp(keys):
             return get_resp(new_keys)
         else:
             log.E(f'<com.get_resp> There are no key "{key}"!')
-            return ''
+            return error_ans
     elif not resp_values[key]:
         log.E(f'<com.get_resp> resp_values["{key}"] is empty!')
-        return ''
+        return error_ans
 
     if len(resp_values[key]) == 1:
-        return resp_data[resp_values[key][0]]
+        d_key = resp_values[key][0]
+        resp_data[d_key]['last_key'] = key
+        return resp_data[d_key]
 
     answers = set(resp_values[key])
     answers.difference_update(ram.data_used)
@@ -153,6 +160,7 @@ def get_resp(keys):
 
     ans = R.choice(tuple(answers))
     ram.data_used.append(ans)
+    resp_data[ans]['last_key'] = key
     return resp_data[ans]
     #
     # answers = resp_values[key]
@@ -280,3 +288,102 @@ def voice_note(user):
         return R.choice(D.voice_notions[user.id]).format(user='<@' + user.id + '>')
     else:
         return False
+
+
+def write_msg(ch, text=None, emb=None, extra=0, save_obj=None, fun:callable=None, a_fun:callable=None):
+
+    if text is None:
+        ti, tn = 1, 0
+    else:
+        ln_text = len(text) if isinstance(text, str) else sum(len(i) for i in text)
+        tn = min(1500, ln_text) / 30 + extra
+        ti = 0
+
+    ident = str(other.t2utc().timestamp())
+    msg_queue.setdefault(ch.id, []).append(ident)
+    msg_args[ident] = (ident, ti, tn, ch, text, emb, save_obj, fun, a_fun)
+    log.D(f'write_msg[add] tn = {tn}, ti = {ti}, ident = {ident}.')
+    _check_queue(ch.id)
+    return ident
+
+
+def rem_from_queue(ch_id, ids):
+    if not ids:
+        return
+    ids = (ids,) if isinstance(ids, str) else ids
+    queue = msg_queue.get(ch_id, [])
+    for id_ in ids:
+        if id_ in msg_args:
+            msg_args.pop(id_)
+        if id_ in queue:
+            queue.remove(id_)
+
+
+def _check_queue(ch_id):
+    queue = msg_queue.get(ch_id, [])
+    if not queue:
+        return
+    count = msg_type_count.get(ch_id, 0)
+    if count < 1:
+        if queue[0] in msg_args:
+            msg_type_count[ch_id] = msg_type_count.get(ch_id, 0) + 1
+            other.later_coro(0, _send_msg(*msg_args.pop(queue[0])))
+        else:
+            log.W('com._check_queue, lost msg with id ', queue.pop(0))
+            _check_queue(ch_id)
+
+
+async def _send_msg(ident, ti, tn, ch, text=None, emb=None, save_obj=None, fun:callable=None, a_fun:callable=None):
+
+    if ident not in msg_queue.get(ch.id, []):
+        msg_type_count[ch.id] = msg_type_count.get(ch.id, 1) - 1
+        log.D(f'write_msg[STOP] tn = {tn}, ti = {ti}, ident = {ident}, count = {msg_type_count[ch.id]}.')
+        _check_queue(ch.id)
+        return
+
+    if ti < tn:
+        dt = min(tn - ti, 10)
+        log.D(f'write_msg[go] tn = {tn}, ti = {ti}, dt = {dt}, ident = {ident}, count = {msg_type_count[ch.id]}.')
+        await C.client.send_typing(ch)
+        other.later_coro(dt, _send_msg(ident, ti + dt, tn, ch, text, emb, save_obj, fun, a_fun))
+    else:
+        try:
+            msgs = []
+            msg_queue[ch.id].remove(ident)
+            msg_type_count[ch.id] = msg_type_count.get(ch.id, 1) - 1
+            log.D(f'write_msg[end] ident = {ident}, count = {msg_type_count[ch.id]}.')
+            for txt in other.split_text(text):
+                msgs.append(await C.client.send_message(ch, content=txt, embed=emb))
+            if save_obj is not None:
+                if isinstance(save_obj, list):
+                    save_obj += msgs
+                elif isinstance(save_obj, set):
+                    save_obj.update(msgs)
+                elif isinstance(save_obj, dict):
+                    save_obj[ident] = tuple(msgs)
+                elif isinstance(save_obj, tuple): # type (dict, key)
+                    save_obj[0][save_obj[1]] = tuple(msgs)
+            if fun:
+                fun(msgs)
+            if a_fun:
+                await a_fun(msgs)
+        except Exception as e:
+            other.pr_error(e, 'com._send_msg', 'Unexpected error')
+        finally:
+            _check_queue(ch.id)
+
+
+async def delete_msg(message=None, ch_i=None, msg_id=None):
+    if not message:
+        try:
+            message = await C.client.get_message(other.get_channel(ch_i), msg_id)
+        except Exception as e:
+            other.pr_error(e, 'com.delete_msg.get_message', 'Unexpected error')
+            return
+    try:
+        await C.client.delete_message(message)
+    except Exception as e:
+        other.pr_error(e, 'com.delete_msg', 'Unexpected error')
+
+
+

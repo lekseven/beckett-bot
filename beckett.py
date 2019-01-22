@@ -9,7 +9,7 @@ import discord
 
 import constants as C
 from communication import prepare as com__prepare
-from check_message import reaction as check_message__reaction
+import check_message
 import other
 import emj
 import local_memory as ram
@@ -37,7 +37,6 @@ async def on_ready():
     log.p('------ ------ ------')
     C.Ready = True
     await other.test_status(ram.game)
-    server = C.vtm_server
 
     pass
     pass
@@ -174,17 +173,19 @@ async def on_server_role_update(before, after):
 @C.client.event
 async def on_message(message):
     if await log.on_mess(message, 'on_message'):
-        await check_message__reaction(message)
+        await check_message.reaction(message)
 
 
 @C.client.event
 async def on_message_edit(before, after):
-    await log.on_mess(after, 'on_message_edit')
+    if await log.on_mess(after, 'on_message_edit'):
+        await check_message.reaction(after, edit=True)
 
 
 @C.client.event
 async def on_message_delete(message):
-    await log.on_mess(message, 'on_message_delete')
+    if await log.on_mess(message, 'on_message_delete'):
+        await check_message.delete_reaction(message)
 
 
 @C.client.event

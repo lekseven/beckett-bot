@@ -220,7 +220,7 @@ async def format_mess(msg, time=False, date=False, dbase=None):
                                                (int(t_n[-1]) - int(t_m[-1]) > 1)) else '')
         ch_name = str(msg.channel.user) if msg.channel.is_private else str(msg.channel.name)
         t = ('(from {0})'.format(other.t2s(msg.timestamp, '%d|%m|%y %T')) if date else s_time)
-        cont = msg.content or ('≤System≥ ' + msg.system_content)
+        cont = msg.content or (('≤System≥ ' + msg.system_content) if msg.system_content else '')
         cont = cont.replace('\n', '\n\t')  # type: str
         db = dbase if dbase is not None else {}  # we need a=={} if it is
         if msg.author.id not in db:
@@ -260,7 +260,7 @@ async def format_mess(msg, time=False, date=False, dbase=None):
         return '{t}<{ch}> {author}: {cont}'.format(t=t, ch=ch_name, author=a_n, cont=cont)
     except Exception as e:
         other.pr_error(e, 'log.format_mess', 'format_mess[253] error')
-        return '<format error> ' + (msg.content or ('≤System≥ ' + msg.system_content))
+        return '<format error> ' + (msg.content or (('≤System≥ ' + msg.system_content) if msg.system_content else ''))
 
 
 async def on_mess(msg, kind):
