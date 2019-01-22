@@ -220,7 +220,7 @@ def welcome_msg(uid):
             format(glad_to_see=R.choice(D.glad_to_see), glad_ans=R.choice(D.glad_ans),
                    because=R.choice(D.because), pause_reason=R.choice(D.pause_reason),
                    pause_wait=R.choice(D.pause_wait)),
-        D.rules_and_ask.format(rules=C.channels['rules'], ask=C.channels['ask']),
+        R.choice(D.rules_and_ask).format(rules=C.channels['rules'], ask=C.channels['ask']),
         R.choice(D.welcome_finish)
     )
 
