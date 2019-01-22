@@ -58,7 +58,7 @@ async def reaction(message, edit=False):
         if any(link in msg.text for link in data.forbiddenLinks):
             log.I(f'<reaction> forbidden Links')
             await msg.delete()
-            await msg.answer(other.name_rand_phr(msg.author, data.threats))
+            await msg.answer(random.choice(data.threats).format(name=msg.author))
             return
         '''str = msg.text
         for link in data.forbiddenLinks:
@@ -123,6 +123,7 @@ async def delete_reaction(message):
     type_ = resp['type'] if resp else ''
     # if resp and type_ and (not type_.startswith('cmd_') or type_ == 'cmd_help'):
     if resp and type_ and not type_.startswith('cmd_'):
+        log.I(f'<delete_reaction> [{type_}]')
         com.rem_from_queue(message.channel.id, typing)
         for mess in resp['ans']:
             await com.delete_msg(mess)
@@ -258,7 +259,7 @@ def _beckett_ans(m_type, author_id):
     elif m_type == 'tremer_joke':
         ans = data.tremer_joke
     elif m_type == 'bot_dog':
-        ans = other.name_rand_phr(author_id, data.threats)
+        ans = random.choice(data.threats).format(name=author_id)
     elif m_type in {'whatsup', 'question'}:
         ans = random.choice(data.responses[m_type])
     elif m_type == 'boring':
