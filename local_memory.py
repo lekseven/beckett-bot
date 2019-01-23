@@ -16,4 +16,4 @@ t_start = None
 t_finish = None
 t_work = None
 
-data_used = []
+# data_used = []

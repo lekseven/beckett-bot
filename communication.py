@@ -20,6 +20,8 @@ msg_queue = {}
 msg_args = {}
 msg_type_count = {}
 
+data_used = []
+
 
 def prepare():
     log.I('Prepare communication:')
@@ -115,6 +117,7 @@ def check_phrase(phr, words):
 
 
 def get_resp(keys):
+    global data_used
     error_ans = {'text': '', 'last_key': ''}
     if not keys:
         log.E('<com.get_resp> There are no keys!')
@@ -139,27 +142,27 @@ def get_resp(keys):
         return resp_data[d_key]
 
     answers = set(resp_values[key])
-    answers.difference_update(ram.data_used)
+    answers.difference_update(data_used)
 
     if not answers:
         # in normal way this block will never execute
         log.W(f'<com.get_resp> answers for ["{key}"] is empty '
-              f'(all_vals: {len(resp_values[key])}, data_used:{len(ram.data_used)} )!')
-        ram.data_used = [k for k in ram.data_used if k not in resp_values[key]]
+              f'(all_vals: {len(resp_values[key])}, data_used:{len(data_used)} )!')
+        data_used = [k for k in data_used if k not in resp_values[key]]
         return get_resp(key)
 
     # if left one phrase -> free all of used
     if len(answers) < 2:
-        ram.data_used = [k for k in ram.data_used if k not in resp_values[key]]
+        data_used = [k for k in data_used if k not in resp_values[key]]
     # if left less then 1/4 of phrases -> free half (early) of used
     elif len(answers)-1 < len(resp_values[key]) >> 2:
         # cycle by data_used, because we need order by time of adding
-        old_data = [k for k in ram.data_used if k in resp_values[key]]
+        old_data = [k for k in data_used if k in resp_values[key]]
         free_data = old_data[0:len(old_data) >> 1]
-        ram.data_used = [k for k in ram.data_used if k not in free_data]
+        data_used = [k for k in data_used if k not in free_data]
 
     ans = R.choice(tuple(answers))
-    ram.data_used.append(ans)
+    data_used.append(ans)
     resp_data[ans]['last_key'] = key
     return resp_data[ans]
     #

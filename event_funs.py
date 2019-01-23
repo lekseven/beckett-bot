@@ -320,7 +320,7 @@ def save_mem():
         conn.commit()
     except psycopg2.DatabaseError as e:
         log.E('[save_mem] <memory> DatabaseError %s' % e)
-        sys.exit(1)
+        # sys.exit(1)
     else:
         log.I('+ memory saved successfully')
     finally:
