@@ -80,7 +80,7 @@ async def on_voice_state_update_u(before, after):
         note = com.voice_note(after)
         if note:
             log.D('<voice> Note event')
-            await other.type2sent(C.main_ch, note)
+            await other.type2sent(after, note)
 
     if after.id in C.voice_alert:
         com.rem_from_queue(C.main_ch.id, voice_alert_ids.setdefault(after.id, []))
@@ -152,6 +152,7 @@ async def on_member_join_u(member):
         if t > 0:
             log.I(member, ' come, but Silence is on.')
             await manager.silence_on(uid, t/3600)
+            timer_hour()
 
     if people.Usr.check_new(member):
         await log.pr_news('{0} ({0.mention}) comeback!'.format(member))
@@ -381,6 +382,7 @@ def timer_min():
         for uid, user in ram.silence_users.items():
             if other.get_sec_total() > user['time']:
                 other.later_coro(1, manager.silence_end(uid))
+                other.later(60, timer_hour)
     except Exception as e:
         other.pr_error(e, 'timer_min')
 

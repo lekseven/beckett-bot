@@ -50,7 +50,7 @@ async def reaction(message, edit=False):
         await msg.delete()
         ram.silence_ans[msg.author] = ram.silence_ans.setdefault(msg.author, 0) + 1
         if ram.silence_ans[msg.author] < 4:
-            await msg.answer('Неугодный <@' + msg.author + '> пытается нам нечто сказать, но мы его не слышим...')
+            await msg.answer(f'Неугодный <@{msg.author}> пытается нам нечто сказать, но заноза в сердце мешает...')
         return
 
     # delete messages containing forbidden links

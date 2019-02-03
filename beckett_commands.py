@@ -405,9 +405,10 @@ async def silence(msg: _Msg):
     await C.client.add_reaction(msg.message, emj.e('ok_hand'))
     user = await manager.silence_on(name, t)
     if user:
-        text = 'По решению Примогената, <@{0}> получает молчанку на {1} ч.'.format(user.id, t)
+        text = 'По решению Примогената, <@{0}> отправлен в торпор на {1} ч.'.format(user.id, t)
         await msg.qanswer(text)
         await msg.say(C.main_ch, text)
+        ev.timer_hour()
     elif user is False:
         await msg.qanswer(name + " имеет слишком высокую роль.")
         return
@@ -436,8 +437,9 @@ async def silence_f(msg: _Msg):
     await C.client.add_reaction(msg.message, emj.e('ok_hand'))
     user = await manager.silence_on(name, t, force=True)
     if user:
-        text = '<@{0}> получает молчанку на {1} ч.'.format(user.id, t)
+        text = '<@{0}> отправлен в торпор на {1} ч.'.format(user.id, t)
         await msg.qanswer(text)
+        ev.timer_hour()
     else:
         await msg.qanswer("Не могу найти пользователя " + name + ".")
         return
@@ -457,8 +459,9 @@ async def unsilence(msg: _Msg):
     await C.client.add_reaction(msg.message, emj.e('ok_hand'))
     user = await manager.silence_off(name)
     if user:
-        text = 'По решению Примогената, <@{0}> уже может говорить.'.format(user.id)
+        text = 'По решению Примогената, <@{0}> уже выведен из торпора.'.format(user.id)
         await msg.say(C.main_ch, text)
+        ev.timer_hour()
     elif user is False:
         await msg.qanswer("Нет пользователя " + name + " в молчанке.")
     elif user is None:
@@ -475,7 +478,8 @@ async def unsilence_all(msg: _Msg):
     for memb in C.prm_server.members:
         await manager.turn_silence(memb, False, force=True)
 
-    await msg.qanswer('Молчанка снята со всех.')
+    await msg.qanswer('Из торпора выведены все.')
+    ev.timer_hour()
 
 
 async def kick(msg: _Msg):

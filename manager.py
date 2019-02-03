@@ -256,7 +256,7 @@ async def silence_off(name):
 async def silence_end(name):
     user = await silence_off(name)
     if user:
-        await C.client.send_message(C.main_ch, content='<@{0}>, твой период молчанки подошёл к концу.'.format(user.id))
+        await C.client.send_message(C.main_ch, content='<@{0}>, период твоего торпора подошёл к концу.'.format(user.id))
     else:
         log.W('End silence for ', name, ", but can't find user.")
 
