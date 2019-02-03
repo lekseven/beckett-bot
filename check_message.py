@@ -230,7 +230,7 @@ def _beckett_m_type(msg)->str:
             return 'bot_dog'
     elif msg.words.intersection({'как'}) and msg.words.intersection({'дела', 'ты'}):
         return 'whatsup'
-    # other questuons must be before this
+    # other questions must be before this
     elif msg.text.endswith('?'):
         if msg.admin:
             if (yes == no) or yes:
@@ -289,6 +289,7 @@ def _data_tp_check(msg:Msg) -> str:
 
 
 def data_tp_del(ch_id, id_):
+    # noinspection PyUnusedLocal
     def fun(messages):
         o = data_typings.get(ch_id, {})
         if id_ in o:

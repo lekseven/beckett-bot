@@ -1,13 +1,15 @@
+import aiohttp
 import re
 import sys
-import constants as C
 import datetime
-import discord
 import random
+from io import BytesIO as io_BytesIO
+from ast import literal_eval as ast__literal_eval
+import discord
+
+import constants as C
 import log
 import manager
-import aiohttp
-from io import BytesIO as io_BytesIO
 
 # for weather
 
@@ -418,7 +420,7 @@ def rand_diceflip(count=1):
     eye = random.choice(('°', '•', '◕', '~', '・', '￣', 'ᵔ', '^', '-', '❛', 'ಠ', '≖'))
     mouth = random.choice(('□', '◡', 'o', '‿', r'\_', '︿', '∀', '▽', '。', 'ᴥ',))
     wave = random.choice(('彡', '︵', '︵︵', '︵︵︵',))
-    dices = '`' + '` `'.join(manager.get_dices(count, simple=True, short=True)) + '`'
+    dices = '`' + '` `'.join(manager.get_dice(count, simple=True, short=True)) + '`'
     return '(╯{0}{1}{0}）╯{2} {3}'.format(eye, mouth, wave, dices)
 
 
@@ -492,3 +494,24 @@ def split_text(text, pre_split=''):
         else:
             for i in range(0, len(text), MAX_LEN):
                 yield text[i:i + MAX_LEN]
+
+
+def obj2int(obj):
+    if not obj:
+        return 0
+    else:
+        return int(obj)
+
+
+def try_sum(s:str):
+    if not s:
+        return 0
+
+    s = s.replace(',', '.')
+    try:
+        res = ast__literal_eval(s)
+    except Exception as e:
+        return 0
+    else:
+        return res
+
