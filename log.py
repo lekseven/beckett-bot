@@ -22,6 +22,7 @@ class LogWrite:
     def write(self, s):
         self.std.write(s)
         self.logfile.write(s)
+        self.flush()
 
     def flush(self):
         self.std.flush()
@@ -39,6 +40,7 @@ class ErrWrite:
             self.logfile.write(other.t2s(frm='![%T]!\t') + s)
         else:
             self.logfile.write(s)
+        self.flush()
 
     def flush(self):
         self.std.flush()
@@ -56,6 +58,16 @@ def log_fun(loop):
         with redirect_stdout(LogWrite(sys.stdout, logfile)):
             with redirect_stderr(ErrWrite(sys.stderr, logfile)):
                 loop()
+
+
+def read_log(n:1):
+    global log_full
+    directory = os.path.dirname(log_full)
+    if not os.path.exists(directory):
+        E('<log.read_log> There is no log file!')
+        return []
+    with open(log_full, 'r') as logfile:
+        return logfile.readlines()[-n:]
 
 
 def send_log():

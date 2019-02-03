@@ -1325,6 +1325,19 @@ async def read(msg: _Msg):
         await msg.qanswer(other.comfortable_help([str(read.__doc__)]))
         return
 
+    if msg.args[2].isnumeric():
+        num = int(msg.args[2])
+    else:
+        await msg.qanswer(other.comfortable_help([str(read.__doc__)]))
+        return
+
+    if msg.args[1] == 'log':
+        log.D('* <read> read from log_file')
+        mess = log.read_log(num)
+        await msg.qanswer('`' + '`\n`'.join(mess) + '`')
+        await msg.qanswer(":ok_hand:")
+        return
+
     ch = await other.get_channel_or_user(msg.args[1])  # type: discord.Channel
     if not ch:
         await msg.qanswer("Can't find channel " + msg.args[1])
@@ -1335,12 +1348,6 @@ async def read(msg: _Msg):
         if not pr.read_message_history:
             await msg.qanswer("No permissions for reading <#{0}>!".format(ch.id))
             return
-
-    if msg.args[2].isnumeric():
-        num = int(msg.args[2])
-    else:
-        await msg.qanswer(other.comfortable_help([str(read.__doc__)]))
-        return
 
     log.D('- <read> for {0}({1}) start'.format(ch, ch.id))
     messages = []
