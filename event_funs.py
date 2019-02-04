@@ -190,20 +190,20 @@ async def on_member_update_u(before: discord.Member, after: discord.Member):
 
     if before.display_name != after.display_name or before.name != after.name:
         b_n = other.uname(before)
-        log.I(f'{b_n} change nickname to {a_n}.')
+        log.I(f'<on_member_update> {b_n} change nickname to {a_n}.')
 
     if before.status != after.status:
-        log.I(f'{a_n} change status from {before.status} to {after.status}.')
+        log.I(f'<on_member_update> {a_n} change status from {before.status} to {after.status}.')
 
     if before.game != after.game:
         if before.game and after.game:
-            log.I(f'{a_n} go play from {before.game.name} to {after.game.name}.')
+            log.I(f'<on_member_update> {a_n} go play from {before.game.name} to {after.game.name}.')
         elif before.game:
-            log.I(f'{a_n} stop play {before.game.name}.')
+            log.I(f'<on_member_update> {a_n} stop play {before.game.name}.')
         elif after.game:
-            log.I(f'{a_n} start play {after.game.name}.')
+            log.I(f'<on_member_update> {a_n} start play {after.game.name}.')
         else:
-            log.I(f' <???> {a_n} - game change, but there are no games...')
+            log.I(f'<on_member_update> {{???}} {a_n} - game change, but there are no games...')
 
     if before.avatar_url != after.avatar_url:
         urls = []
@@ -212,21 +212,21 @@ async def on_member_update_u(before: discord.Member, after: discord.Member):
         a_url, b_url = urls
 
         if before.avatar_url and after.avatar_url:
-            await log.pr_news(f'{a_n} change avatar from \n{a_url} \nto\n{b_url}')
+            await log.pr_news(f'<on_member_update> {a_n} change avatar from \n{a_url} \nto\n{b_url}')
         elif before.avatar_url:
-            await log.pr_news(f'{a_n} delete avatar: \n{b_url}')
+            await log.pr_news(f'<on_member_update> {a_n} delete avatar: \n{b_url}')
         elif after.avatar_url:
-            await log.pr_news(f'{a_n} set avatar: \n{a_url}')
+            await log.pr_news(f'<on_member_update> {a_n} set avatar: \n{a_url}')
         else:
-            log.I(f' <???> {a_n} - avatar change, but there are no avatar_urls...')
+            log.I(f'<on_member_update> {{???}} {a_n} - avatar change, but there are no avatar_urls...')
 
     if before.roles != after.roles:
         old_roles = [('@' + r.name) for r in before.roles if r not in after.roles]
         new_roles = [('@' + r.name) for r in after.roles if r not in before.roles]
         if old_roles:
-            log.I(f'{a_n} lost role(s): {", ".join(old_roles)}.')
+            log.I(f'<on_member_update> {a_n} lost role(s): {", ".join(old_roles)}.')
         if new_roles:
-            log.I(f'{a_n} get role(s): {", ".join(new_roles)}.')
+            log.I(f'<on_member_update> {a_n} get role(s): {", ".join(new_roles)}.')
 
 
 # noinspection PyUnusedLocal

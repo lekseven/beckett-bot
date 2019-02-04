@@ -130,7 +130,7 @@ def save_em():
         'Tony': {'p_Lacr', 'Logo_Ventrue', }, # 'ok_hand', 'thumbsup',
         'Manf': {'m_draniki', 'm_bulba', 'star_and_crescent'},
         'Hadley': {'Logo_Toreador', 'thumbsup'},
-        'Kuro': {'point_up', 'Logo_Tremere', 'thumbsup'}, # for test
+        # 'Kuro': {'point_up', 'Logo_Tremere', 'thumbsup'}, # for test
     }
     rand = {'t_jiznbol1', 't_jiznbol2', 'm_Tarkin_f', 'slight_smile', 'joy', 'laughing', 'rofl',
                'smiley_cat', 'smile_cat', 'joy_cat', 'full_moon', 'full_moon_with_face', 'crescent_moon',
