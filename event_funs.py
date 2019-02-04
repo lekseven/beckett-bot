@@ -182,6 +182,58 @@ async def on_member_remove_o(server, member):
     await C.client.send_message(def_ch, com.bye(member.id, member.display_name))
 
 
+async def on_member_update_u(before: discord.Member, after: discord.Member):
+    # it's triggers on changing status, game playing, avatar, nickname or roles
+    # just for test now
+    a_n = other.uname(after)
+    log.I(f'on_member_update_u for {a_n}.')
+
+    if before.display_name != after.display_name or before.name != after.name:
+        b_n = other.uname(before)
+        log.I(f'{b_n} change nickname to {a_n}.')
+
+    if before.status != after.status:
+        log.I(f'{a_n} change status from {before.status} to {after.status}.')
+
+    if before.game != after.game:
+        if before.game and after.game:
+            log.I(f'{a_n} go play from {before.game.name} to {after.game.name}.')
+        elif before.game:
+            log.I(f'{a_n} stop play {before.game.name}.')
+        elif after.game:
+            log.I(f'{a_n} start play {after.game.name}.')
+        else:
+            log.I(f' <???> {a_n} - game change, but there are no games...')
+
+    if before.avatar_url != after.avatar_url:
+        urls = []
+        for url in (before.avatar_url, after.avatar_url):
+            urls.append(' ?'.join(url.split('?', maxsplit=1)))
+        a_url, b_url = urls
+
+        if before.avatar_url and after.avatar_url:
+            await log.pr_news(f'{a_n} change avatar from \n{a_url} \nto\n{b_url}')
+        elif before.avatar_url:
+            await log.pr_news(f'{a_n} delete avatar: \n{b_url}')
+        elif after.avatar_url:
+            await log.pr_news(f'{a_n} set avatar: \n{a_url}')
+        else:
+            log.I(f' <???> {a_n} - avatar change, but there are no avatar_urls...')
+
+    if before.roles != after.roles:
+        old_roles = [('@' + r.name) for r in before.roles if r not in after.roles]
+        new_roles = [('@' + r.name) for r in after.roles if r not in before.roles]
+        if old_roles:
+            log.I(f'{a_n} lost role(s): {", ".join(old_roles)}.')
+        if new_roles:
+            log.I(f'{a_n} get role(s): {", ".join(new_roles)}.')
+
+
+# noinspection PyUnusedLocal
+async def on_member_update_o(server: discord.Server, before: discord.Member, after: discord.Member):
+    pass
+
+
 async def on_member_ban_u(member):
     await people.on_ban(member)
     await log.pr_news('Ban {0} ({0.mention})!'.format(member))
@@ -194,12 +246,14 @@ async def on_member_ban_o(server, member):
     await C.client.send_message(def_ch, com.bye(member.id, member.display_name))
 
 
+# noinspection PyUnusedLocal
 async def on_member_unban_u(server, user):
     people.on_unban(user)
     await C.client.send_message(C.main_ch, com.unban_msg(user.id))
     await log.pr_news('Unban {0} ({0.mention})!'.format(user))
 
 
+# noinspection PyUnusedLocal
 async def on_member_unban_o(server, server_, user):
     await log.pr_other_news(server, 'Unban {0} ({0.mention})!'.format(user))
 

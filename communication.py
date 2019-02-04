@@ -1,5 +1,4 @@
 import re
-import random as R
 import hashlib
 
 import data as D
@@ -123,7 +122,7 @@ def get_resp(keys):
         log.E('<com.get_resp> There are no keys!')
         return error_ans
 
-    key = keys if isinstance(keys, str) else R.choice(tuple(keys))
+    key = keys if isinstance(keys, str) else other.choice(tuple(keys))
     if key not in resp_values:
         if not isinstance(keys, str):
             new_keys = tuple(k for k in keys if k in resp_values)
@@ -161,13 +160,13 @@ def get_resp(keys):
         free_data = old_data[0:len(old_data) >> 1]
         data_used = [k for k in data_used if k not in free_data]
 
-    ans = R.choice(tuple(answers))
+    ans = other.choice(tuple(answers))
     data_used.append(ans)
     resp_data[ans]['last_key'] = key
     return resp_data[ans]
     #
     # answers = resp_values[key]
-    # ans_phr = resp_data[R.choice(answers)]
+    # ans_phr = resp_data[other.choice(answers)]
     # return ans_phr
 
 
@@ -213,25 +212,25 @@ def f_gt_key(orig_phrase, tr_phrase, words, bot_mention):
 
 
 def hi(uid):
-    return other.name_phr(uid, R.choice(D.hello))
+    return other.name_phr(uid, other.choice(D.hello))
 
 
 def welcome_msg(uid):
     return '{0}\n{1} {2}\n{3}'.format(
         hi(uid),
         '{glad_to_see} {glad_ans} {because} {pause_reason} - {pause_wait}'.
-            format(glad_to_see=R.choice(D.glad_to_see), glad_ans=R.choice(D.glad_ans),
-                   because=R.choice(D.because), pause_reason=R.choice(D.pause_reason),
-                   pause_wait=R.choice(D.pause_wait)),
-        R.choice(D.rules_and_ask).format(rules=C.channels['rules'], ask=C.channels['ask']),
-        R.choice(D.welcome_finish)
+            format(glad_to_see=other.choice(D.glad_to_see), glad_ans=other.choice(D.glad_ans),
+                   because=other.choice(D.because), pause_reason=other.choice(D.pause_reason),
+                   pause_wait=other.choice(D.pause_wait)),
+        other.choice(D.rules_and_ask).format(rules=C.channels['rules'], ask=C.channels['ask']),
+        other.choice(D.welcome_finish)
     )
 
 
 def comeback_msg(uid, time_out=False, clan_id=False):
-    return '{0} {1}{2}'.format(R.choice(D.comeback_msg).format(name=uid),
+    return '{0} {1}{2}'.format(other.choice(D.comeback_msg).format(name=uid),
                                D.comeback_time[time_key(time_out)] or '',
-                               clan_id and '\n{0}'.format(R.choice(D.comeback_clan).format(clan=clan_id)) or ''
+                               clan_id and '\n{0}'.format(other.choice(D.comeback_clan).format(clan=clan_id)) or ''
                                )
 
 
@@ -256,21 +255,22 @@ def time_key(t):
 
 
 def bye(uid, name=''):
-    return other.name_phr(uid, R.choice(D.bye), name=name)
+    return other.name_phr(uid, other.choice(D.bye), name=name)
 
 
 def bye_msg(uid, name=''):
-    return '{bye}\n{phrase}'.format(bye=bye(uid, name), phrase=R.choice(D.bye_phrase))
+    return '{bye}\n{phrase}'.format(bye=bye(uid, name), phrase=other.choice(D.bye_phrase))
 
 
 def ban_msg(uid, nick=''):
     nick = nick and '(' + nick + ')'
     name = '<@{uid}>{nick}'.format(uid=uid, nick=nick)
-    return '{msg}\n{comment}'.format(msg=R.choice(D.ban_msg).format(name=name), comment=R.choice(D.ban_comment))
+    return '{msg}\n{comment}'.format(msg=other.choice(D.ban_msg).format(name=name), comment=other.choice(D.ban_comment))
 
 
 def unban_msg(uid):
-    return '{msg}\n{comment}'.format(msg=R.choice(D.unban_msg).format(name=uid), comment=R.choice(D.unban_comment))
+    return '{msg}\n{comment}'.format(msg=other.choice(D.unban_msg).format(name=uid),
+                                     comment=other.choice(D.unban_comment))
 
 
 def make_words(words, endings):
@@ -283,12 +283,12 @@ def make_words(words, endings):
 
 
 def voice_event(user, channel, here='@here'):
-    return R.choice(D.voice_alone_messages).format(user='<@'+user.id+'>', voice='<#'+channel.id+'>', here=here)
+    return other.choice(D.voice_alone_messages).format(user='<@'+user.id+'>', voice='<#'+channel.id+'>', here=here)
 
 
 def voice_note(user):
     if user.id in D.voice_notions:
-        return R.choice(D.voice_notions[user.id]).format(user='<@' + user.id + '>')
+        return other.choice(D.voice_notions[user.id]).format(user='<@' + user.id + '>')
     else:
         return False
 
@@ -387,6 +387,3 @@ async def delete_msg(message=None, ch_i=None, msg_id=None):
         await C.client.delete_message(message)
     except Exception as e:
         other.pr_error(e, 'com.delete_msg', 'Unexpected error')
-
-
-

@@ -1,5 +1,4 @@
 # -*- coding: utf8 -*-
-#import random
 #import data
 from os import environ as os__environ
 import signal
@@ -114,6 +113,7 @@ def prepare_const2():
 
 # Events with check_server
 # region Ev.check_server
+# noinspection PyUnusedLocal
 @C.client.event
 @ev.check_server
 async def on_voice_state_update(before, after):
@@ -133,18 +133,28 @@ async def on_member_remove(member):
     return member.server
 
 
+# noinspection PyUnusedLocal
+@C.client.event
+@ev.check_server
+async def on_member_update(before, after):
+    # it's triggers on changing status, game playing, avatar, nickname or roles
+    return after.server
+
+
 @C.client.event
 @ev.check_server
 async def on_member_ban(member):
     return member.server
 
 
+# noinspection PyUnusedLocal
 @C.client.event
 @ev.check_server
 async def on_member_unban(server, user):
     return server
 
 
+# noinspection PyUnusedLocal
 @C.client.event
 @ev.check_server
 async def on_server_emojis_update(before, after):
@@ -163,6 +173,7 @@ async def on_server_role_delete(role):
     return role.server
 
 
+# noinspection PyUnusedLocal
 @C.client.event
 @ev.check_server
 async def on_server_role_update(before, after):
@@ -176,6 +187,7 @@ async def on_message(message):
         await check_message.reaction(message)
 
 
+# noinspection PyUnusedLocal
 @C.client.event
 async def on_message_edit(before, after):
     if await log.on_mess(after, 'on_message_edit'):
@@ -211,8 +223,8 @@ def on_exit(signum):
 
 
 def main_loop():
-    for signame in ('SIGINT', 'SIGTERM'):
-        C.loop.add_signal_handler(getattr(signal, signame), functools__partial(on_exit, signame))
+    for sig_name in ('SIGINT', 'SIGTERM'):
+        C.loop.add_signal_handler(getattr(signal, sig_name), functools__partial(on_exit, sig_name))
     try:
         log.I("Start ClientRun.")
         C.client.run(C.DISCORD_TOKEN)

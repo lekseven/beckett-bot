@@ -1,6 +1,5 @@
 # -*- coding: utf8 -*-
 import re
-import random
 
 import data
 import local_memory as ram
@@ -58,7 +57,7 @@ async def reaction(message, edit=False):
         if any(link in msg.text for link in data.forbiddenLinks):
             log.I(f'<reaction> forbidden Links')
             await msg.delete()
-            await msg.answer(random.choice(data.threats).format(name=msg.author))
+            await msg.answer(other.choice(data.threats).format(name=msg.author))
             return
         '''str = msg.text
         for link in data.forbiddenLinks:
@@ -147,14 +146,14 @@ def _do_reaction(msg:Msg) -> (str, str):
     other.later_coro(0, emj.on_message(msg.message, beckett))
 
     found_keys = com.check_phrase(msg.text, msg.words)
-    prob = random.random()
+    prob = other.rand()
 
     # embrace
     if msg.channel.id == C.channels['ask'] and not msg.roles.intersection(C.clan_ids):
         clan_keys = list(C.clan_names.intersection(found_keys))
         if clan_keys:
-            clan = random.choice(clan_keys)
-            other.later_coro(random.randrange(30, 90),
+            clan = other.choice(clan_keys)
+            other.later_coro(other.rand(30, 90),
                              manager.do_embrace_and_say(msg, msg.author, clan=clan))
             # return 'embrace', clan
     elif embrace_or_return:
@@ -199,7 +198,7 @@ def _do_reaction(msg:Msg) -> (str, str):
             if ans:
                 return m_type, ans
 
-        if beckett_reference or (beckett_mention and random.random() < 0.25):
+        if beckett_reference or (beckett_mention and other.rand() < 0.25):
             m_type = 'For_Prince' if msg.author == C.users['Natali'] and prob < 0.4 else 'beckett'
             ans_phr = com.get_resp(m_type)
             return m_type, ans_phr['text']
@@ -219,12 +218,12 @@ def _beckett_m_type(msg)->str:
     elif (msg.words.intersection(data.sm_resp['love']) or msg.words.intersection(emj.hearts)) and not no:
         return 'love'
     elif 'любимый клан' in msg.text:
-        if random.random() > 0.09:
+        if other.rand() > 0.09:
             return 'apoliticality'
         else:
             return 'tremer_joke'
     elif msg.words.intersection(data.sm_resp['bot_dog']):
-        if msg.admin or random.random() > 0.2:
+        if msg.admin or other.rand() > 0.2:
             return 'not_funny'
         else:
             return 'bot_dog'
@@ -255,13 +254,13 @@ def _beckett_ans(m_type, author_id):
             ans = ':heart:'
         ans = other.name_phr(author_id, ans)
     elif m_type == 'apoliticality':
-        ans = random.choice(data.sm_resp['apoliticality'])
+        ans = other.choice(data.sm_resp['apoliticality'])
     elif m_type == 'tremer_joke':
         ans = data.tremer_joke
     elif m_type == 'bot_dog':
-        ans = random.choice(data.threats).format(name=author_id)
+        ans = other.choice(data.threats).format(name=author_id)
     elif m_type in {'whatsup', 'question'}:
-        ans = random.choice(data.responses[m_type])
+        ans = other.choice(data.responses[m_type])
     elif m_type == 'boring':
         ans = other.name_phr(author_id, 'я тоже')
     # elif m_type in {'no-response', ''}:

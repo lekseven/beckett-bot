@@ -1,5 +1,4 @@
 import discord
-import random
 import operator
 import lxml.html
 import requests
@@ -157,7 +156,7 @@ class Msg:
         if gt_key:
             h18 = 64800  # 18h in sec
             if (other.get_sec_total() - self.gt[gt_key['g_key']]) > h18: # not beckett and
-                phr = random.choice(com.good_time[gt_key['g_key']][gt_key['g_type']]['response'])
+                phr = other.choice(com.good_time[gt_key['g_key']][gt_key['g_type']]['response'])
                 str_weather = ''
                 if gt_key['g_key'] == 'g_morn' and self.author in com.morning_add:
                     phr += ' ' + com.morning_add[self.author]
@@ -325,7 +324,7 @@ async def do_embrace(user, clan=None):
                 if r.id in C.clan_ids:
                     clan = C.role_by_id[r.id]
                     break
-        clan = clan or random.choice(list(C.clan_names))
+        clan = clan or other.choice(list(C.clan_names))
         roles = [other.find(C.vtm_server.roles, id=C.roles[clan])]
         pander = False
         if clan in C.sabbat_clans:
@@ -345,13 +344,13 @@ async def do_embrace(user, clan=None):
                 if other.find(mem.roles, id=C.roles[clan]) and mem.id != user.id:
                     clan_users.add(mem.id)
             clan_users.difference_update(C.not_sir)
-            sir = random.choice(list(clan_users))
-            text = random.choice(data.embrace_msg).format(sir='<@' + sir + '>', child='<@' + user.id + '>')
+            sir = other.choice(list(clan_users))
+            text = other.choice(data.embrace_msg).format(sir='<@' + sir + '>', child='<@' + user.id + '>')
         else:
-            text = random.choice(data.embrace_pander).format(child='<@' + user.id + '>')
+            text = other.choice(data.embrace_pander).format(child='<@' + user.id + '>')
 
         if clan in C.sabbat_clans and not pander:
-            text += "\n" + random.choice(data.embrace_sabbat)
+            text += "\n" + other.choice(data.embrace_sabbat)
 
         return text
 
@@ -594,7 +593,7 @@ def get_rolles(count=1, dtype=10, par_keys:set='', rel='ge', diff=6,
     was_success = False
 
     for i in range(0, count):
-        d = random.randint(1, dtype)
+        d = other.rand(1, dtype)
         dices.append(d)
 
     if simple and not calc_sum:
@@ -723,7 +722,7 @@ def get_dices_v5(count=1, diff=0, hung=0, simple=False, short=False):
     dices = []
     count_tens = 0
     for i in range(0, count):
-        d = random.randint(1, 10)
+        d = other.rand(1, 10)
         dices.append(d)
         count_tens += 1 if d == 10 else 0
 

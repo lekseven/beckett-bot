@@ -322,7 +322,7 @@ def ch_list(id_list):
     return text
 
 
-def issuper(usr):
+def is_super(usr):
     """
 
     :param discord.Member usr:
@@ -508,10 +508,32 @@ def try_sum(s:str):
         return 0
 
     s = s.replace(',', '.')
+    # noinspection PyBroadException
     try:
         res = ast__literal_eval(s)
-    except Exception as e:
+    except Exception:
         return 0
     else:
         return res
 
+
+def choice(*args):
+    """Alias for random.choice"""
+    if len(args) == 1:
+        ls = tuple(args[0])
+    else:
+        ls = tuple(args)
+
+    return random.choice(ls)
+
+
+def rand(a:int=None, b:int=None):
+    """Alias for random.random() and random.randint(a, b)"""
+    if a is None or b is None:
+        return random.random()
+    else:
+        return random.randint(a, b)
+
+
+def uname(memb:discord.Member):
+    return str(memb) + ('(' + memb.display_name + ')' if memb.name != memb.display_name else '')

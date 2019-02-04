@@ -1062,7 +1062,7 @@ async def kick_f(msg: _Msg):
     if not usr:
         await msg.qanswer('Пользователь не найден.')
     else:
-        if other.issuper(usr):
+        if other.is_super(usr):
             await msg.qanswer('Пользователя нельзя кикнуть.')
         else:
             await C.client.kick(usr)
@@ -1077,7 +1077,7 @@ async def ban(msg: _Msg):
     if not usr:
         await msg.qanswer('Пользователь не найден.')
     else:
-        if other.issuper(usr):
+        if other.is_super(usr):
             await msg.qanswer('Пользователя нельзя банить.')
         else:
             await C.client.ban(usr, delete_message_days=0)
@@ -1225,7 +1225,7 @@ async def info(msg: _Msg):
         ans += [v[k] for k in sorted(v)]
         ans.append('\tMembers: ')
         for m in s.members: # type: discord.Member
-            usr_name = str(m) + ('(' + m.display_name + ')' if m.name != m.display_name else '')
+            usr_name = other.uname(m)
             ans.append('\t\t' + usr_name + ' {' + m.mention + '}')
     f_name = 'info[{0}].txt'.format(other.t2utc().strftime('%d|%m|%y %T'))
     with open(f_name, "w") as file:

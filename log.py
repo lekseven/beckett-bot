@@ -249,7 +249,7 @@ async def format_mess(msg, time=False, date=False, dbase=None):
                         db[uid] = usr
                     else:
                         continue
-                usr_name = str(usr) + ('(' + usr.display_name + ')' if usr.name != usr.display_name else '')
+                usr_name = other.uname(usr)
                 cont = cont.replace('<@' + usr.id + '>', usr_name).replace('<@!' + usr.id + '>', usr_name)
         if msg.raw_channel_mentions:
             for chid in msg.raw_channel_mentions:
@@ -268,7 +268,7 @@ async def format_mess(msg, time=False, date=False, dbase=None):
                             break
                 if role:
                     cont = cont.replace('<@&' + role.id + '>', '&' + str(role))
-        a_n = str(msg.author) + ('('+msg.author.display_name+')' if msg.author.name != msg.author.display_name else '')
+        a_n = other.uname(msg.author)
         return '{t}<{ch}> {author}: {cont}'.format(t=t, ch=ch_name, author=a_n, cont=cont)
     except Exception as e:
         other.pr_error(e, 'log.format_mess', 'format_mess[253] error')

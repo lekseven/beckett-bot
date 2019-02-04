@@ -1,9 +1,9 @@
 import discord
+
 from data_emoji import emojis
 import constants as C
 import local_memory as ram
 import other
-import random
 import log
 
 
@@ -77,6 +77,8 @@ hearts = {'❤', '💛', '💚', '💙', '💜', '❣', '💕', '💞', '💓', 
 
 
 def e(name):
+    if not isinstance(name, str):
+        return None
     if name in emojis:
         return emojis[name]
     elif not C.is_test:
@@ -127,7 +129,8 @@ def save_em():
         'Doriana': {'black_heart', 'octopus', 'unicorn', 'Logo_Lasombra', },
         'Tony': {'p_Lacr', 'Logo_Ventrue', }, # 'ok_hand', 'thumbsup',
         'Manf': {'m_draniki', 'm_bulba', 'star_and_crescent'},
-        #'Kuro': {'point_up', 'Logo_Tremere', }, # for test
+        'Hadley': {'Logo_Toreador', 'thumbsup'},
+        'Kuro': {'point_up', 'Logo_Tremere', 'thumbsup'}, # for test
     }
     rand = {'t_jiznbol1', 't_jiznbol2', 'm_Tarkin_f', 'slight_smile', 'joy', 'laughing', 'rofl',
                'smiley_cat', 'smile_cat', 'joy_cat', 'full_moon', 'full_moon_with_face', 'crescent_moon',
@@ -147,7 +150,7 @@ def save_em():
                 emojis[ems_id[em.id]] = em
                 extra_em[ems_id[em.id]] = em_str
                 # emojis['<:{0}:{1}>'.format(em.id, ems_id[em.id])] = ems_id[em.id]
-            if not em.name in emojis:
+            if em.name not in emojis:
                 emojis[em.name] = em
                 extra_em[em.name] = em_str
             emojis[em.id] = em
@@ -213,25 +216,25 @@ async def on_reaction_add(reaction, user):
         # emoji[0] because it can be different colors
         if (isinstance(emoji, str) and emoji[0] in name_em[user.id]) or emoji in name_em[user.id]:
             log.jD('Copy special reaction')
-            await C.client.add_reaction(message, emoji)
+            pause_and_add(message, emoji)
             return
 
     if emoji in rand_em:
-        chance = random.random()
+        chance = other.rand()
         if chance <= 0.01:
             log.jD('Copy some reaction')
-            await C.client.add_reaction(message, emoji)
+            pause_and_add(message, emoji)
             return
 
     if server.id == C.vtm_server.id:
         if emoji == e('Logo_Gangrel') and other.find(C.vtm_server.get_member(user.id).roles, id=C.roles['Gangrel']):
             log.jD('Copy Gangrel reaction')
-            await C.client.add_reaction(message, emoji)
+            pause_and_add(message, emoji)
 
     # len(message.reactions) < 20
     # if str(user) == 'Kuro#3777':
     #     pass
-    #     await C.client.add_reaction(message, random.choice(list(emojis.values())))
+    #     await C.client.add_reaction(message, other.choice(list(emojis.values())))
     #     #await C.client.add_reaction(message, emojis['LogoClanTremere'])
 
 
@@ -262,32 +265,51 @@ async def on_reaction_remove(reaction, user):
     #     await C.client.remove_reaction(message, emoji, C.server.me)
 
 
-async def on_message(message, beckett_mention):
-    prob = random.random()
+async def on_message(message: discord.Message, beckett_mention):
+    prob = other.rand()
     author = message.author.id
+
+    if message.channel.id == C.channels['stuff'] and (message.attachments or message.embeds):
+        if author == C.users['Natali'] and prob < 0.9:
+            log.jD('Like Natali in staff')
+            pause_and_add(message, other.choice('purple_heart', 'heart_eyes', 'heart_eyes_cat', 'heartpulse'))
+            return
+        if author in {C.users['Doriana'], C.users['Tilia'], C.users['Buffy']} and prob < 0.4:
+            log.jD('Like Doriana or Tilia or Buffy in staff')
+            pause_and_add(message, other.choice('heart', 'hearts', 'heart_eyes', 'black_heart'))
+            return
+        if author in {C.users['Hadley'], C.users['cycl0ne'], C.users['Magdavius']} and prob < 0.4:
+            log.jD('Like Hadley or cycl0ne or Magdavius in staff')
+            pause_and_add(message, other.choice('thumbsup', 'ok_hand', 'heart_eyes_cat'))
+            return
+
+    if message.content.endswith('((') and prob > 0.5:
+        log.jD('Add jiznbol')
+        pause_and_add(message, other.choice('t_jiznbol1', 't_jiznbol2'))
 
     if author == C.users['Natali']:
         if beckett_mention:
             log.jD('Like Natali for Beckett')
-            await C.client.add_reaction(message, e('purple_heart')) #green_heart
+            pause_and_add(message, other.choice(*('purple_heart',) * 5, 'relaxed', 'blush',
+                                                'kissing_closed_eyes', 'kissing_heart', 'slight_smile'))
         elif prob < 0.01:
             log.jD('Like Natali chance 0.01')
-            await C.client.add_reaction(message, e('purple_heart'))
+            pause_and_add(message, other.choice('purple_heart', 'heart_eyes', 'heart_eyes_cat'))
         return
 
     if author == C.users['Doriana']:
         if beckett_mention and prob < 0.1:
             log.jD('Like Doriana for Beckett chance 0.1')
-            await C.client.add_reaction(message, e('octopus'))
+            pause_and_add(message, e('octopus'))
         elif prob < 0.005:
             log.jD('Like Doriana chance 0.005')
-            await C.client.add_reaction(message, e('black_heart'))
+            pause_and_add(message, e('black_heart'))
         return
 
     if author == C.users['Tony']:
         if beckett_mention and prob < 0.1:
             log.jD('Like Tony for Beckett chance 0.1')
-            await C.client.add_reaction(message, e('Logo_Ventrue'))
+            pause_and_add(message, e('Logo_Ventrue'))
         # elif prob < 0.005:
         #     log.jD('Like Tony chance 0.005')
         #     await C.client.add_reaction(message, e('ok_hand'))
@@ -296,11 +318,22 @@ async def on_message(message, beckett_mention):
     if author == C.users['Rainfall']:
         if beckett_mention and prob < 0.1:
             log.jD('Like Rainfall for Beckett chance 0.1')
-            await C.client.add_reaction(message, e('green_heart'))
+            pause_and_add(message, e('green_heart'))
         elif prob < 0.005:
             log.jD('Like Rainfall chance 0.005')
-            await C.client.add_reaction(message, e('racehorse'))
+            pause_and_add(message, e('racehorse'))
         return
 
     if author == '237604798499651594': # Барон Рихтер
         await C.client.add_reaction(message, e('poop'))
+        return
+
+
+def pause_and_add(message, emoji:str or discord.Emoji, t=-1):
+
+    emoji = e(emoji) or emoji
+
+    if t < 0:
+        t = other.rand(5, 15)
+
+    other.later_coro(t, C.client.add_reaction(message, emoji))
