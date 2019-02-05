@@ -18,34 +18,6 @@ import manager
 find = discord.utils.get
 
 
-# def comfortable_help1(docs):
-#     lens = []
-#     docs2 = []
-#     for doc in docs:
-#         if doc:
-#             new_doc = doc.split('\n')
-#             docs2 += new_doc
-#             for doc2 in new_doc:
-#                 lens.append(len(re.match('.*?[:]', doc2).group(0)))
-#
-#     m = max(lens)
-#     docs = []
-#     for doc in docs2:
-#         docs.append(doc.replace(':', ':' + (' ' * (m - lens.pop(0))) + '\t'))
-#
-#     docs.sort()
-#     #print('len(docs)=', len(docs))
-#     docs_len = len(docs)
-#     count_helps = int(docs_len / 21) + 1  # 20 lines for one message
-#     step = int(docs_len / count_helps - 0.001) + 1
-#     helps = [docs[i:i + step] for i in range(0, len(docs), step)]
-#     texts = []
-#     for h in helps:
-#         texts.append(('```css\n' + '\n'.join(h) + '```').replace('    !', '!'))
-#
-#     return texts
-
-
 def comfortable_help(docs):
     help = {}
     lens = set()
@@ -136,6 +108,25 @@ def sec2str(total_sec):
             l_numb = int(str(t[k])[-1])
             s.append(str(t[k]) + ' ' + (v[l_numb < 5 and l_numb]))
     return ', '.join(s) if s else 'мгновение'
+
+
+def s2s(total_sec):
+    sec_in = {'years': 31557600, 'd': 86400, 'h': 3600, 'min': 60, 'sec': 1}
+    t = {}
+    s = []
+    for k, v in sec_in.items():
+        t[k] = int(total_sec / v)
+        if s or t[k] > 0:
+            total_sec -= t[k] * v
+            s.append(f'{t[k]} {k}')
+    return ', '.join(s) if s else 'flash'
+
+
+def sec2ts(total_sec, frm="%H:%M:%S"):
+    if total_sec == 0:
+        return '0'
+    timedata = datetime.timedelta(seconds=int(total_sec))
+    return t2utc(timedata).strftime(frm)
 
 
 async def get_ban_user(server, s_name):

@@ -11,13 +11,18 @@ gone = {} # type: dict[id, Gn]
 bans = [] # type: list[discord.User]
 bans_id = set() # type: {discord.User.id}
 other_usrs = {}
+users_online = {} # type: dict[id, list]
 
 
 class Usr:
-    def __init__(self, uid, name='', karma=0, status='', g_morn=0, g_day=0, g_ev=0, g_n=0, last_m=-1):
-        self.id = uid
+    props = ('name', 'karma', 'status', 'g_morn', 'g_day', 'g_ev', 'g_n',
+             'last_m', 'last_st', 'online', 'prev_st')
+
+    def __init__(self, uid, name='', karma=0, status='', g_morn=0, g_day=0, g_ev=0, g_n=0,
+                 last_m=-1, last_st=-1, online=True, prev_st=0):
+        self.id = str(uid)
         self.name = name
-        self.karma = karma
+        self.karma = int(karma)
         self.status = status
         self.g_morn = int(g_morn)
         self.g_day = int(g_day)
@@ -25,6 +30,10 @@ class Usr:
         self.g_n = int(g_n)
         l_m = int(last_m)
         self.last_m = l_m if l_m >= 0 else other.get_sec_total()
+        self.online = bool(online)
+        l_st = int(last_st)
+        self.last_st = l_st if l_st >= 0 else other.get_sec_total()
+        self.prev_st = int(prev_st)
         # usrs[id] = self
 
     def set(self, **kwargs):
@@ -41,12 +50,12 @@ class Usr:
         :param str status:
         :return Usr:
         """
-        return Usr(memb.id, name=str(memb), status=status, last_m=other.get_sec_total())
+        return Usr(memb.id, name=other.uname(memb), status=status, last_m=other.get_sec_total())
 
     @staticmethod
     def load(row):
-        return Usr(str(row['id']), name=row['name'], karma=row['karma'], status='',
-            g_morn=row['g_morn'], g_day=row['g_day'], g_ev=row['g_ev'], g_n=row['g_n'], last_m=row['last_m'])
+        d = {key: row.get(key, '') for key in Usr.props}
+        return Usr((row['id']), **d)
 
     @staticmethod
     def check_new(memb):
@@ -61,10 +70,12 @@ class Usr:
             return False
 
     def row_add(self):
-        return [self.id, self.name, self.g_morn, self.g_day, self.g_ev, self.g_n, self.karma, self.last_m]
+        tp = (getattr(self, key) for key in Usr.props)
+        return [self.id, *tp]
 
     def row_upd(self): # self.id must be in the end of array
-        return [self.name, self.g_morn, self.g_day, self.g_ev, self.g_n, self.karma, self.last_m, self.id]
+        tp = (getattr(self, key) for key in Usr.props)
+        return [*tp, self.id]
 
     def go(self, memb=None, res=False):
         """
@@ -91,21 +102,23 @@ class Usr:
         else:
             gone[self.id] = gn
 
-    def offline(self):
+    def offtime(self):
         return other.get_sec_total() - self.last_m
 
 
 class Gn:
+    props = ('name', 'karma', 'status', 'last', 'role', 'ban')
+
     def __init__(self, gid, name='', karma=0, status='', last=None, role='0', ban=None):
         global bans_id
         t = last or other.get_sec_total()
         self.id = gid
         self.name = name
-        self.karma = karma
+        self.karma = int(karma)
         self.status = status
         self.ban = ban if ban is not None else gid in bans_id
         self.last = int(t)
-        self.role = role
+        self.role = str(role)
         # gone[id] = self
 
     def set(self, **kwargs):
@@ -133,8 +146,8 @@ class Gn:
 
     @staticmethod
     def load(row):
-        return Gn(str(row['id']), name=row['name'], karma=row['karma'], status='',
-                   last=row['last'], role=str(row['role']), ban=row['ban'])
+        d = {key: row.get(key, '') for key in Gn.props}
+        return Gn(str(row['id']), **d)
 
     @staticmethod
     def check_new(memb):
@@ -156,17 +169,19 @@ class Gn:
         return False
 
     def row_add(self):
-        return [self.id, self.name, self.ban, self.last, self.karma, self.role]
+        tp = (getattr(self, key) for key in Gn.props)
+        return [self.id, *tp]
 
-    def row_upd(self):
-        return [self.name, self.ban, self.last, self.karma, self.role, self.id]
+    def row_upd(self): # self.id must be in the end of array
+        tp = (getattr(self, key) for key in Gn.props)
+        return [*tp, self.id]
 
     def comeback(self, memb=None, res=False):
         global usrs
         nm = self.name
         m = memb or other.find_member(C.vtm_server, self.id)
         if m:
-            nm = str(m)
+            nm = other.uname(m)
             if self.role != '0':
                 role = other.find(C.vtm_server.roles, id=self.role)
                 if role:
@@ -245,7 +260,7 @@ def load(res=False):
     gone_l = {}
     conn = None
     if not res:
-        log.I('- load people tables')
+        log.D('- load people tables')
     try:
         conn = psycopg2.connect(C.DATABASE_URL, sslmode='require')
         cur = conn.cursor(cursor_factory=psycopg2.extras.DictCursor)
@@ -266,7 +281,7 @@ def load(res=False):
         sys.exit(1)
     else:
         if not res:
-            log.I('+ people tables loaded successfully')
+            log.D('+ people tables loaded successfully')
     finally:
         if conn:
             conn.close()
@@ -283,18 +298,32 @@ async def check_now():
     log.I('- start check people')
     s_mems = set()
     # noinspection PyTypeChecker
-    for mem in C.vtm_server.members:
+    for mem in C.vtm_server.members: # type: discord.Member
         s_mems.add(mem.id)
+        uname = other.uname(mem)
         if mem.id not in usrs:
             if Usr.check_new(mem):
                 if gone[mem.id].ban:
-                    await log.pr_news('New user ' + usrs[mem.id].name + ' from ban!')
+                    await log.pr_news(f'New user {uname} from ban!')
                 else:
-                    await log.pr_news('New user ' + usrs[mem.id].name + ' from gone!')
+                    await log.pr_news(f'New user {uname} from gone!')
             else:
-                await log.pr_news('New user ' + usrs[mem.id].name + '!')
-        elif usrs[mem.id].name != str(mem):
-            usrs[mem.id].set(name=str(mem), status='upd')
+                await log.pr_news(f'New user {uname}!')
+        elif usrs[mem.id].name != uname:
+            usrs[mem.id].set(name=uname, status='upd')
+
+        online_now = str(mem.status) != 'offline'
+        s_now = f'~{other.t2s()}~'
+
+        if usrs[mem.id].online and online_now:
+            users_online[mem.id] = [[other.sec2ts(usrs[mem.id].last_st), s_now]]
+        elif online_now:
+            users_online[mem.id] = []
+        elif usrs[mem.id].online:
+            users_online[mem.id] = [[other.sec2ts(usrs[mem.id].last_st)]]
+        else:
+            users_online[mem.id] = [[f'{{{s_now}}}']]
+        online_change(mem.id, status=str(mem.status), st_now=s_now)
 
     for usr in usrs:
         if usr not in s_mems:
@@ -321,7 +350,7 @@ async def check_now():
 
 def upd():
     t = load(res=True)
-    log.I('- start people tables')
+    log.D('- start upd people tables')
     log_upd = {'change_usrs': {'add': [], 'upd': [], 'del': []}, 'change_gone': {'add': [], 'upd': [], 'del': []}}
     change_usrs = {'add': [], 'upd': [], 'del': []}
     for uid in list(usrs.keys()):
@@ -371,30 +400,34 @@ def upd():
         return
 
     conn = None
-    log.I('- update people tables')
+    log.D('- update people tables')
     try:
+        ch_usrs_par = ', '.join(Usr.props)
+        ch_usrs_par_s = ', '.join(('%s',) * len(Usr.props))
+        ch_gone_par = ', '.join(Gn.props)
+        ch_gone_par_s = ', '.join(('%s',) * len(Gn.props))
         conn = psycopg2.connect(C.DATABASE_URL, sslmode='require')
         cur = conn.cursor(cursor_factory=psycopg2.extras.DictCursor)
         if change_usrs['add']:
-            query = '''INSERT INTO members (id, name, g_morn, g_day, g_ev, g_n, karma, last_m)
-                                            VALUES (%s, %s, %s, %s, %s, %s, %s, %s)'''
+            query = f'''INSERT INTO members (id, {ch_usrs_par})
+                                            VALUES (%s, {ch_usrs_par_s})'''
             cur.executemany(query, change_usrs['add'])
             conn.commit()
 
         if change_gone['add']:
-            query = '''INSERT INTO users_gone (id, name, ban, last, karma, role) 
-                                                        VALUES (%s, %s, %s, %s, %s, %s)'''
+            query = f'''INSERT INTO users_gone (id, {ch_gone_par}) 
+                                                        VALUES (%s, {ch_gone_par_s})'''
             cur.executemany(query, change_gone['add'])
             conn.commit()
 
         if change_usrs['upd']:
-            query = '''UPDATE members SET (name, g_morn, g_day, g_ev, g_n, karma, last_m) = 
-                                                          (%s, %s, %s, %s, %s, %s, %s) WHERE id = %s'''
+            query = f'''UPDATE members SET ({ch_usrs_par}) = 
+                                                          ({ch_usrs_par_s}) WHERE id = %s'''
             cur.executemany(query, change_usrs['upd'])
             conn.commit()
 
         if change_gone['upd']:
-            query = '''UPDATE users_gone SET (name, ban, last, karma, role) = (%s, %s, %s, %s, %s) WHERE id = %s'''
+            query = f'''UPDATE users_gone SET ({ch_gone_par}) = ({ch_gone_par_s}) WHERE id = %s'''
             cur.executemany(query, change_gone['upd'])
             conn.commit()
 
@@ -412,13 +445,13 @@ def upd():
         log.E('DatabaseError %s' % e)
         sys.exit(1)
     else:
-        log.I('+ people tables updated successfully')
+        log.D('+ people tables updated successfully')
         log.jD('subjects were updated:\n',
                '\n'.join([cat + ':\n\t' +
                           '\n'.join([tp + '[{0}]:\n\t\t'.format(len(names)) +
                                      ', '.join(names) for tp, names in ls.items() if names])
                           for cat, ls in log_upd.items() if ls]))
-        print('--------------------------------------------------------')
+        log.p('--------------------------------------------------------')
     finally:
         if conn:
             conn.close()
@@ -433,20 +466,24 @@ def rewrite():
         gn_rows.append(gn.row_add())
     conn = None
     try:
+        ch_usrs_par = ', '.join(Usr.props)
+        ch_usrs_par_s = ', '.join(('%s',) * len(Usr.props))
+        ch_gone_par = ', '.join(Gn.props)
+        ch_gone_par_s = ', '.join(('%s',) * len(Gn.props))
         conn = psycopg2.connect(C.DATABASE_URL, sslmode='require')
         cur = conn.cursor(cursor_factory=psycopg2.extras.DictCursor)
 
         cur.execute("TRUNCATE TABLE members RESTART IDENTITY")
         if usr_rows:
-            query = '''INSERT INTO members (id, name, g_morn, g_day, g_ev, g_n, karma, last_m)
-                                        VALUES (%s, %s, %s, %s, %s, %s, %s, %s)'''
+            query = f'''INSERT INTO members (id, {ch_usrs_par})
+                                        VALUES (%s, {ch_usrs_par_s})'''
             cur.executemany(query, usr_rows)
         conn.commit()
 
         cur.execute("TRUNCATE TABLE users_gone RESTART IDENTITY")
         if gn_rows:
-            query = '''INSERT INTO users_gone (id, name, ban, last, karma, role) 
-                                                    VALUES (%s, %s, %s, %s, %s, %s)'''
+            query = f'''INSERT INTO users_gone (id, {ch_gone_par}) 
+                                                    VALUES (%s, {ch_gone_par_s})'''
             cur.executemany(query, gn_rows)
         conn.commit()
 
@@ -539,7 +576,7 @@ async def time_sync():
     log.I('+ Time_sync end')
     log.jD('Test results:')
     for mem in C.vtm_server.members:
-        log.jD('{0} \t-\t {1}'.format(mem, other.sec2str(offline(mem.id))))
+        log.jD('{0} \t-\t {1}'.format(mem, other.sec2str(offtime(mem.id))))
 
 
 def clear():
@@ -612,10 +649,83 @@ def set_gt(uid, key):
             other_usrs[uid][key] = other.get_sec_total()
 
 
-def offline(uid):
-    return uid in usrs and usrs[uid].offline()
+def offtime(uid):
+    return uid in usrs and usrs[uid].offtime()
 
 
 def set_last_m(uid):
     if uid in usrs:
         usrs[uid].set(last_m=other.get_sec_total(), status='upd')
+
+
+def online_change(uid, status, force=False, st_now=''):
+    if uid not in usrs:
+        return False
+
+    usr = usrs[uid]
+    online_now = str(status) != 'offline'
+
+    if not(usr.online != online_now or force):
+        return True
+
+    usr_online = users_online.setdefault(uid, [['!']])
+    t_now = other.get_now()
+    sec_now = other.get_sec_total(t_now)
+    s_now = st_now or f'{other.t2s(t_now)}'
+
+    if force:
+        usr_online.append([f'{{{s_now}}}'])
+    elif online_now:
+        usr_online.append([s_now])
+    else:
+        s = '+' if (sec_now - usr.last_st) >= 86400 else ''
+        usr_online[-1].append(s_now + s)
+
+    if usr.online != online_now:
+        usr.prev_st = sec_now - usr.last_st
+        usr.last_st = sec_now
+        # log.jI(f"{usr.name} is {('offline', 'online')[online_now]} now after {other.s2s(usr.prev_st)}")
+        usr.online = online_now
+        usr.status = 'upd'
+
+    if uid in {C.users[usr] for usr in ('Dummy', 'Tilia', 'Natali', 'Doriana', 'cycl0ne')}:
+        log_f = log.jI if st_now else log.I
+        log_f(get_online_info_now(uid, get_for_now=force))
+
+    return True
+
+
+def get_online_info(uid, t_now=None):
+    if uid not in usrs or uid not in users_online:
+        return ''
+
+    t_now = t_now or other.get_now()
+    s_now = f'~{other.t2s(t_now)}~'
+    usr = usrs[uid]
+    usr_online = users_online[uid].copy()
+    if usr.online:
+        usr_online[-1].append(s_now)
+    return f'''{usr.name}: {', '.join((f'({" - ".join(ls)})' if len(ls) > 1 else ls[0]) for ls in usr_online)}'''
+
+
+def print_online_people():
+    t_now = other.get_now()
+    log.p('\n', 'People online data:')
+    for uid in users_online:
+        inf = get_online_info(uid, t_now)
+        if not inf:
+            continue
+        log.p(inf)
+
+
+def get_online_info_now(uid, get_for_now=True):
+    if uid not in usrs or uid not in users_online:
+        return ''
+
+    usr = usrs[uid]
+    onl_now = usr.online
+    sec_now = other.get_sec_total()
+    s_prev = other.s2s(usr.prev_st)
+    s_onl = ('offline', 'online')
+    for_now = f' for {other.s2s(sec_now - usr.last_st)}' if get_for_now else ''
+    return f'{usr.name} is {s_onl[onl_now]} now{for_now} (after be {s_onl[not onl_now]} for {s_prev}).'

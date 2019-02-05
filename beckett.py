@@ -212,19 +212,9 @@ async def on_reaction_remove(reaction, user):
         await emj.on_reaction_remove(reaction, user)
 
 
-def on_exit(signum):
-    log.I("Call on_exit by signal %s" % signum)
-    C.loop.create_task(C.client.logout())
-    ev.stop_timers()
-    C.was_Ready = C.Ready
-    C.Ready = False
-    pass
-    #C.loop.stop()
-
-
 def main_loop():
     for sig_name in ('SIGINT', 'SIGTERM'):
-        C.loop.add_signal_handler(getattr(signal, sig_name), functools__partial(on_exit, sig_name))
+        C.loop.add_signal_handler(getattr(signal, sig_name), functools__partial(ev.on_exit, sig_name))
     try:
         log.I("Start ClientRun.")
         C.client.run(C.DISCORD_TOKEN)
@@ -233,13 +223,7 @@ def main_loop():
     else:
         log.I("ClientRun is completed without errors.")
     finally:
-        ram.t_finish = other.t2utc()
-        ram.t_work = (ram.t_finish-ram.t_start)
-        if C.was_Ready:
-            ev.save()
-        log.I('Finally exit at ', ram.t_finish.strftime('[%D %T]'),
-              ', working for ', other.delta2s(ram.t_work))
-        log.p('------ ------ ------')
+        ev.on_final_exit()
 
 
 # main_loop[try] -> ERROR -> main_loop[except] -> main_loop[finally] -> sys.exit(0)

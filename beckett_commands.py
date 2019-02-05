@@ -408,7 +408,7 @@ async def silence(msg: _Msg):
         text = 'По решению Примогената, <@{0}> отправлен в торпор на {1} ч.'.format(user.id, t)
         await msg.qanswer(text)
         await msg.say(C.main_ch, text)
-        ev.timer_hour()
+        ev.timer_quarter_h()
     elif user is False:
         await msg.qanswer(name + " имеет слишком высокую роль.")
         return
@@ -439,7 +439,7 @@ async def silence_f(msg: _Msg):
     if user:
         text = '<@{0}> отправлен в торпор на {1} ч.'.format(user.id, t)
         await msg.qanswer(text)
-        ev.timer_hour()
+        ev.timer_quarter_h()
     else:
         await msg.qanswer("Не могу найти пользователя " + name + ".")
         return
@@ -461,7 +461,7 @@ async def unsilence(msg: _Msg):
     if user:
         text = 'По решению Примогената, <@{0}> уже выведен из торпора.'.format(user.id)
         await msg.say(C.main_ch, text)
-        ev.timer_hour()
+        ev.timer_quarter_h()
     elif user is False:
         await msg.qanswer("Нет пользователя " + name + " в молчанке.")
     elif user is None:
@@ -479,7 +479,7 @@ async def unsilence_all(msg: _Msg):
         await manager.turn_silence(memb, False, force=True)
 
     await msg.qanswer('Из торпора выведены все.')
-    ev.timer_hour()
+    ev.timer_quarter_h()
 
 
 async def kick(msg: _Msg):
@@ -558,7 +558,7 @@ async def get_offtime(msg: _Msg):
         await msg.qanswer('Пользователь не найден.')
         return
     await msg.qanswer('{0} последний раз писал(а) {1} назад.'
-                      .format(usr.mention, other.sec2str(people.offline(usr.id))))
+                      .format(usr.mention, other.sec2str(people.offtime(usr.id))))
 
 
 async def get_offlines(msg: _Msg):
@@ -576,7 +576,7 @@ async def get_offlines(msg: _Msg):
     check_t = int(ds * 24 * 3600)
     count = 0
     for uid, usr in people.usrs.items():
-        t_off = people.offline(usr.id)
+        t_off = people.offtime(usr.id)
         if t_off >= check_t:
             count += 1
             u = other.find_member(C.vtm_server, uid)
@@ -1499,7 +1499,7 @@ async def info_channels(msg: _Msg):
 
 async def go_timer(msg: _Msg):
     log.D('Start timer by command.')
-    ev.timer_hour()
+    ev.timer_quarter_h()
     if C.is_test:
         await msg.qanswer('Done, look the log.')
     else:
@@ -1550,13 +1550,36 @@ async def full_update(msg: _Msg):
             gn.status = 'upd'
 
     await go_timer(msg)
+
+
+async def get_online(msg: _Msg):
+    """
+    !get_online username:
+    """
+    if len(msg.args) < 2:
+        await msg.qanswer(other.comfortable_help([str(get_online.__doc__)]))
+        return
+
+    user = other.find_member(C.vtm_server, msg.original[len('!get_online '):])
+    if not user:
+        await msg.qanswer("Не могу найти такого пользователя.")
+        return
+
+    inf = f'{people.get_online_info_now(user.id)}\n{people.get_online_info(user.id)}'
+
+    if len(inf) > 1:
+        await msg.qanswer(inf)
+    else:
+        await msg.qanswer('В db нет такого пользователя... :thinking:')
+
+
 # endregion
 
 
 # region Voice
 async def connect(msg: _Msg):
     """
-    !connect ch: подсоедениться к войсу
+    !connect ch: подсоединиться к войсу
     """
     if len(msg.args) > 1:
         ch = other.get_channel(' '.join(msg.args[1:]))

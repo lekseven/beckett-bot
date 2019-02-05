@@ -13,8 +13,8 @@ import emj
 import people
 import manager
 import log
-timer_hour_handle = None
-timer_min_handle = None
+timer_quarter_h_handle = None
+timer_half_min_handle = None
 voice_alert_msg = {}
 voice_alert_ids = {}
 
@@ -152,7 +152,7 @@ async def on_member_join_u(member):
         if t > 0:
             log.I(member, ' come, but Silence is on.')
             await manager.silence_on(uid, t/3600)
-            timer_hour()
+            timer_quarter_h()
 
     if people.Usr.check_new(member):
         await log.pr_news('{0} ({0.mention}) comeback!'.format(member))
@@ -185,17 +185,16 @@ async def on_member_remove_o(server, member):
 async def on_member_update_u(before: discord.Member, after: discord.Member):
     # it's triggers on changing status, game playing, avatar, nickname or roles
     # just for test now
+    smth_happend = False
     a_n = other.uname(after)
-    log.I(f'on_member_update_u for {a_n}.')
 
     if before.display_name != after.display_name or before.name != after.name:
+        smth_happend = True
         b_n = other.uname(before)
         log.I(f'<on_member_update> {b_n} change nickname to {a_n}.')
 
-    if before.status != after.status:
-        log.I(f'<on_member_update> {a_n} change status from {before.status} to {after.status}.')
-
     if before.game != after.game:
+        smth_happend = True
         if before.game and after.game:
             log.I(f'<on_member_update> {a_n} go play from {before.game.name} to {after.game.name}.')
         elif before.game:
@@ -206,6 +205,7 @@ async def on_member_update_u(before: discord.Member, after: discord.Member):
             log.I(f'<on_member_update> {{???}} {a_n} - game change, but there are no games...')
 
     if before.avatar_url != after.avatar_url:
+        smth_happend = True
         urls = []
         for url in (before.avatar_url, after.avatar_url):
             urls.append(' ?'.join(url.split('?', maxsplit=1)))
@@ -221,6 +221,7 @@ async def on_member_update_u(before: discord.Member, after: discord.Member):
             log.I(f'<on_member_update> {{???}} {a_n} - avatar change, but there are no avatar_urls...')
 
     if before.roles != after.roles:
+        smth_happend = True
         old_roles = [('@' + r.name) for r in before.roles if r not in after.roles]
         new_roles = [('@' + r.name) for r in after.roles if r not in before.roles]
         if old_roles:
@@ -228,9 +229,33 @@ async def on_member_update_u(before: discord.Member, after: discord.Member):
         if new_roles:
             log.I(f'<on_member_update> {a_n} get role(s): {", ".join(new_roles)}.')
 
+    if before.status != after.status or not smth_happend:
+        people.online_change(after.id, after.status, force=before.status == after.status)
+        # log.I(f'<on_member_update> {a_n} change status from {before.status} to {after.status}.')
+
 
 # noinspection PyUnusedLocal
 async def on_member_update_o(server: discord.Server, before: discord.Member, after: discord.Member):
+    '''
+    if server.id != C.vtm_server.id:
+        return
+
+    smth_happend = False
+    if before.display_name != after.display_name or before.name != after.name:
+        smth_happend = True
+
+    if before.game != after.game:
+        smth_happend = True
+
+    if before.avatar_url != after.avatar_url:
+        smth_happend = True
+
+    if before.roles != after.roles:
+        smth_happend = True
+
+    if before.status != after.status or not smth_happend:
+        people.online_change(after.id, after.status, force=before.status == after.status)
+    '''
     pass
 
 
@@ -385,7 +410,9 @@ def save_mem():
 
 async def load():
     load_mem()
-    await people.get(check=(not C.is_test))
+    await people.get() # check=(not C.is_test)
+    pass
+    pass
 
 
 def save():
@@ -393,63 +420,82 @@ def save():
     people.upd()
 
 
-def stop_hour_timer():
-    global timer_hour_handle
-    if timer_hour_handle:
-        timer_hour_handle.cancel()
+def stop_quarter_h_timer():
+    global timer_quarter_h_handle
+    if timer_quarter_h_handle:
+        timer_quarter_h_handle.cancel()
 
 
-def start_hour_timer():
-    global timer_hour_handle
-    t = 3600
-    stop_hour_timer()
-    timer_hour_handle = other.later(t, timer_hour)
+def start_quarter_h_timer():
+    global timer_quarter_h_handle
+    t = 900
+    stop_quarter_h_timer()
+    timer_quarter_h_handle = other.later(t, timer_quarter_h)
     log.I('* Start new timer in {0} seconds.'.format(t))
 
 
-def timer_hour():
-    start_hour_timer()
+def timer_quarter_h():
+    start_quarter_h_timer()
     try:
-        log.D('+ Hour timer event!')
+        log.D('+ Quarter hour timer event!')
         save()
         log.D('+ Timer event finished!')
     except Exception as e:
-        other.pr_error(e, 'hour_timer')
+        other.pr_error(e, 'timer_quarter_h')
 
 
-def stop_min_timer():
-    global timer_min_handle
-    if timer_min_handle:
-        timer_min_handle.cancel()
+def stop_half_min_timer():
+    global timer_half_min_handle
+    if timer_half_min_handle:
+        timer_half_min_handle.cancel()
 
 
-def start_min_timer():
-    global timer_min_handle
-    t = 60
-    stop_min_timer()
-    timer_min_handle = other.later(t, timer_min)
+def start_half_min_timer():
+    global timer_half_min_handle
+    t = 30
+    stop_half_min_timer()
+    timer_half_min_handle = other.later(t, timer_half_min)
 
 
-def timer_min():
-    start_min_timer()
+def timer_half_min():
+    start_half_min_timer()
     try:
         for uid, user in ram.silence_users.items():
             if other.get_sec_total() > user['time']:
                 other.later_coro(1, manager.silence_end(uid))
-                other.later(60, timer_hour)
+                other.later(15, timer_quarter_h)
     except Exception as e:
-        other.pr_error(e, 'timer_min')
+        other.pr_error(e, 'timer_half_min')
 
 
 def start_timers():
-    start_hour_timer()
-    start_min_timer()
+    start_quarter_h_timer()
+    start_half_min_timer()
 
 
 def stop_timers():
-    stop_hour_timer()
-    stop_min_timer()
+    stop_quarter_h_timer()
+    stop_half_min_timer()
 
 
 def force_exit():
     sys.exit(0)
+
+
+def on_exit(signum):
+    log.I(f'Call on_exit by signal {signum}')
+    C.loop.create_task(C.client.logout())
+    stop_timers()
+    C.was_Ready = C.Ready
+    C.Ready = False
+
+
+def on_final_exit():
+    people.print_online_people()
+    ram.t_finish = other.t2utc()
+    ram.t_work = (ram.t_finish - ram.t_start)
+    if C.was_Ready:
+        save()
+    log.I('Finally exit at ', ram.t_finish.strftime('[%D %T]'),
+          ', working for ', other.delta2s(ram.t_work))
+    log.p('------ ------ ------')

@@ -86,53 +86,53 @@ def dropbox_send(f_path, f_name, drop_path):
     f.close()
 
 
-def p(*args):  #time_print
-    print(*args, sep='')
+def p(*args, sep=''):  #time_print
+    print(*args, sep=sep)
 
 
-def tp(*args):  #time_print
-    print(other.t2s(frm='[%T]'), *args, sep='')
+def tp(*args, sep=''):  #time_print
+    print(other.t2s(frm='[%T]'), *args, sep=sep)
 
 
-def tpprint(kind, *args):  #type_print
-    print('<{0}>'.format(kind), *args, sep='')
+def tpprint(kind, *args, sep=''):  #type_print
+    print('<{0}> '.format(kind), *args, sep=sep)
 
 
-def time_tpprint(kind, *args):  #time_type_print
-    print('<{0}>[{1}]'.format(kind, other.t2s(frm='%T')), *args, sep='')
+def time_tpprint(kind, *args, sep=''):  #time_type_print
+    print('<{0}>[{1}] '.format(kind, other.t2s(frm='%T')), *args, sep=sep)
 
 
-def D(*args):
+def D(*args, sep=''):
     if C.is_test:
-        time_tpprint('D', ' ', *args)
+        time_tpprint('D', *args, sep=sep)
 
 
-def I(*args):
-    time_tpprint('I', ' ', *args)
+def I(*args, sep=''):
+    time_tpprint('I', *args, sep=sep)
 
 
-def W(*args):
-    time_tpprint('W', ' ', *args)
+def W(*args, sep=''):
+    time_tpprint('W', *args, sep=sep)
 
 
-def E(*args):
-    print('!!!\t<E>[{0}]'.format(other.t2s(frm='%T')), *args)
+def E(*args, sep=''):
+    print('!!!\t<E>[{0}]'.format(other.t2s(frm='%T')), *args, sep=sep)
 
 
-def jD(*args):
+def jD(*args, sep=''):
     # without time
     if C.is_test:
-        tpprint('D', ' ', *args)
+        tpprint('D', *args, sep=sep)
 
 
-def jI(*args):
+def jI(*args, sep=''):
     # without time
-    tpprint('I', ' ', *args)
+    tpprint('I', *args, sep=sep)
 
 
-def jW(*args):
+def jW(*args, sep=''):
     # without time
-    tpprint('W', ' ', *args)
+    tpprint('W', *args, sep=sep)
 
 
 async def mess_plus(message, save_disc_links=False, save_all_links=False, update_links=False, other_channel=None):
