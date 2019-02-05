@@ -15,7 +15,7 @@ users_online = {} # type: dict[id, list]
 
 
 class Usr:
-    props = ('name', 'karma', 'status', 'g_morn', 'g_day', 'g_ev', 'g_n',
+    upd_props = ('name', 'karma', 'g_morn', 'g_day', 'g_ev', 'g_n',
              'last_m', 'last_st', 'online', 'prev_st')
 
     def __init__(self, uid, name='', karma=0, status='', g_morn=0, g_day=0, g_ev=0, g_n=0,
@@ -54,7 +54,7 @@ class Usr:
 
     @staticmethod
     def load(row):
-        d = {key: row.get(key, '') for key in Usr.props}
+        d = {key: row.get(key, '') for key in Usr.upd_props}
         return Usr((row['id']), **d)
 
     @staticmethod
@@ -70,11 +70,11 @@ class Usr:
             return False
 
     def row_add(self):
-        tp = (getattr(self, key) for key in Usr.props)
+        tp = (getattr(self, key) for key in Usr.upd_props)
         return [self.id, *tp]
 
     def row_upd(self): # self.id must be in the end of array
-        tp = (getattr(self, key) for key in Usr.props)
+        tp = (getattr(self, key) for key in Usr.upd_props)
         return [*tp, self.id]
 
     def go(self, memb=None, res=False):
@@ -107,7 +107,7 @@ class Usr:
 
 
 class Gn:
-    props = ('name', 'karma', 'status', 'last', 'role', 'ban')
+    upd_props = ('name', 'karma', 'last', 'role', 'ban')
 
     def __init__(self, gid, name='', karma=0, status='', last=None, role='0', ban=None):
         global bans_id
@@ -146,7 +146,7 @@ class Gn:
 
     @staticmethod
     def load(row):
-        d = {key: row.get(key, '') for key in Gn.props}
+        d = {key: row.get(key, '') for key in Gn.upd_props}
         return Gn(str(row['id']), **d)
 
     @staticmethod
@@ -169,11 +169,11 @@ class Gn:
         return False
 
     def row_add(self):
-        tp = (getattr(self, key) for key in Gn.props)
+        tp = (getattr(self, key) for key in Gn.upd_props)
         return [self.id, *tp]
 
     def row_upd(self): # self.id must be in the end of array
-        tp = (getattr(self, key) for key in Gn.props)
+        tp = (getattr(self, key) for key in Gn.upd_props)
         return [*tp, self.id]
 
     def comeback(self, memb=None, res=False):
@@ -402,10 +402,10 @@ def upd():
     conn = None
     log.D('- update people tables')
     try:
-        ch_usrs_par = ', '.join(Usr.props)
-        ch_usrs_par_s = ', '.join(('%s',) * len(Usr.props))
-        ch_gone_par = ', '.join(Gn.props)
-        ch_gone_par_s = ', '.join(('%s',) * len(Gn.props))
+        ch_usrs_par = ', '.join(Usr.upd_props)
+        ch_usrs_par_s = ', '.join(('%s',) * len(Usr.upd_props))
+        ch_gone_par = ', '.join(Gn.upd_props)
+        ch_gone_par_s = ', '.join(('%s',) * len(Gn.upd_props))
         conn = psycopg2.connect(C.DATABASE_URL, sslmode='require')
         cur = conn.cursor(cursor_factory=psycopg2.extras.DictCursor)
         if change_usrs['add']:
@@ -466,10 +466,10 @@ def rewrite():
         gn_rows.append(gn.row_add())
     conn = None
     try:
-        ch_usrs_par = ', '.join(Usr.props)
-        ch_usrs_par_s = ', '.join(('%s',) * len(Usr.props))
-        ch_gone_par = ', '.join(Gn.props)
-        ch_gone_par_s = ', '.join(('%s',) * len(Gn.props))
+        ch_usrs_par = ', '.join(Usr.upd_props)
+        ch_usrs_par_s = ', '.join(('%s',) * len(Usr.upd_props))
+        ch_gone_par = ', '.join(Gn.upd_props)
+        ch_gone_par_s = ', '.join(('%s',) * len(Gn.upd_props))
         conn = psycopg2.connect(C.DATABASE_URL, sslmode='require')
         cur = conn.cursor(cursor_factory=psycopg2.extras.DictCursor)
 
@@ -690,7 +690,7 @@ def online_change(uid, status, force=False, st_now=''):
 
     if uid in {C.users[usr] for usr in ('Dummy', 'Tilia', 'Natali', 'Doriana', 'cycl0ne')}:
         log_f = log.jI if st_now else log.I
-        log_f(get_online_info_now(uid, get_for_now=force))
+        log_f('<on_status_update> ' + get_online_info_now(uid, get_for_now=force))
 
     return True
 

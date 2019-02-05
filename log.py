@@ -230,7 +230,7 @@ async def format_mess(msg, time=False, date=False, dbase=None):
         t_n = other.t2s()
         s_time = ('(from {0})'.format(t_m) if (time or (t_n[:-1] != t_m[:-1]) or
                                                (int(t_n[-1]) - int(t_m[-1]) > 1)) else '')
-        ch_name = str(msg.channel.user) if msg.channel.is_private else str(msg.channel.name)
+        ch_name = ('#@' + str(msg.channel.user)) if msg.channel.is_private else str(msg.channel.name)
         t = ('(from {0})'.format(other.t2s(msg.timestamp, '%d|%m|%y %T')) if date else s_time)
         cont = msg.content or (('≤System≥ ' + msg.system_content) if msg.system_content else '')
         cont = cont.replace('\n', '\n\t')  # type: str
