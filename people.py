@@ -674,7 +674,10 @@ def online_change(uid, status, force=False, st_now=''):
     s_now = st_now or f'{other.t2s(t_now)}'
 
     if force:
-        usr_online.append([f'{{{s_now}}}'])
+        if online_now:
+            usr_online.append([f'??{s_now}??'])
+        else:
+            usr_online.append([f'{{{s_now}}}'])
     elif online_now:
         usr_online.append([s_now])
     else:
@@ -702,7 +705,7 @@ def get_online_info(uid, t_now=None):
     t_now = t_now or other.get_now()
     s_now = f'~{other.t2s(t_now)}~'
     usr = usrs[uid]
-    usr_online = users_online[uid].copy()
+    usr_online = other.deepcopy(users_online[uid])
     if usr.online:
         usr_online[-1].append(s_now)
     return f'''{usr.name}: {', '.join((f'({" - ".join(ls)})' if len(ls) > 1 else ls[0]) for ls in usr_online)}'''

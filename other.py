@@ -3,6 +3,7 @@ import re
 import sys
 import datetime
 import random
+import copy
 from io import BytesIO as io_BytesIO
 from ast import literal_eval as ast__literal_eval
 import discord
@@ -524,3 +525,7 @@ def rand(a:int=None, b:int=None):
 
 def uname(memb:discord.Member):
     return str(memb) + ('(' + memb.display_name + ')' if memb.name != memb.display_name else '')
+
+
+def deepcopy(o):
+    return copy.deepcopy(o)
