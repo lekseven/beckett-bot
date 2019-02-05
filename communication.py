@@ -212,7 +212,7 @@ def f_gt_key(orig_phrase, tr_phrase, words, bot_mention):
 
 
 def hi(uid):
-    return other.name_phr(uid, other.choice(D.hello))
+    return other.name_phr(uid, D.hello)
 
 
 def welcome_msg(uid):
@@ -255,7 +255,7 @@ def time_key(t):
 
 
 def bye(uid, name=''):
-    return other.name_phr(uid, other.choice(D.bye), name=name)
+    return other.name_phr(uid, D.bye, name=name)
 
 
 def bye_msg(uid, name=''):

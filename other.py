@@ -125,7 +125,7 @@ def s2s(total_sec):
 def sec2ts(total_sec, frm="%H:%M:%S"):
     if total_sec == 0:
         return '0'
-    timedata = datetime.timedelta(seconds=int(total_sec))
+    timedata = datetime.datetime.fromtimestamp(int(total_sec))
     return t2utc(timedata).strftime(frm)
 
 
@@ -324,18 +324,13 @@ def is_super(usr):
         return True
 
 
-def name_pat():
-    patterns = ['{ph}, <@{id}>{name}.', '<@{id}>{name}, {ph}.']
-    return random.choice(patterns)
-
-
-def name_phr(uid, phr, name=''):
-    name = name and '(' + name + ')'
-    return name_pat().format(id=uid, ph=phr, name='{name}').capitalize().format(name=name)
-
-
-def name_rand_phr(uid, arr, name=''):
-    return name_phr(uid, random.choice(arr), name)
+def name_phr(uid, phr, name='', punct=True):
+    if not(isinstance(phr, str) or isinstance(phr, discord.Emoji)):
+        phr = choice(phr)
+    name = f'({name})' if name else ''
+    pun = (',', '.') if punct else ('', '')
+    pattern = choice('{ph}{pun[0]} <@{id}>{name}{pun[1]}', '<@{id}>{name}{pun[0]} {ph}{pun[1]}')
+    return pattern.format(id=uid, ph=phr, pun=pun, name='{name}').capitalize().format(name=name)
 
 
 def later_coro(t, coro):
@@ -398,21 +393,22 @@ def find_def_ch(server):
     return channels[0]
 
 
+def rand_flip():
+    eye = choice('°', '•', '◕', '~', '・', '￣', 'ᵔ', '^', '-', '❛', 'ಠ', '≖')
+    mouth = choice('□', '◡', 'o', '‿', r'\_', '︿', '∀', '▽', '。', 'ᴥ',)
+    wave = choice('彡', '︵', '︵︵', '︵︵︵',)
+    return '(╯{0}{1}{0}）╯{2}'.format(eye, mouth, wave)
+
+
 def rand_tableflip():
     # (╯°□°）╯︵ ┻━┻
-    eye = random.choice(('°', '•', '◕', '~', '・', '￣', 'ᵔ', '^', '-', '❛', 'ಠ', '≖'))
-    mouth = random.choice(('□', '◡', 'o', '‿', r'\_', '︿', '∀', '▽', '。', 'ᴥ',))
-    wave = random.choice(('彡', '︵', '︵︵', '︵︵︵', ))
-    table = random.choice(('┻━┻', '┻━━┻', '┻━━━┻', '┻━━━━┻', '┻━━━━━┻', '┻━━━━━━┻', '┻━━━━━━━┻', ))
-    return '(╯{0}{1}{0}）╯{2} {3}'.format(eye, mouth, wave, table)
+    table = choice(('┻━┻', '┻━━┻', '┻━━━┻', '┻━━━━┻', '┻━━━━━┻', '┻━━━━━━┻', '┻━━━━━━━┻', ))
+    return '{0} {1}'.format(rand_flip(), table)
 
 
 def rand_diceflip(count=1):
-    eye = random.choice(('°', '•', '◕', '~', '・', '￣', 'ᵔ', '^', '-', '❛', 'ಠ', '≖'))
-    mouth = random.choice(('□', '◡', 'o', '‿', r'\_', '︿', '∀', '▽', '。', 'ᴥ',))
-    wave = random.choice(('彡', '︵', '︵︵', '︵︵︵',))
     dices = '`' + '` `'.join(manager.get_dice(count, simple=True, short=True)) + '`'
-    return '(╯{0}{1}{0}）╯{2} {3}'.format(eye, mouth, wave, dices)
+    return '{0} {1}'.format(rand_flip(), dices)
 
 
 async def get_url_files(url_i):
@@ -510,7 +506,7 @@ def try_sum(s:str):
 
 def choice(*args):
     """Alias for random.choice"""
-    if len(args) == 1:
+    if len(args) == 1 and hasattr(args[0], '__len__') and not isinstance(args[0], str):
         ls = tuple(args[0])
     else:
         ls = tuple(args)

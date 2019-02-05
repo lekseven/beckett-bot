@@ -87,18 +87,12 @@ async def reaction(message, edit=False):
             return
 
         if old_type and not m_type:
-            # log.I(f'<reaction> delete [{old_type}]')
-            # com.rem_from_queue(msg.channel.id, _data_tp_check(msg))
-            # for mess in resp['ans']:
-            #     await com.delete_msg(mess)
-            # resp['type'] = ''
-            # resp['ans'] = []
             return
 
         if m_type and old_type and text:
             log.I(f'<reaction> edit [{old_type}] to [{m_type}]')
             typing = _data_tp_check(msg)
-            if typing in com.msg_queue.get(msg.channel.id, ()):
+            if typing in com.msg_queue.get(msg.channel.id, ()) or old_type == 'no-response':
                 com.rem_from_queue(msg.channel.id, typing)
                 # and type new mess
             else:
@@ -111,8 +105,9 @@ async def reaction(message, edit=False):
     if m_type and text:
         log.I(('<reaction.edit>' if edit else '<reaction>') + f'[{m_type}]')
         save_obj = _data_msgs_add(msg, m_type)
-        _data_tp_add(msg, com.write_msg(msg.channel, text=text, save_obj=save_obj,
-                                   fun=data_tp_del(msg.channel.id, msg.message.id)))
+        if m_type != 'no-response':
+            _data_tp_add(msg, com.write_msg(msg.channel, text=text, save_obj=save_obj,
+                                            fun=data_tp_del(msg.channel.id, msg.message.id)))
         # await msg.qanswer(text)
 
 
@@ -191,6 +186,8 @@ def _do_reaction(msg:Msg) -> (str, str):
                     return 'diceflip', other.rand_diceflip(dice_count)
         elif msg.original[1:].startswith('tableflip') and (msg.admin or msg.channel.id == C.channels['bar']):
             return '/tableflip', '* *бросаю за <@{id}>* *\n{table}'.format(id=msg.author, table=other.rand_tableflip())
+        elif msg.original[1:].startswith('shrug'):
+            return '/shrug', r'¯\_(ツ)_/¯'
 
         if beckett:
             m_type = _beckett_m_type(msg)
@@ -209,13 +206,16 @@ def _do_reaction(msg:Msg) -> (str, str):
 def _beckett_m_type(msg)->str:
     yes = 'да' in msg.words
     no = 'не' in msg.words or 'нет' in msg.words
+    check_like = set(data.sm_resp['love']).union(emj.hearts).union({'😘'})
     if msg.words.intersection({'спасибо', 'благодарю'}):  #'спасибо'
         return 'wlc'
     elif msg.words.intersection(data.sm_resp['hi_plus']):
         return 'hi_plus'
+    elif msg.words.intersection(data.sm_resp['fun_smiles']):
+        return 'fun_smiles'
     elif msg.words.intersection(data.sm_resp['bye']):
         return 'bye'
-    elif (msg.words.intersection(data.sm_resp['love']) or msg.words.intersection(emj.hearts)) and not no:
+    elif msg.words.intersection(check_like) and not no:
         return 'love'
     elif 'любимый клан' in msg.text:
         if other.rand() > 0.09:
@@ -230,7 +230,7 @@ def _beckett_m_type(msg)->str:
     elif msg.words.intersection({'как'}) and msg.words.intersection({'дела', 'ты'}):
         return 'whatsup'
     # other questions must be before this
-    elif msg.text.endswith('?'):
+    elif msg.text.rstrip(')(. ').endswith('?'):
         if msg.admin:
             if (yes == no) or yes:
                 return 'yes'
@@ -245,14 +245,25 @@ def _beckett_m_type(msg)->str:
 
 
 def _beckett_ans(m_type, author_id):
-    if m_type in {'wlc', 'bye', 'hi_plus', 'not_funny', 'yes', 'no', }:
-        ans = other.name_rand_phr(author_id, data.sm_resp[m_type])
+    prob = other.rand()
+    if m_type == 'no-response':
+        ans = 'no-response'
+    elif m_type in {'wlc', 'bye', 'yes', 'no', }:
+        ans = other.name_phr(author_id, data.sm_resp[m_type])
+    elif m_type == 'hi_plus':
+        ans = other.choice(data.sm_resp[m_type])
+        ans = other.name_phr(author_id, ans, punct=ans not in data.sm_resp['hi_smiles'])
+    elif m_type == 'fun_smiles':
+        ans = other.name_phr(author_id, data.sm_resp['fun_smiles'], punct=False)
+    elif m_type == 'not_funny':
+        ans = other.choice(data.sm_resp[m_type])
+        ans = other.name_phr(author_id, ans, punct=ans not in data.sm_resp['not_funny_sm'])
     elif m_type == 'love':
         if author_id == C.users['Natali']:
-            ans = ':purple_heart:'
+            ans = (emj.e_str('a_Toreador_light'), emj.e_str('a_Toreador_wave')) if prob < 0.1 else ':purple_heart:'
         else:
-            ans = ':heart:'
-        ans = other.name_phr(author_id, ans)
+            ans = (':heart:', ':hearts:', ':kissing_heart:', ':relaxed:')
+        ans = other.name_phr(author_id, ans, punct=False)
     elif m_type == 'apoliticality':
         ans = other.choice(data.sm_resp['apoliticality'])
     elif m_type == 'tremer_joke':
@@ -263,7 +274,6 @@ def _beckett_ans(m_type, author_id):
         ans = other.choice(data.responses[m_type])
     elif m_type == 'boring':
         ans = other.name_phr(author_id, 'я тоже')
-    # elif m_type in {'no-response', ''}:
     else:
         ans = ''
 
