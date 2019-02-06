@@ -13,10 +13,12 @@ import emj
 import people
 import manager
 import log
+
 timer_quarter_h_handle = None
 timer_half_min_handle = None
 voice_alert_msg = {}
 voice_alert_ids = {}
+timer_quarter_works = 0
 
 
 def check_server(fun):
@@ -67,6 +69,9 @@ async def on_voice_state_update_u(before, after):
     global voice_alert_msg
     v_old = before.voice_channel
     v_new = after.voice_channel
+
+    if v_new:
+        on_user_life_signs(after.id)
 
     if v_old == v_new:
         return
@@ -194,7 +199,7 @@ async def on_member_update_u(before: discord.Member, after: discord.Member):
         log.I(f'<on_member_update> {b_n} change nickname to {a_n}.')
 
     if before.game != after.game:
-        smth_happend = True
+        smth_happend = True # Vampire: The Masquerade - Bloodlines
         if before.game and after.game:
             log.I(f'<on_member_update> {a_n} go play from {before.game.name} to {after.game.name}.')
         elif before.game:
@@ -233,11 +238,14 @@ async def on_member_update_u(before: discord.Member, after: discord.Member):
         people.online_change(after.id, after.status, force=before.status == after.status)
         # log.I(f'<on_member_update> {a_n} change status from {before.status} to {after.status}.')
 
+    if (smth_happend or people.is_online(after.id)) and before.roles == after.roles:
+        on_user_life_signs(after.id)
+
 
 # noinspection PyUnusedLocal
 async def on_member_update_o(server: discord.Server, before: discord.Member, after: discord.Member):
-    '''
-    if server.id != C.vtm_server.id:
+    """"""
+    '''if server.id != C.vtm_server.id:
         return
 
     smth_happend = False
@@ -254,7 +262,9 @@ async def on_member_update_o(server: discord.Server, before: discord.Member, aft
         smth_happend = True
 
     if before.status != after.status or not smth_happend:
-        people.online_change(after.id, after.status, force=before.status == after.status)
+        if C.is_test and before.status == after.status and str(after.status) != 'offline':
+            await log.pr_news(f'{{TEST}} <on_status_update> {other.uname(after)} change online to online!')
+        # people.online_change(after.id, after.status, force=before.status == after.status)
     '''
     pass
 
@@ -378,7 +388,7 @@ def load_mem():
 
 
 def save_mem():
-    log.I('+ save memory in DB')
+    log.D('+ save memory in DB')
     module = sys.modules[ram.__name__]
     module_attrs = dir(module)
     variables = {key: getattr(module, key)
@@ -402,7 +412,7 @@ def save_mem():
         log.E('[save_mem] <memory> DatabaseError %s' % e)
         # sys.exit(1)
     else:
-        log.I('+ memory saved successfully')
+        log.D('+ memory saved successfully')
     finally:
         if conn:
             conn.close()
@@ -435,11 +445,15 @@ def start_quarter_h_timer():
 
 
 def timer_quarter_h():
+    global timer_quarter_works
     start_quarter_h_timer()
     try:
         log.D('+ Quarter hour timer event!')
         save()
+        timer_quarter_works += 1
         log.D('+ Timer event finished!')
+        mn = 4 if timer_quarter_works % 4 == 0 else 1
+        log.p('--------------------' * mn)
     except Exception as e:
         other.pr_error(e, 'timer_quarter_h')
 
@@ -491,11 +505,16 @@ def on_exit(signum):
 
 
 def on_final_exit():
-    people.print_online_people()
+    log.I('\n', 'People online data:')
+    log.p('\n'.join(people.print_online_people()))
     ram.t_finish = other.t2utc()
     ram.t_work = (ram.t_finish - ram.t_start)
     if C.was_Ready:
         save()
     log.I('Finally exit at ', ram.t_finish.strftime('[%D %T]'),
           ', working for ', other.delta2s(ram.t_work))
-    log.p('------ ------ ------')
+    log.p('====== ====== ======')
+
+
+def on_user_life_signs(uid):
+    people.life_signs(uid)

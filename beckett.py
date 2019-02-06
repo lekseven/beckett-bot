@@ -33,7 +33,8 @@ async def on_ready():
             log.jW('opus lib not load!')
     ev.start_timers()
     log.I('Beckett ready for work now, after starting at ', ram.t_start.strftime('[%D %T]'))
-    log.p('------ ------ ------')
+    ram.debug = ram.debug or C.is_test
+    log.p('====== ====== ======')
     C.Ready = True
     await other.test_status(ram.game)
 
@@ -182,14 +183,16 @@ async def on_server_role_update(before, after):
 
 
 @C.client.event
-async def on_message(message):
+async def on_message(message:discord.Message):
+    ev.on_user_life_signs(message.author.id)
     if await log.on_mess(message, 'on_message'):
         await check_message.reaction(message)
 
 
 # noinspection PyUnusedLocal
 @C.client.event
-async def on_message_edit(before, after):
+async def on_message_edit(before:discord.Message, after:discord.Message):
+    ev.on_user_life_signs(after.author.id)
     if await log.on_mess(after, 'on_message_edit'):
         await check_message.reaction(after, edit=True)
 
@@ -202,6 +205,7 @@ async def on_message_delete(message):
 
 @C.client.event
 async def on_reaction_add(reaction, user):
+    ev.on_user_life_signs(user.id)
     if await log.on_reaction(reaction, 'on_reaction_add', user):
         await emj.on_reaction_add(reaction, user)
 

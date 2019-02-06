@@ -32,8 +32,15 @@ class Usr:
         self.last_m = l_m if l_m >= 0 else other.get_sec_total()
         self.online = bool(online)
         l_st = int(last_st)
-        self.last_st = l_st if l_st >= 0 else other.get_sec_total()
-        self.prev_st = int(prev_st)
+        self.last_st = l_st if l_st >= 0 else other.get_sec_total() # when changes last user state
+        self.prev_st = int(prev_st) # length of prev user state
+        # Not save data
+        self.maybe_invisible = False
+        self.prev_inv = False
+        self.prev_onl = not online
+        self.was_invisible = False
+        self.last_force_check = self.last_st
+        self.life_signs_t = other.get_sec_total()
         # usrs[id] = self
 
     def set(self, **kwargs):
@@ -104,6 +111,28 @@ class Usr:
 
     def offtime(self):
         return other.get_sec_total() - self.last_m
+
+    def set_invisible(self, inv=True, was_inv=False):
+        if self.maybe_invisible == inv:
+            self.prev_inv = False
+            return
+
+        self.prev_inv = self.maybe_invisible
+        self.maybe_invisible = inv
+        self.was_invisible = inv or was_inv
+        if inv:
+            if self.last_force_check > self.last_st:
+                self.prev_st = self.last_force_check - self.last_st
+                self.last_st = self.last_force_check
+            usr_online = users_online.setdefault(self.id, [[f'{{!{other.t2s()}!}}']])
+            if not usr_online[-1][-1].startswith('{'):
+                usr_online[-1][-1] = f'{{{usr_online[-1][-1]}}}'
+
+    def life_signs(self):
+        self.life_signs_t = other.get_sec_total()
+        if not(self.online or self.maybe_invisible):
+            log.jD(f' ~ think {self.name} in invisible')
+            self.set_invisible(True)
 
 
 class Gn:
@@ -323,6 +352,7 @@ async def check_now():
             users_online[mem.id] = [[other.sec2ts(usrs[mem.id].last_st)]]
         else:
             users_online[mem.id] = [[f'{{{s_now}}}']]
+
         online_change(mem.id, status=str(mem.status), st_now=s_now)
 
     for usr in usrs:
@@ -386,18 +416,18 @@ def upd():
                 log_upd['change_gone']['del'].append(gn.name)
             gone.pop(uid)
 
-    if C.is_test:
-        log.I("- it's Test mode, print results and return")
+    if log.debug():
+        if C.is_test:
+            log.D("- it's Test mode, print results and return")
         log_upd = {'change_usrs': change_usrs, 'change_gone': change_gone}
-        # log.jD('change_usrs:\n', change_usrs)
-        # log.jD('change_gone:\n', change_gone)
         log.jD('subjects were updated:\n',
                '\n'.join([cat + ':\n\t' +
                           '\n'.join([tp + '[{0}]:\n\t\t'.format(len(u_s)) +
                                      ',\n\t\t'.join(str(u) for u in u_s) for tp, u_s in ls.items() if u_s])
                           for cat, ls in log_upd.items() if ls]))
-        print('--------------------------------------------------------')
-        return
+        # log.p('--------------------------------------------------------')
+        if C.is_test:
+            return
 
     conn = None
     log.D('- update people tables')
@@ -451,7 +481,6 @@ def upd():
                           '\n'.join([tp + '[{0}]:\n\t\t'.format(len(names)) +
                                      ', '.join(names) for tp, names in ls.items() if names])
                           for cat, ls in log_upd.items() if ls]))
-        log.p('--------------------------------------------------------')
     finally:
         if conn:
             conn.close()
@@ -672,28 +701,51 @@ def online_change(uid, status, force=False, st_now=''):
     t_now = other.get_now()
     sec_now = other.get_sec_total(t_now)
     s_now = st_now or f'{other.t2s(t_now)}'
+    s = '+' if (sec_now - usr.last_st) >= 86400 else ''
 
     if force:
-        if online_now:
-            usr_online.append([f'??{s_now}??'])
-        else:
-            usr_online.append([f'{{{s_now}}}'])
-    elif online_now:
-        usr_online.append([s_now])
-    else:
-        s = '+' if (sec_now - usr.last_st) >= 86400 else ''
-        usr_online[-1].append(s_now + s)
+        ''' if offline -> offline - it can be go in/out invisible user
+            if online -> online - open app with open tab in browser
+        '''
+        if not online_now:  # offline -> offline
+            if usr.maybe_invisible:
+                usr_online[-1].append(f'{{{s_now}{s}}}')
+            else:
+                usr_online.append([f'{{{s_now}{s}}}'])
 
-    if usr.online != online_now:
+            if usr.was_invisible:
+                usr.set_invisible(not usr.maybe_invisible, True)
+            else:
+                usr.set_invisible(False, False)
+            usr.prev_onl = False
+
+        usr.last_force_check = sec_now
+
+    elif online_now:
+        if usr.maybe_invisible:
+            usr_online[-1].append(f'{s_now}{s}')
+        else:
+            usr_online.append([f'{s_now}{s}'])
+    else:
+        usr_online[-1].append(f'{s_now}{s}')
+
+    if not force:
+        usr.prev_onl = usr.online
+        usr.set_invisible(False)
+
+    if usr.online != online_now or usr.maybe_invisible != usr.prev_inv:
         usr.prev_st = sec_now - usr.last_st
         usr.last_st = sec_now
         # log.jI(f"{usr.name} is {('offline', 'online')[online_now]} now after {other.s2s(usr.prev_st)}")
         usr.online = online_now
         usr.status = 'upd'
+        get_for_now = False
+    else:
+        get_for_now = force and not online_now
 
     if uid in {C.users[usr] for usr in ('Dummy', 'Tilia', 'Natali', 'Doriana', 'cycl0ne')}:
         log_f = log.jI if st_now else log.I
-        log_f('<on_status_update> ' + get_online_info_now(uid, get_for_now=force))
+        log_f('<on_status_update> ' + get_online_info_now(uid, get_for_now=get_for_now))
 
     return True
 
@@ -702,23 +754,27 @@ def get_online_info(uid, t_now=None):
     if uid not in usrs or uid not in users_online:
         return ''
 
-    t_now = t_now or other.get_now()
-    s_now = f'~{other.t2s(t_now)}~'
     usr = usrs[uid]
+    s_now = other.t2s(t_now or other.get_now())
     usr_online = other.deepcopy(users_online[uid])
     if usr.online:
-        usr_online[-1].append(s_now)
+        usr_online[-1].append(f'~{s_now}~')
+    elif usr.maybe_invisible:
+        usr_online[-1].append(f'~{{{s_now}}}~')
+
     return f'''{usr.name}: {', '.join((f'({" - ".join(ls)})' if len(ls) > 1 else ls[0]) for ls in usr_online)}'''
 
 
 def print_online_people():
     t_now = other.get_now()
-    log.p('\n', 'People online data:')
+    info = {}
     for uid in users_online:
         inf = get_online_info(uid, t_now)
         if not inf:
             continue
-        log.p(inf)
+        info[usrs[uid].name] = inf
+
+    return [info[key] for key in sorted(info)]
 
 
 def get_online_info_now(uid, get_for_now=True):
@@ -730,5 +786,22 @@ def get_online_info_now(uid, get_for_now=True):
     sec_now = other.get_sec_total()
     s_prev = other.s2s(usr.prev_st)
     s_onl = ('offline', 'online')
+    st_now = 'invisible' if usr.maybe_invisible else s_onl[onl_now]
+    st_old = ('invisible' if usr.prev_inv else
+              s_onl[usr.prev_onl] if usr.maybe_invisible else s_onl[not onl_now])
     for_now = f' for {other.s2s(sec_now - usr.last_st)}' if get_for_now else ''
-    return f'{usr.name} is {s_onl[onl_now]} now{for_now} (after be {s_onl[not onl_now]} for {s_prev}).'
+    return f'{usr.name} is {st_now} now{for_now} (after be {st_old} for {s_prev}).'
+
+
+def life_signs(uid):
+    if uid not in usrs:
+        return False
+
+    usrs[uid].life_signs()
+
+
+def is_online(uid):
+    if uid not in usrs:
+        return False
+
+    return usrs[uid].online

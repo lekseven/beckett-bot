@@ -15,5 +15,6 @@ silence_ans = {}
 t_start = None
 t_finish = None
 t_work = None
+debug = False
 
 # data_used = []

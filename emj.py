@@ -274,25 +274,32 @@ async def on_message(message: discord.Message, beckett_mention):
     author = message.author.id
 
     if message.channel.id == C.channels['stuff'] and (message.attachments or message.embeds):
+        log.jD(f'emj.in_staff, prob = {prob}.')
         if author == C.users['Natali'] and prob < 0.9:
             log.jD('Like Natali in staff')
             pause_and_add(message, ('purple_heart', 'heart_eyes', 'heart_eyes_cat', 'heartpulse'))
             return
-        if author in {C.users['Doriana'], C.users['Tilia'], C.users['Buffy']} and prob < 0.4:
+        elif author in {C.users['Doriana'], C.users['Tilia'], C.users['Buffy']} and prob < 0.4:
             log.jD('Like Doriana or Tilia or Buffy in staff')
             pause_and_add(message, ('heart', 'hearts', 'heart_eyes', 'black_heart'))
             return
-        if author in {C.users['Hadley'], C.users['cycl0ne'], C.users['Magdavius']} and prob < 0.4:
+        elif author in {C.users['Hadley'], C.users['cycl0ne'], C.users['Magdavius']} and prob < 0.4:
             log.jD('Like Hadley or cycl0ne or Magdavius in staff')
             pause_and_add(message, ('thumbsup', 'ok_hand', 'heart_eyes_cat'))
             return
 
-    if message.content.endswith('((') and prob > 0.5:
-        log.jD('Add jiznbol')
-        pause_and_add(message, ('t_jiznbol1', 't_jiznbol2'))
-    elif message.content.endswith('))') and prob > 0.5:
-        log.jD('Add fun')
-        pause_and_add(message, ('smiley', 'slight_smile', 'grin', 'grinning', 'smile', 'upside_down'))
+    if prob > 0.5:
+        for sm in ('((', 'Т_Т', 'T_T', ':С', ':C', '😭', '😢', '😣', '😖', '😫', '😩', 's_blood_cry'):
+            if sm in message.content:
+                log.jD(f'Add jiznbol for {sm}.')
+                pause_and_add(message, ('t_jiznbol1', 't_jiznbol2'))
+                break
+        else:
+            for sm in ('))', ':D', 'XD', '😃', '😁', '😀', '😄', 'm_wafer', 'm_Tilia_fase', '😂', '😆', '😹', '🤣'):
+                if sm in message.content:
+                    log.jD(f'Add fun for {sm}.')
+                    pause_and_add(message, ('smiley', 'slight_smile', 'grin', 'grinning', 'smile', 'upside_down'))
+                    break
 
     if author == C.users['Natali']:
         if beckett_mention:

@@ -1190,6 +1190,11 @@ async def test(msg: _Msg):
     await other.test_status(ram.game)
 
 
+async def debug(msg: _Msg):
+    ram.debug = not ram.debug
+    await msg.qanswer(f'Debug mode is {("off", "on")[ram.debug]}.')
+
+
 async def play(msg: _Msg):
     game = None
     if len(msg.args) > 1:
@@ -1571,6 +1576,16 @@ async def get_online(msg: _Msg):
         await msg.qanswer(inf)
     else:
         await msg.qanswer('В db нет такого пользователя... :thinking:')
+
+
+async def get_online_all(msg: _Msg):
+
+    inf = '\n'.join(people.print_online_people())
+
+    if inf:
+        await msg.qanswer(inf)
+    else:
+        await msg.qanswer('Нет нужно информации... :thinking:')
 
 
 # endregion

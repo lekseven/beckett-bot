@@ -103,7 +103,7 @@ def time_tpprint(kind, *args, sep=''):  #time_type_print
 
 
 def D(*args, sep=''):
-    if C.is_test:
+    if ram.debug:
         time_tpprint('D', *args, sep=sep)
 
 
@@ -121,7 +121,7 @@ def E(*args, sep=''):
 
 def jD(*args, sep=''):
     # without time
-    if C.is_test:
+    if ram.debug:
         tpprint('D', *args, sep=sep)
 
 
@@ -338,3 +338,7 @@ async def pr_news(text):
 async def pr_other_news(server, text):
     time_tpprint('Ev', '<', server.name, '> ', text)
     await C.client.send_message(C.other_news_ch, content='<Ev from {0}> {1}'.format(server.name, text))
+
+
+def debug():
+    return ram.debug
