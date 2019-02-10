@@ -1557,6 +1557,17 @@ async def full_update(msg: _Msg):
     await go_timer(msg)
 
 
+async def data_process(msg: _Msg):
+    ans = await msg.question('Это уничтожит текущий файл с текстовой информацией и попробует создать новый. '
+                             'Не выполняйте данную команду, если **точно** не знаете, что вы делаете.\n'
+                             'Вы уверены, что *действительно желаете* продолжить?')
+    if ans:
+        com.make_d2u()
+        await msg.qanswer("Готово, перезагрузите бота.")
+    else:
+        await msg.qanswer("Отмена data_process.")
+
+
 async def get_online(msg: _Msg):
     """
     !get_online username:
@@ -1679,10 +1690,12 @@ async def tst(msg: _Msg):
 
 
 async def tst2(msg: _Msg):
-    print('tst2')
-    com.rem_from_queue(msg.channel.id, keys)
-    print(com.msg_queue)
-    print(com.msg_args)
+    t = com.get_t('test9')
+    print(t or 'No test9')
+    # print('tst2')
+    # com.rem_from_queue(msg.channel.id, keys)
+    # print(com.msg_queue)
+    # print(com.msg_args)
     # com.msg_args = {}
     # for k in keys:
     #     if k in com.msg_queue.get(msg.channel.id, []):
@@ -1690,13 +1703,17 @@ async def tst2(msg: _Msg):
 
 
 async def tst3(msg: _Msg):
-    print(msgs)
+    # print(msgs)
+    t = com.get_text_obj('testA')
+    print(t)
 
 
 async def tst4(msg: _Msg):
-    for o in msgs:
-        for m in msgs[o]:
-            await C.client.delete_message(m)
+    t = com.get_text_obj(('testA', 'testB',), 'testC')
+    print(t)
+    # for o in msgs:
+    #     for m in msgs[o]:
+    #         await C.client.delete_message(m)
 
 
 async def tst_2(msg: _Msg):
@@ -1759,5 +1776,6 @@ async def song(msg: _msg):
 # endregion
 # endregion
 
-all_cmds = set(key for key in dir(sys.modules[__name__]) if key[0] != '_' and callable(getattr(sys.modules[__name__], key)))
+all_cmds = set(key for key in dir(sys.modules[__name__])
+               if key[0] != '_' and callable(getattr(sys.modules[__name__], key)))
 only_super = all_cmds.difference(admin_cmds.union(primogenat_cmds).union(free_cmds))

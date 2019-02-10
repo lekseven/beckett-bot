@@ -1,10 +1,7 @@
 import discord
 import operator
-import lxml.html
-import requests
 import re
 
-import data
 import other
 import constants as C
 import local_memory as ram
@@ -156,18 +153,10 @@ class Msg:
         if gt_key:
             h18 = 64800  # 18h in sec
             if (other.get_sec_total() - self.gt[gt_key['g_key']]) > h18: # not beckett and
-                phr = other.choice(com.good_time[gt_key['g_key']][gt_key['g_type']]['response'])
-                str_weather = ''
-                if gt_key['g_key'] == 'g_morn' and self.author in com.morning_add:
-                    phr += ' ' + com.morning_add[self.author]
-                    if self.author == C.users['Natali']:
-                        try:
-                            log.I('try get_weather for Natali')
-                            str_weather = '\n:newspaper: ' + get_weather()
-                        except Exception as e:
-                            other.pr_error(e, 'get_weather')
-                people.set_gt(self.author, gt_key['g_key'])
-                return other.name_phr(self.author, phr) + str_weather
+                phr = com.phrase_gt(gt_key, self.author)
+                if phr:
+                    people.set_gt(self.author, gt_key['g_key'])
+                    return phr
         return False
 
     def get_commands(self):
@@ -286,29 +275,6 @@ async def voting(channel, text='', timeout=60, votes=None, count=3):
     return False
 
 
-def get_weather():
-    url = 'https://weather.com/ru-RU/weather/5day/l/UPXX0017:1:UP'
-    resp = requests.get(url)
-    page = lxml.html.fromstring(resp.content)
-    d = page.get_element_by_id('twc-scrollabe')
-    tr = d.getchildren()[0].getchildren()[1].getchildren()[0]
-    tr_ch = tr.getchildren()
-    desc = tr_ch[2].text_content()
-    t_max = tr_ch[3].getchildren()[0].getchildren()[0].text_content()
-    t_min = tr_ch[3].getchildren()[0].getchildren()[2].text_content()
-    rain = tr_ch[4].text_content()
-    wind = re.search(r'\d+', tr_ch[5].text_content())[0] # км/ч
-    hum = tr_ch[6].text_content()
-    t_desc = ''
-    if t_min != '--' or t_max != '--':
-        t_desc = (' Температура' +
-            (' от ' + t_min if t_min != '--' else '') +
-            (' до ' + t_max if t_max != '--' else '') +
-            '.')
-    return ('Во Львове сегодня {descr}.{temp} Вероятность дождя {rain}, ветер до {wind} км/ч, влажность {hum}.'.format(
-        descr=desc.lower(), temp=t_desc, rain=rain, wind=wind, hum=hum))
-
-
 async def do_embrace_and_say(msg, name, clan=None):
     user = other.find_member(C.vtm_server, name)
     roles = {role.id for role in user.roles[1:]}
@@ -345,12 +311,12 @@ async def do_embrace(user, clan=None):
                     clan_users.add(mem.id)
             clan_users.difference_update(C.not_sir)
             sir = other.choice(list(clan_users))
-            text = other.choice(data.embrace_msg).format(sir='<@' + sir + '>', child='<@' + user.id + '>')
+            text = com.get_t('embrace_msg', sir=f'<@{sir}>', child=f'<@{user.id}>')
         else:
-            text = other.choice(data.embrace_pander).format(child='<@' + user.id + '>')
+            text = com.get_t('embrace_pander', child=f'<@{user.id}>')
 
         if clan in C.sabbat_clans and not pander:
-            text += "\n" + other.choice(data.embrace_sabbat)
+            text += "\n" + com.get_t('embrace_sabbat')
 
         return text
 

@@ -77,6 +77,8 @@ em_set = set()
 em_name = {}
 hearts = {'❤', '💛', '💚', '💙', '💜', '❣', '💕', '💞', '💓', '💗', '💖', '💘', '💝', '💟', '♥', } # '💔',
 
+morn_add = {}
+
 
 def e(name):
     if not isinstance(name, str):
@@ -92,7 +94,7 @@ def e_str(name):
     if name in extra_em:
         return extra_em[name]
     elif name in em_name:
-        return em_name[name]
+        return f':{em_name[name]}:'
     elif name in emojis:
         return emojis[name]
     elif not C.is_test:
@@ -104,7 +106,7 @@ def em2text(text):
     text_set = set(text)
     em_text = em_set.intersection(text_set)
     for em in em_text:
-        text = text.replace(em, f':{em_name[em]}:')
+        text = text.replace(em, e_str(em))
 
     # for em in extra_em:
     #     if em in text:
@@ -125,6 +127,20 @@ def prepare():
         em_name[sk] = 'skin_' + str(i)
         em_set.add(sk)
         i += 1
+
+    morn_to_add = {
+        C.users['Kuro']: ('tea', r'\♨'),
+        C.users['Natali']: ('tea', 'chocolate_bar', 'purple_heart', 'heartpulse'),
+        C.users['Buffy']: (*('sun_with_face',) * 3, 'm_wafer', 'chocolate_bar', 'doughnut', 'cake'),
+        C.users['Tilia']: (*('sun_with_face',) * 3, 'm_Tilia_fase', 'm_wafer', 'smiley_cat'),
+        C.users['cycl0ne']: ('p_jonesy', 'smiley_cat'),
+        C.users['AyrinSiverna']: ('', 'Logo_Toreador', 'heart', 'hearts', 'rose', 'tulip'),
+        C.users['Doriana']: 'hugging', C.users['Creol']: 'hugging',
+        C.users['Hadley']: 'smiley', C.users['Soul']: 'coffee',
+    }
+    for name in morn_to_add:
+        val = (morn_to_add[name], ) if isinstance(morn_to_add[name], str) else tuple(morn_to_add[name])
+        morn_add[name] = tuple((e_str(em) or em) for em in val)
 
 
 def save_em():

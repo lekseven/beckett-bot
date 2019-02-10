@@ -1,27 +1,22 @@
 import re
-import hashlib
+from hashlib import md5 as hashlib__md5
+from importlib import reload as importlib__reload
+from lxml.html import fromstring as lxml__fromstring
+from requests import get as requests__get
 
-import data as D
 import constants as C
 import emj
 import other
 import log
-import local_memory as ram
 
-
-good_time = {}
-morning_add = {}
-resp_keys = {}
-resp_values = {}
-resp_data = {}
+import data_to_process as d2p
+import data_to_use as d2u
 
 msg_queue = {}
 msg_args = {}
 msg_type_count = {}
 
-data_used = []
-
-
+'''
 def prepare():
     log.I('Prepare communication:')
     log.jI('\t -make dictionary good_type')
@@ -97,26 +92,138 @@ def prepare():
                 resp_values[key] += [h]
 
     log.I('Prepare communication done.')
+'''
+
+
+def make_d2u():
+    log.I('<make_d2u>')
+
+    log.jI('\t -make dictionary good_type')
+    good_time = {}
+
+    def _make_gt_phrases(phrases, obj2save=None, resp=False):
+        obj2save = obj2save or {'simple': set(), 'check_phrases': [], 'response': []}
+        if not phrases:
+            return obj2save
+        if 'simple' in phrases:
+            obj2save['simple'].update(phrases['simple'])
+        for noun in phrases['noun']:
+            for adj in phrases['adj']:
+                n_a = ' '.join((noun, adj))
+                a_n = ' '.join((adj, noun))
+                obj2save['check_phrases'].append(n_a)
+                obj2save['check_phrases'].append(a_n)
+                if resp:
+                    obj2save['response'].append(a_n)
+        return obj2save
+
+    for g_key in d2p.good_time:
+        g_period = []
+        for d_type in d2p.good_time[g_key]:
+            gt_type = {}
+            if 'key' in d_type:
+                gt_type = _make_gt_phrases(d_type['key'])
+            gt_type = _make_gt_phrases(d_type, gt_type, resp=True)
+            gt_type = {
+                'simple': gt_type['simple'],
+                'check_phrases': tuple(gt_type['check_phrases']),
+                'response': tuple(gt_type['response'])
+            }
+            g_period.append(gt_type)
+        good_time[g_key] = tuple(g_period)
+
+    log.jI('\t -make resp_keys')
+    resp_keys = {}
+
+    # searching resp_keys can be done with regex, but test show,
+    # that intersection with set(words) and "in"-check(collocations) in for-cycle are faster (≈ in 10 times)
+
+    def _make_words(words, endings):
+        s = set()
+        for w in words:
+            s.update({f'{w}{end}' for end in endings})
+
+        return s
+
+    for ind, keys in d2p.response_keys.items():
+        dct = {'words': set(), 'colls': set()}
+        dct['words'].update(keys.clear)
+        dct['words'].update(_make_words(keys.noun, d2p.noun_endings))
+        dct['words'].update(_make_words(keys.adj, d2p.adj_endings))
+        dct['words'].update(_make_words(keys.eng, d2p.eng_endings))
+        dct['colls'].update(keys.clear_collocation)
+        for coll in keys.n_c:
+            dct['colls'].update({f'{coll[0]}{end} {coll[1]}' for end in d2p.noun_endings})
+        for coll in keys.a_c:
+            dct['colls'].update({f'{coll[0]}{end} {coll[1]}' for end in d2p.adj_endings})
+
+        resp_keys[ind] = dct
+
+    log.jI('\t -make resp_values & resp_data')
+    resp_values = {}  # keys: {hashes}
+    resp_data = {}  # hash : text object {'text':"", etc}
+
+    def _make_resp(obj: (dict, list, tuple, set, str), add_keys: set = None):
+        importlib__reload(d2p)
+        add_keys = add_keys or set()
+        add_phr = {}
+        if isinstance(obj, str):
+            add_phr = {'text': obj}
+        elif isinstance(obj, list) or isinstance(obj, set) or isinstance(obj, tuple):
+            for phr in obj:
+                _make_resp(phr, add_keys)
+        elif isinstance(obj, dict) and 'text' not in obj:
+            for key in obj:
+                _make_resp(obj[key], add_keys.union({key}))
+        elif isinstance(obj, dict) and 'text' in obj:
+            add_phr = obj
+            add_phr['text'] = str(add_phr['text'])
+        else:
+            log.jW('<make_d2u.make_resp> Fail phrase in response data: ', obj)
+
+        if add_phr:
+            h = hashlib__md5(add_phr['text'].encode('utf-8')).hexdigest()
+            add_phr['keys'] = set(add_phr.get('keys', set())).union(add_keys)
+            if h in resp_data:
+                add_phr['keys'].update(resp_data[h]['keys'])
+            resp_data[h] = add_phr
+            for key in add_phr['keys']:
+                resp_values.setdefault(key, set()).add(h)
+
+    _make_resp(d2p.data_text)
+    log.jI('\t -save to d2u.py')
+    data_used = []
+    saved_args = ('data_used', 'good_time', 'resp_keys', 'resp_values', 'resp_data')
+    l_args = locals()
+    time_upd = other.t2s(frm="%x %X")
+    with open('data_to_use.py', "w") as file:
+        print('"""\nThis document was created from data_to_process.py by command !data_process'
+              f'\nDon\'t edit it by yourself.\nCreated: {time_upd}.\n"""\n\n', file=file)
+        print(*(f'{name} = {repr(l_args[name])}' for name in saved_args), file=file, sep='\n\n')
+        print(f'\n\nprint("<!>\\t\\tGenerated module data_to_use from {time_upd} was successfully loaded.")', file=file)
+    log.I('Reload module d2u...')
+    importlib__reload(d2u)
+    log.I('Prepare make_d2u done.')
 
 
 def check_phrase(phr, words):
-    f_keys = []
-    for key in resp_keys:
-        f_key = resp_keys[key]['words'].intersection(words)
+    f_keys = set()
+    for key in d2u.resp_keys:
+        f_key = d2u.resp_keys[key]['words'].intersection(words)
         if not f_key:
-            for coll in resp_keys[key]['colls']:
+            for coll in d2u.resp_keys[key]['colls']:
                 f_key = coll in phr
                 if f_key:
                     break
 
         if f_key:
-            f_keys += [key]
+            f_keys.add(key)
 
     return f_keys
 
 
+'''
 def get_resp(keys):
-    global data_used
     error_ans = {'text': '', 'last_key': ''}
     if not keys:
         log.E('<com.get_resp> There are no keys!')
@@ -168,6 +275,92 @@ def get_resp(keys):
     # answers = resp_values[key]
     # ans_phr = resp_data[other.choice(answers)]
     # return ans_phr
+'''
+
+
+def get_text_obj(any_keys=None, all_keys=None):
+    any_keys = {any_keys} if isinstance(any_keys, str) else (set(any_keys) if any_keys else set())
+    all_keys = {all_keys} if isinstance(all_keys, str) else (set(all_keys) if all_keys else set())
+    any_k = (any_keys if any_keys else all_keys).copy()
+    error_ans = {'text': '', 'last_key': ''}
+
+    if not any_k:
+        log.E('<com.get_text_obj[1]> There are no keys!')
+        return error_ans
+
+    texts = set()
+    for k in any_k:
+        texts.update({h for h in d2u.resp_values.get(k, set()) if d2u.resp_data[h]['keys'].issuperset(all_keys)})
+
+    if not texts:
+        log.E('<com.get_text_obj[2]> There are no keys!')
+        return error_ans
+
+    not_used_texts = texts.difference(d2u.data_used)
+    log.D(f'<com.get_text_obj> txts: {len(texts)}, not_used_t: {len(not_used_texts)}, data_used: {len(d2u.data_used)}.')
+
+    if not not_used_texts:
+        log.D(f'<com.get_text_obj> answers for any({", ".join(any_keys)}) and all({", ".join(all_keys)}) '
+              f'were all used, clear this texts in data_used.')
+        d2u.data_used = [k for k in d2u.data_used if k not in texts] # we need order in data_used, so not .difference
+        not_used_texts = texts
+
+    ans_h = other.choice(not_used_texts)
+    ans = d2u.resp_data[ans_h]
+    last_key = other.choice(ans['keys'].intersection(any_keys if any_keys else all_keys))
+    ans['last_key'] = last_key
+
+    if not_used_texts != texts:
+        for k in ans['keys']:
+            topic_t = d2u.resp_values[k]
+            topic_unused = topic_t.difference(d2u.data_used)
+            if len(topic_t) == len(topic_unused):
+                continue
+            count_unused = len(topic_unused) - 1
+            log.D(f'<com.get_text_obj> topic_t: {len(topic_t)}, count_unused: {count_unused}.')
+            # if left one phrase -> free all of used
+            if count_unused < 2:
+                log.D(f'<com.get_text_obj> free all topic_t in data_used ')
+                d2u.data_used = [k for k in d2u.data_used if k not in topic_t]
+            # if left less then 1/4 of phrases -> free half (early) of used
+            elif count_unused <= len(topic_t) >> 2:
+                log.D(f'<com.get_text_obj> free half topic_t in data_used ')
+                # cycle by data_used, because we need order by time of adding
+                old_data = [k for k in d2u.data_used if k in topic_t]
+                data_to_free = old_data[0:len(old_data) >> 1] # early half of used
+                d2u.data_used = [k for k in d2u.data_used if k not in data_to_free]
+
+    d2u.data_used.append(ans_h)
+    log.D(f'<com.get_text_obj> data_used: {repr(d2u.data_used)}')
+    return ans
+
+
+def get_t(any_keys=None, all_keys=None, **frm):
+    ans = get_text_obj(any_keys, all_keys)
+    t = ans.get('text', '') if ans else ''
+    if t and frm:
+        return t.format(**frm)
+    return t
+
+
+def is_text_exist(any_keys=None, all_keys=None):
+    any_keys = {any_keys} if isinstance(any_keys, str) else (set(any_keys) if any_keys else set())
+    all_keys = {all_keys} if isinstance(all_keys, str) else (set(all_keys) if all_keys else set())
+    any_k = (any_keys if any_keys else all_keys).copy()
+
+    if not any_k:
+        return False
+
+    for k in any_k:
+        for h in d2u.resp_values.get(k, set()):
+            if d2u.resp_data[h]['keys'].issuperset(all_keys):
+                return True
+
+    return False
+
+
+ignore = {'вам', 'всем', 'чат', 'чату', 'чатик', 'чатику', 'в', 'с', 'народ', 'люди', 'сородичи', 'каиниты', }
+ign_patt = re.compile(rf'((?<!\w)({"|".join(ignore)})(?!\w)([ ]+)?)|((?<=[ ])[ ]+)')
 
 
 def f_gt_key(orig_phrase, tr_phrase, words, bot_mention):
@@ -179,7 +372,6 @@ def f_gt_key(orig_phrase, tr_phrase, words, bot_mention):
     :param bot_mention: bool
     """
     words.difference_update(emj.em_set)
-    ignore = {'вам', 'всем'}
     words.difference_update(ignore)
     skin_sm = set()
     for w in words:
@@ -190,15 +382,13 @@ def f_gt_key(orig_phrase, tr_phrase, words, bot_mention):
     if (orig_phrase.count('@') > 0 and not bot_mention) or len(words) < 1:
         return False
 
-    phr = re.sub('[ ]?' + '|'.join(ignore) + '[ ]?', ' ', tr_phrase)  # delete all words from ignore
-    phr = re.sub('[ ]+', ' ', phr)  # replace more than one spaces with only one
+    phr = ign_patt.sub('', tr_phrase)  # delete all words from ignore
     smiles = re.findall(r'[:][\w_]*[:]', orig_phrase)
-    count_sm = len(smiles) + ''.join(smiles).count('_')
+    count_sm = len(smiles)*2 + ''.join(smiles).count('_')
     simple = len(words) < (count_sm + 2 + bot_mention)
-
-    for g_key in good_time:
+    for g_key in d2u.good_time:
         i = 0
-        for g_type in good_time[g_key]:
+        for g_type in d2u.good_time[g_key]:
             if simple and words.intersection(g_type['simple']):
                 return {'g_key': g_key, 'g_type': i}
 
@@ -211,26 +401,65 @@ def f_gt_key(orig_phrase, tr_phrase, words, bot_mention):
     return False
 
 
+def phrase_gt(gt=None, uid=None):
+    if not gt:
+        return False
+
+    uid = uid or 'here'
+    phr = other.choice(d2u.good_time[gt['g_key']][gt['g_type']]['response'])
+    str_weather = ''
+    if gt['g_key'] == 'g_morn' and uid in emj.morn_add:
+        phr += ' ' + other.choice(emj.morn_add[uid])
+        if uid == C.users['Natali']:
+            try:
+                log.I('try get_weather for Natali')
+                str_weather = '\n:newspaper: ' + get_weather()
+            except Exception as e:
+                other.pr_error(e, 'get_weather')
+    return other.name_phr(uid, phr) + str_weather
+
+
+def get_weather():
+    url = 'https://weather.com/ru-RU/weather/5day/l/UPXX0017:1:UP'
+    resp = requests__get(url)
+    page = lxml__fromstring(resp.content)
+    d = page.get_element_by_id('twc-scrollabe')
+    tr = d.getchildren()[0].getchildren()[1].getchildren()[0]
+    tr_ch = tr.getchildren()
+    desc = tr_ch[2].text_content()
+    t_max = tr_ch[3].getchildren()[0].getchildren()[0].text_content()
+    t_min = tr_ch[3].getchildren()[0].getchildren()[2].text_content()
+    rain = tr_ch[4].text_content()
+    wind = re.search(r'\d+', tr_ch[5].text_content())[0] # км/ч
+    hum = tr_ch[6].text_content()
+    t_desc = ''
+    if t_min != '--' or t_max != '--':
+        t_desc = (' Температура' +
+            (' от ' + t_min if t_min != '--' else '') +
+            (' до ' + t_max if t_max != '--' else '') +
+            '.')
+    return ('Во Львове сегодня {descr}.{temp} '
+            'Вероятность осадков {rain}, ветер до {wind} км/ч, влажность {hum}.'.format(
+        descr=desc.lower(), temp=t_desc, rain=rain, wind=wind, hum=hum))
+
+
 def hi(uid):
-    return other.name_phr(uid, D.hello)
+    return other.name_phr(uid, get_t('hello'))
 
 
 def welcome_msg(uid):
-    return '{0}\n{1} {2}\n{3}'.format(
-        hi(uid),
-        '{glad_to_see} {glad_ans} {because} {pause_reason} - {pause_wait}'.
-            format(glad_to_see=other.choice(D.glad_to_see), glad_ans=other.choice(D.glad_ans),
-                   because=other.choice(D.because), pause_reason=other.choice(D.pause_reason),
-                   pause_wait=other.choice(D.pause_wait)),
-        other.choice(D.rules_and_ask).format(rules=C.channels['rules'], ask=C.channels['ask']),
-        other.choice(D.welcome_finish)
+    return '{hi}\n{glad_to_see} {glad_ans} {because} {pause_reason} - {pause_wait} {rules_and_ask}\n{finish}'.format(
+        hi=hi(uid), glad_to_see=get_t('glad_to_see'), glad_ans=get_t('glad_ans'), because=get_t('because'),
+        pause_reason=get_t('pause_reason'), pause_wait=get_t('pause_wait'),
+        rules_and_ask=get_t('rules_and_ask', rules=C.channels['rules'], ask=C.channels['ask']),
+        finish=get_t('welcome_finish')
     )
 
 
 def comeback_msg(uid, time_out=False, clan_id=False):
-    return '{0} {1}{2}'.format(other.choice(D.comeback_msg).format(name=uid),
-                               D.comeback_time[time_key(time_out)] or '',
-                               clan_id and '\n{0}'.format(other.choice(D.comeback_clan).format(clan=clan_id)) or ''
+    return '{0} {1}{2}'.format(get_t('comeback_msg', name=uid),
+                               get_t(all_keys={'comeback_time', time_key(time_out)}),
+                               clan_id and f"\n{get_t('comeback_clan', clan=clan_id)}" or ''
                                )
 
 
@@ -242,53 +471,45 @@ def time_key(t):
         return 'min'
     elif t < 3600:
         return 'hour'
-    elif t < 86400:
+    elif t < 86400:     # 3600 * 24
         return 'day'
-    elif t < 604800:
+    elif t < 604800:    # 3600 * 24 * 7
         return 'week'
-    elif t < 18144000:
+    elif t < 2592000:   # 3600 * 24 * 30
         return 'month'
-    elif t < 220752000:
+    elif t < 15552000:  # 3600 * 24 * 180
+        return 'half_year'
+    elif t < 31536000:  # 3600 * 24 * 365
         return 'year'
     else:
         return 'years'
 
 
 def bye(uid, name=''):
-    return other.name_phr(uid, D.bye, name=name)
+    return other.name_phr(uid, get_t('bye'), name=name)
 
 
 def bye_msg(uid, name=''):
-    return '{bye}\n{phrase}'.format(bye=bye(uid, name), phrase=other.choice(D.bye_phrase))
+    return '{bye}\n{phrase}'.format(bye=bye(uid, name), phrase=get_t('bye_phrase'))
 
 
 def ban_msg(uid, nick=''):
     nick = nick and '(' + nick + ')'
     name = '<@{uid}>{nick}'.format(uid=uid, nick=nick)
-    return '{msg}\n{comment}'.format(msg=other.choice(D.ban_msg).format(name=name), comment=other.choice(D.ban_comment))
+    return '{msg}\n{comment}'.format(msg=get_t('ban_msg', name=name), comment=get_t('ban_comment'))
 
 
 def unban_msg(uid):
-    return '{msg}\n{comment}'.format(msg=other.choice(D.unban_msg).format(name=uid),
-                                     comment=other.choice(D.unban_comment))
-
-
-def make_words(words, endings):
-    s = set()
-    for w in words:
-        for end in endings:
-            s.add(w + end)
-
-    return s
+    return '{msg}\n{comment}'.format(msg=get_t('unban_msg', name=uid), comment=get_t('unban_comment'))
 
 
 def voice_event(user, channel, here='@here'):
-    return other.choice(D.voice_alone_messages).format(user='<@'+user.id+'>', voice='<#'+channel.id+'>', here=here)
+    return get_t('voice_alone_messages', user=f'<@{user.id}>', voice=f'<#{channel.id}>', here=here)
 
 
 def voice_note(user):
-    if user.id in D.voice_notions:
-        return other.choice(D.voice_notions[user.id]).format(user='<@' + user.id + '>')
+    if is_text_exist(all_keys={'voice_notions', user.id}):
+        return get_t(all_keys={'voice_notions', user.id}, user=f'<@{user.id}>')
     else:
         return False
 
@@ -305,7 +526,7 @@ def write_msg(ch, text=None, emb=None, extra=0, save_obj=None, fun:callable=None
     ident = str(other.t2utc().timestamp())
     msg_queue.setdefault(ch.id, []).append(ident)
     msg_args[ident] = (ident, ti, tn, ch, text, emb, save_obj, fun, a_fun)
-    log.D(f'write_msg[add] tn = {tn}, ti = {ti}, ident = {ident}.')
+    # log.D(f'<write_msg>[add] tn = {tn}, ti = {ti}, ident = {ident}.')
     _check_queue(ch.id)
     return ident
 
@@ -340,13 +561,13 @@ async def _send_msg(ident, ti, tn, ch, text=None, emb=None, save_obj=None, fun:c
 
     if ident not in msg_queue.get(ch.id, []):
         msg_type_count[ch.id] = msg_type_count.get(ch.id, 1) - 1
-        log.D(f'write_msg[STOP] tn = {tn}, ti = {ti}, ident = {ident}, count = {msg_type_count[ch.id]}.')
+        # log.D(f'<write_msg>[STOP] tn = {tn}, ti = {ti}, ident = {ident}, count = {msg_type_count[ch.id]}.')
         _check_queue(ch.id)
         return
 
     if ti < tn:
         dt = min(tn - ti, 10)
-        log.D(f'write_msg[go] tn = {tn}, ti = {ti}, dt = {dt}, ident = {ident}, count = {msg_type_count[ch.id]}.')
+        # log.D(f'<write_msg>[go] tn = {tn}, ti = {ti}, dt = {dt}, ident = {ident}, count = {msg_type_count[ch.id]}.')
         await C.client.send_typing(ch)
         other.later_coro(dt, _send_msg(ident, ti + dt, tn, ch, text, emb, save_obj, fun, a_fun))
     else:
@@ -354,7 +575,7 @@ async def _send_msg(ident, ti, tn, ch, text=None, emb=None, save_obj=None, fun:c
             msgs = []
             msg_queue[ch.id].remove(ident)
             msg_type_count[ch.id] = msg_type_count.get(ch.id, 1) - 1
-            log.D(f'write_msg[end] ident = {ident}, count = {msg_type_count[ch.id]}.')
+            # log.D(f'<write_msg>[end] ident = {ident}, count = {msg_type_count[ch.id]}.')
             for txt in other.split_text(text):
                 msgs.append(await C.client.send_message(ch, content=txt, embed=emb))
             if save_obj is not None:

@@ -57,14 +57,9 @@ async def reaction(message, edit=False):
         if any(link in msg.text for link in data.forbiddenLinks):
             log.I(f'<reaction> forbidden Links')
             await msg.delete()
-            await msg.answer(other.choice(data.threats).format(name=msg.author))
+            await msg.answer(com.get_t('threats', name=msg.author))
             return
-        '''str = msg.text
-        for link in data.forbiddenLinks:
-            str = re.sub('(?i)'+link, "**`ЦЕНЗУРА`**", str)
-        if str != msg.text:
-            await msg.edit(str)
-            return'''
+
     resp = _data_msgs_check(msg)
     if edit and resp and (resp['type'].startswith('cmd_') or resp['type'] == 'gt'):
         return
@@ -167,7 +162,7 @@ def _do_reaction(msg:Msg) -> (str, str):
             response = True
 
         if response:
-            ans_phr = com.get_resp(found_keys)
+            ans_phr = com.get_text_obj(found_keys)
             if ans_phr['text']:
                 return ans_phr['last_key'], ans_phr['text']
     else:
@@ -177,7 +172,10 @@ def _do_reaction(msg:Msg) -> (str, str):
                     return 'rand_tableflip', other.rand_tableflip()
                 elif msg.channel.id == C.channels['bar']:
                     if {msg.author}.intersection({C.users['Buffy'], C.users['Tilia'], }):
-                        return 'rand_tableflip', other.rand_tableflip()
+                        if prob < 0.2:
+                            return 'tableflip_phrase', com.get_t('tableflip_phrase')
+                        else:
+                            return 'rand_tableflip', other.rand_tableflip()
                 else:
                     return 'unflip', '┬─┬ ノ( ゜-゜ノ)'
             else:
@@ -185,7 +183,11 @@ def _do_reaction(msg:Msg) -> (str, str):
                 if dice_count > 0:
                     return 'diceflip', other.rand_diceflip(dice_count)
         elif msg.original[1:].startswith('tableflip') and (msg.admin or msg.channel.id == C.channels['bar']):
-            return '/tableflip', '* *бросаю за <@{id}>* *\n{table}'.format(id=msg.author, table=other.rand_tableflip())
+            if not {msg.author}.intersection({C.users['Buffy'], C.users['Tilia'], }) and not msg.admin and prob < 0.2:
+                return 'tableflip_phrase', com.get_t('tableflip_cmd_phrase')
+            else:
+                return '/tableflip', '* *бросаю за <@{id}>* *\n{table}'.format(id=msg.author,
+                                                                               table=other.rand_tableflip())
         elif msg.original[1:].startswith('shrug'):
             return '/shrug', r'¯\_(ツ)_/¯'
 
@@ -197,8 +199,8 @@ def _do_reaction(msg:Msg) -> (str, str):
 
         if beckett_reference or (beckett_mention and other.rand() < 0.25):
             m_type = 'For_Prince' if msg.author == C.users['Natali'] and prob < 0.4 else 'beckett'
-            ans_phr = com.get_resp(m_type)
-            return m_type, ans_phr['text']
+            ans_phr = com.get_t(m_type)
+            return m_type, ans_phr
 
     return '', ''
 
@@ -206,7 +208,6 @@ def _do_reaction(msg:Msg) -> (str, str):
 def _beckett_m_type(msg)->str:
     yes = 'да' in msg.words
     no = 'не' in msg.words or 'нет' in msg.words
-    check_like = set(data.sm_resp['love']).union(emj.hearts).union({'😘'})
     if msg.words.intersection({'спасибо', 'благодарю'}):  #'спасибо'
         return 'wlc'
     elif msg.words.intersection(data.sm_resp['hi_plus']):
@@ -215,7 +216,7 @@ def _beckett_m_type(msg)->str:
         return 'fun_smiles'
     elif msg.words.intersection(data.sm_resp['bye']):
         return 'bye'
-    elif msg.words.intersection(check_like) and not no:
+    elif msg.words.intersection(data.sm_resp['check_like']) and not no:
         return 'love'
     elif 'любимый клан' in msg.text:
         if other.rand() > 0.09:
@@ -227,10 +228,10 @@ def _beckett_m_type(msg)->str:
             return 'not_funny'
         else:
             return 'bot_dog'
-    elif msg.words.intersection({'как'}) and msg.words.intersection({'дела', 'ты'}):
+    elif msg.words.intersection({'как'}) and msg.words.intersection({'дела', 'делишки', 'ты', 'чё', 'че'}):
         return 'whatsup'
     # other questions must be before this
-    elif msg.text.rstrip(')(. ').endswith('?'):
+    elif msg.text.rstrip(')(.! ').endswith('?'):
         if msg.admin:
             if (yes == no) or yes:
                 return 'yes'
@@ -246,18 +247,15 @@ def _beckett_m_type(msg)->str:
 
 def _beckett_ans(m_type, author_id):
     prob = other.rand()
+    ans = None
+    keys = {'sm_resp'}
+    punct = True
+    name_phr = False
     if m_type == 'no-response':
         ans = 'no-response'
-    elif m_type in {'wlc', 'bye', 'yes', 'no', }:
-        ans = other.name_phr(author_id, data.sm_resp[m_type])
-    elif m_type == 'hi_plus':
-        ans = other.choice(data.sm_resp[m_type])
-        ans = other.name_phr(author_id, ans, punct=ans not in data.sm_resp['hi_smiles'])
-    elif m_type == 'fun_smiles':
-        ans = other.name_phr(author_id, data.sm_resp['fun_smiles'], punct=False)
-    elif m_type == 'not_funny':
-        ans = other.choice(data.sm_resp[m_type])
-        ans = other.name_phr(author_id, ans, punct=ans not in data.sm_resp['not_funny_sm'])
+    elif m_type in {'wlc', 'bye', 'yes', 'no', 'hi_plus', 'not_funny', 'fun_smiles'}:
+        keys.add(m_type)
+        name_phr = True
     elif m_type == 'love':
         if author_id == C.users['Natali']:
             ans = (emj.e_str('a_Toreador_light'), emj.e_str('a_Toreador_wave')) if prob < 0.1 else ':purple_heart:'
@@ -265,17 +263,22 @@ def _beckett_ans(m_type, author_id):
             ans = (':heart:', ':hearts:', ':kissing_heart:', ':relaxed:')
         ans = other.name_phr(author_id, ans, punct=False)
     elif m_type == 'apoliticality':
-        ans = other.choice(data.sm_resp['apoliticality'])
+        keys.add(m_type)
     elif m_type == 'tremer_joke':
         ans = data.tremer_joke
     elif m_type == 'bot_dog':
-        ans = other.choice(data.threats).format(name=author_id)
+        ans = com.get_t('threats', name=author_id)
     elif m_type in {'whatsup', 'question'}:
-        ans = other.choice(data.responses[m_type])
+        keys = {m_type}
     elif m_type == 'boring':
         ans = other.name_phr(author_id, 'я тоже')
     else:
         ans = ''
+
+    if ans is None:
+        text = com.get_t(all_keys=keys)
+        punct = punct and text not in data.sm_resp['ans_smiles']
+        ans = other.name_phr(author_id, text, punct=punct) if name_phr else text
 
     return ans
 

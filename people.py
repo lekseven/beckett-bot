@@ -342,14 +342,16 @@ async def check_now():
             usrs[mem.id].set(name=uname, status='upd')
 
         online_now = str(mem.status) != 'offline'
-        s_now = f'~{other.t2s()}~'
+        sec_now = other.get_sec_total()
+        frm = '[%d.%m.%y]%H:%M:%S' if (sec_now - usrs[mem.id].last_st) >= 86400 else '%H:%M:%S'
+        s_now = f'~{other.sec2ts(sec_now, frm=frm)}~'
 
         if usrs[mem.id].online and online_now:
-            users_online[mem.id] = [[other.sec2ts(usrs[mem.id].last_st), s_now]]
+            users_online[mem.id] = [[other.sec2ts(usrs[mem.id].last_st, frm=frm), s_now]]
         elif online_now:
             users_online[mem.id] = []
         elif usrs[mem.id].online:
-            users_online[mem.id] = [[other.sec2ts(usrs[mem.id].last_st)]]
+            users_online[mem.id] = [[other.sec2ts(usrs[mem.id].last_st, frm=frm)]]
         else:
             users_online[mem.id] = [[f'{{{s_now}}}']]
 
@@ -700,8 +702,8 @@ def online_change(uid, status, force=False, st_now=''):
     usr_online = users_online.setdefault(uid, [['!']])
     t_now = other.get_now()
     sec_now = other.get_sec_total(t_now)
-    s_now = st_now or f'{other.t2s(t_now)}'
-    s = '+' if (sec_now - usr.last_st) >= 86400 else ''
+    frm = '[%d.%m.%y]%H:%M:%S' if (sec_now - usr.last_st) >= 86400 else '%H:%M:%S'
+    s_now = st_now or f'{other.t2s(t_now, frm)}'
 
     if force:
         ''' if offline -> offline - it can be go in/out invisible user
@@ -709,9 +711,9 @@ def online_change(uid, status, force=False, st_now=''):
         '''
         if not online_now:  # offline -> offline
             if usr.maybe_invisible:
-                usr_online[-1].append(f'{{{s_now}{s}}}')
+                usr_online[-1].append(f'{{{s_now}}}')
             else:
-                usr_online.append([f'{{{s_now}{s}}}'])
+                usr_online.append([f'{{{s_now}}}'])
 
             if usr.was_invisible:
                 usr.set_invisible(not usr.maybe_invisible, True)
@@ -723,11 +725,11 @@ def online_change(uid, status, force=False, st_now=''):
 
     elif online_now:
         if usr.maybe_invisible:
-            usr_online[-1].append(f'{s_now}{s}')
+            usr_online[-1].append(f'{s_now}')
         else:
-            usr_online.append([f'{s_now}{s}'])
+            usr_online.append([f'{s_now}'])
     else:
-        usr_online[-1].append(f'{s_now}{s}')
+        usr_online[-1].append(f'{s_now}')
 
     if not force:
         usr.prev_onl = usr.online
@@ -755,7 +757,9 @@ def get_online_info(uid, t_now=None):
         return ''
 
     usr = usrs[uid]
-    s_now = other.t2s(t_now or other.get_now())
+    sec_now = t_now if t_now is not None else other.get_sec_total()
+    frm = '[%d.%m.%y]%H:%M:%S' if (sec_now - usr.last_st) >= 86400 else '%H:%M:%S'
+    s_now = other.sec2ts(sec_now, frm)
     usr_online = other.deepcopy(users_online[uid])
     if usr.online:
         usr_online[-1].append(f'~{s_now}~')
@@ -766,10 +770,10 @@ def get_online_info(uid, t_now=None):
 
 
 def print_online_people():
-    t_now = other.get_now()
+    sec_now = other.get_sec_total()
     info = {}
     for uid in users_online:
-        inf = get_online_info(uid, t_now)
+        inf = get_online_info(uid, sec_now)
         if not inf:
             continue
         info[usrs[uid].name] = inf

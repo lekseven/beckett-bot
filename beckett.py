@@ -7,7 +7,6 @@ from functools import partial as functools__partial
 import discord
 
 import constants as C
-from communication import prepare as com__prepare
 import check_message
 import other
 import emj
@@ -23,7 +22,6 @@ async def on_ready():
     prepare_const2()
     emj.prepare()
     await ev.load()
-    com__prepare()
     if not discord.opus.is_loaded():
         lb = find_library("opus")
         log.jD('opus lib: ', lb) # i can't find it on heroku
@@ -34,7 +32,7 @@ async def on_ready():
     ev.start_timers()
     log.I('Beckett ready for work now, after starting at ', ram.t_start.strftime('[%D %T]'))
     ram.debug = ram.debug or C.is_test
-    log.p('====== ====== ======')
+    log.p('======= ' * 10)
     C.Ready = True
     await other.test_status(ram.game)
 

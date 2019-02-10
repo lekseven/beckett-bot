@@ -4,6 +4,7 @@ import datetime
 import psycopg2
 import psycopg2.extras
 import discord
+from os.path import getmtime as os__getmtime
 
 import constants as C
 import local_memory as ram
@@ -378,7 +379,7 @@ def load_mem():
                 else:
                     setattr(module, row['var'], v)
     except psycopg2.DatabaseError as e:
-        log.E('DatabaseError %s' % e)
+        log.E('<ev.load_mem> DatabaseError %s' % e)
         sys.exit(1)
     else:
         log.I('+ memory loaded successfully')
@@ -387,8 +388,48 @@ def load_mem():
             conn.close()
 
 
+def load_texts_used():
+    log.D('+ load data_used from DB')
+    conn = None
+    com.d2u.data_used = []
+    try:
+        conn = psycopg2.connect(C.DATABASE_URL, sslmode='require')
+        cur = conn.cursor(cursor_factory=psycopg2.extras.DictCursor)
+        cur.execute("SELECT * FROM data_used ORDER BY id")
+        rows = cur.fetchall()
+        for row in rows:
+            com.d2u.data_used.append(row['value'])
+    except psycopg2.DatabaseError as e:
+        log.E('<ev.load_texts_used> DatabaseError %s' % e)
+    else:
+        log.I('+ data_used loaded successfully')
+    finally:
+        if conn:
+            conn.close()
+
+
+def save_texts_used():
+    log.D('+ save data_used to DB')
+    conn = None
+    rows = [(i,val) for i, val in enumerate(com.d2u.data_used)]
+    try:
+        conn = psycopg2.connect(C.DATABASE_URL, sslmode='require')
+        cur = conn.cursor(cursor_factory=psycopg2.extras.DictCursor)
+        cur.execute("TRUNCATE TABLE data_used RESTART IDENTITY")
+        query = "INSERT INTO data_used (id, value) VALUES (%s, %s)"
+        cur.executemany(query, rows)
+        conn.commit()
+    except psycopg2.DatabaseError as e:
+        log.E('<ev.save_texts_used> DatabaseError %s' % e)
+    else:
+        log.D('+ data_used saved successfully')
+    finally:
+        if conn:
+            conn.close()
+
+
 def save_mem():
-    log.D('+ save memory in DB')
+    log.D('+ save memory to DB')
     module = sys.modules[ram.__name__]
     module_attrs = dir(module)
     variables = {key: getattr(module, key)
@@ -409,7 +450,7 @@ def save_mem():
         cur.executemany(query, rows)
         conn.commit()
     except psycopg2.DatabaseError as e:
-        log.E('[save_mem] <memory> DatabaseError %s' % e)
+        log.E('<ev.save_mem>  DatabaseError %s' % e)
         # sys.exit(1)
     else:
         log.D('+ memory saved successfully')
@@ -419,6 +460,13 @@ def save_mem():
 
 
 async def load():
+    t1 = os__getmtime('data_to_process.py')
+    t2 = os__getmtime('data_to_use.py')
+    if t1 > t2:
+        log.W(f'Date of "data_to_process.py" is {other.sec2ts(t1, "%d/%m/%y %H:%M:%S")}, '
+              f'when "data_to_use.py" from {other.sec2ts(t2, "%d/%m/%y %H:%M:%S")} => try to recreate "data_to_use".')
+        com.make_d2u()
+    load_texts_used()
     load_mem()
     await people.get() # check=(not C.is_test)
     pass
@@ -428,6 +476,7 @@ async def load():
 def save():
     save_mem()
     people.upd()
+    save_texts_used()
 
 
 def stop_quarter_h_timer():
@@ -453,7 +502,7 @@ def timer_quarter_h():
         timer_quarter_works += 1
         log.D('+ Timer event finished!')
         mn = 4 if timer_quarter_works % 4 == 0 else 1
-        log.p('--------------------' * mn)
+        log.p('------------------------------------- ' * mn)
     except Exception as e:
         other.pr_error(e, 'timer_quarter_h')
 
@@ -513,7 +562,7 @@ def on_final_exit():
         save()
     log.I('Finally exit at ', ram.t_finish.strftime('[%D %T]'),
           ', working for ', other.delta2s(ram.t_work))
-    log.p('====== ====== ======')
+    log.p('====== ' * 10)
 
 
 def on_user_life_signs(uid):
