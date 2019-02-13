@@ -508,8 +508,8 @@ def upd():
         log.D('+ people tables updated successfully')
         log.jD('subjects were updated:\n',
                '\n'.join([cat + ':\n\t' +
-                          '\n'.join([tp + '[{0}]:\n\t\t'.format(len(names)) +
-                                     ', '.join(names) for tp, names in ls.items() if names])
+                          '\n'.join([tp + '[{0}]:\n\t\t'.format(len(u_s)) +
+                                     ',\n\t\t'.join(str(u) for u in u_s) for tp, u_s in ls.items() if u_s])
                           for cat, ls in log_upd.items() if ls]))
     finally:
         if conn:
