@@ -129,18 +129,28 @@ def prepare():
         i += 1
 
     morn_to_add = {
-        C.users['Kuro']: ('tea', r'\♨'),
-        C.users['Natali']: ('tea', 'chocolate_bar', 'purple_heart', 'heartpulse'),
+        C.users['Kuro']: (r'\♨', ),
+        C.users['Natali']: (':tea::chocolate_bar:', ),
+        C.users['AyrinSiverna']: ('', ),
+    }
+    morn_to_add_sm = {
+        C.users['Kuro']: ('tea',),
+        C.users['Natali']: ('purple_heart', 'heartpulse'),
         C.users['Buffy']: (*('sun_with_face',) * 3, 'm_wafer', 'chocolate_bar', 'doughnut', 'cake'),
         C.users['Tilia']: (*('sun_with_face',) * 3, 'm_Tilia_fase', 'm_wafer', 'smiley_cat'),
         C.users['cycl0ne']: ('p_jonesy', 'smiley_cat'),
-        C.users['AyrinSiverna']: ('', 'Logo_Toreador', 'heart', 'hearts', 'rose', 'tulip'),
+        C.users['AyrinSiverna']: ('Logo_Toreador', 'heart', 'hearts', 'rose', 'tulip'),
         C.users['Doriana']: 'hugging', C.users['Creol']: 'hugging',
         C.users['Hadley']: 'smiley', C.users['Soul']: 'coffee',
+        C.users['CrimsonKing']: 'carrot',
+        C.users['Vladislav Shrike']: ('punch', 'metal'),
+        C.users['Samael']: 'lizard',
     }
     for name in morn_to_add:
-        val = (morn_to_add[name], ) if isinstance(morn_to_add[name], str) else tuple(morn_to_add[name])
-        morn_add[name] = tuple((e_str(em) or em) for em in val)
+        morn_add[name] = (morn_to_add[name], ) if isinstance(morn_to_add[name], str) else tuple(morn_to_add[name])
+    for name in morn_to_add_sm:
+        val = (morn_to_add_sm[name], ) if isinstance(morn_to_add_sm[name], str) else tuple(morn_to_add_sm[name])
+        morn_add[name] = morn_add.get(name, tuple()) + tuple((e_str(em) or em) for em in val)
 
 
 def save_em():
