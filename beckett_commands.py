@@ -1196,14 +1196,8 @@ async def debug(msg: _Msg):
 
 
 async def play(msg: _Msg):
-    game = None
-    if len(msg.args) > 1:
-        ram.game = msg.original[len('!play '):]
-        game = discord.Game(name=ram.game)
-    else:
-        ram.game = False
-    # status = (discord.Status.dnd if ram.game else discord.Status.online)
-    await C.client.change_presence(game=game, status=discord.Status.online, afk=False)
+    game_name = msg.original[len('!play '):] if len(msg.args) > 1 else False
+    await other.set_game(game_name)
 
 
 async def info(msg: _Msg):
@@ -1538,7 +1532,7 @@ async def people_time_sync(msg: _Msg):
                              'Вы **точно** уверены, что *действительно желаете* продолжить?')
     if ans:
         await msg.qanswer("Хорошо, начинаем, наберитесь терпения...")
-        await people.time_sync()
+        await ev.cmd_people_time_sync()
         await msg.qanswer(":ok_hand:")
     else:
         await msg.qanswer("Отмена people_time_sync.")

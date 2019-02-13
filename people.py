@@ -6,6 +6,8 @@ import other
 import discord
 import log
 
+gt_keys = {'g_morn', 'g_day', 'g_ev', 'g_n'}
+
 usrs = {} # type: dict[id, Usr]
 gone = {} # type: dict[id, Gn]
 bans = [] # type: list[discord.User]
@@ -133,6 +135,32 @@ class Usr:
         if not(self.online or self.maybe_invisible):
             log.jD(f' ~ think {self.name} in invisible')
             self.set_invisible(True)
+
+    def stable_for(self):
+        return other.get_sec_total() - self.last_st
+
+    def is_stable_for(self, h:[float, int]=1):
+        return self.stable_for() > (h * 3600 - 1)
+
+    def was_stable_for(self, h: [float, int]=1):
+        return self.prev_st > (h * 3600 - 1)
+
+    def was_writing(self, h: [float, int]=1):
+        return self.offtime() < (h * 3600)
+
+    def gt_was_for(self, key, h:[float, int]=1):
+        if key not in {'g_morn', 'g_day', 'g_ev', 'g_n'}:
+            return False
+
+        t = other.get_sec_total() - getattr(self, key)
+        return t < (h * 3600)
+
+    def gt_passed_for(self, key, h:[float, int]=1):
+        if key not in {'g_morn', 'g_day', 'g_ev', 'g_n'}:
+            return False
+
+        t = other.get_sec_total() - getattr(self, key)
+        return t > (h * 3600 - 1)
 
 
 class Gn:
@@ -588,13 +616,18 @@ async def time_sync():
             log.D('+ {0}) {1} - check'.format(i + 1, ch.name))
             mems_i = set(mems)
             count = 0
+            messes = []
             async for mess in C.client.logs_from(ch, limit=1000000):
+                messes.append(mess)
+
+            for mess in messes:
                 aid = mess.author.id
                 if aid in mems_i:
                     ts = other.get_sec_total(mess.timestamp)
                     if ts > usrs[aid].last_m:
                         usrs[aid].last_m = ts
                         usrs[aid].status = 'upd'
+
                     mems_i.remove(aid)
                     if len(mems_i) < 1:
                         break
@@ -661,23 +694,28 @@ def clan(uid):
 
 def get_gt(uid):
     if uid in usrs:
-        return {'g_morn': usrs[uid].g_morn, 'g_day': usrs[uid].g_day, 'g_ev': usrs[uid].g_ev, 'g_n': usrs[uid].g_n}
+        return {key: getattr(usrs[uid], key) for key in gt_keys}
     elif uid in other_usrs:
         return other_usrs[uid]
     else:
-        return {'g_morn': 0, 'g_day': 0, 'g_ev': 0, 'g_n': 0}
+        return {key:0 for key in gt_keys}
 
 
 def set_gt(uid, key):
-    keys = {'g_morn', 'g_day', 'g_ev', 'g_n'}
-    if key in keys:
+    if key in gt_keys:
         if uid in usrs:
             setattr(usrs[uid], key, other.get_sec_total())
             usrs[uid].status = 'upd'
         else:
             if uid not in other_usrs:
-                other_usrs[uid] = {'g_morn': 0, 'g_day': 0, 'g_ev': 0, 'g_n': 0}
+                other_usrs[uid] = {key:0 for key in gt_keys}
             other_usrs[uid][key] = other.get_sec_total()
+
+
+def gt_passed_for(uid, key, h:[float, int]=1):
+    if uid not in usrs:
+        return False
+    return usrs[uid].gt_passed_for(key, h)
 
 
 def offtime(uid):
@@ -787,13 +825,12 @@ def get_online_info_now(uid, get_for_now=True):
 
     usr = usrs[uid]
     onl_now = usr.online
-    sec_now = other.get_sec_total()
     s_prev = other.s2s(usr.prev_st)
     s_onl = ('offline', 'online')
     st_now = 'invisible' if usr.maybe_invisible else s_onl[onl_now]
     st_old = ('invisible' if usr.prev_inv else
               s_onl[usr.prev_onl] if usr.maybe_invisible else s_onl[not onl_now])
-    for_now = f' for {other.s2s(sec_now - usr.last_st)}' if get_for_now else ''
+    for_now = f' for {other.s2s(usr.stable_for())}' if get_for_now else ''
     return f'{usr.name} is {st_now} now{for_now} (after be {st_old} for {s_prev}).'
 
 
@@ -809,3 +846,43 @@ def is_online(uid):
         return False
 
     return usrs[uid].online
+
+
+def is_stable_for(uid, h:[float, int]=1):
+    if uid not in usrs:
+        return False
+
+    return usrs[uid].is_stable_for(h)
+
+
+def was_stable_for(uid, h: [float, int]=1):
+    if uid not in usrs:
+        return False
+
+    return usrs[uid].was_stable_for(h)
+
+
+def was_writing(uid, h: [float, int]=1):
+    if uid not in usrs:
+        return False
+
+    return usrs[uid].was_writing(h)
+
+
+def online_ev(uid):
+    if uid not in usrs:
+        return False
+    usr = usrs[uid]
+    if (usr.online and usr.was_stable_for(5) and usr.was_writing(48) and
+            any({usr.gt_was_for(key, 48) for key in {'g_morn', 'g_day', 'g_ev'}})):
+        corr = 0
+        if usr.id == C.users['Tony']:
+            corr = -8
+        h = other.get_now().hour + corr
+        t_day = {'g_morn': (4, 12), 'g_day': (12, 18), 'g_ev': (18, 24)}
+
+        for g_key in t_day:
+            t_min, t_max = t_day[g_key]
+            if t_min <= h < t_max:
+                return g_key if usr.gt_passed_for(g_key, 16) else False
+    return False

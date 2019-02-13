@@ -100,7 +100,7 @@ async def reaction(message, edit=False):
     if m_type and text:
         log.I(('<reaction.edit>' if edit else '<reaction>') + f'[{m_type}]')
         save_obj = _data_msgs_add(msg, m_type)
-        if m_type != 'no-response':
+        if text != 'no-response':
             _data_tp_add(msg, com.write_msg(msg.channel, text=text, save_obj=save_obj,
                                             fun=data_tp_del(msg.channel.id, msg.message.id)))
         # await msg.qanswer(text)
@@ -120,7 +120,7 @@ async def delete_reaction(message):
 
 
 def _do_reaction(msg:Msg) -> (str, str):
-
+    m_type = None
     embrace_or_return = False
     if (ram.mute_channels.intersection({msg.channel.id, 'all'})
             or msg.author in ram.ignore_users or msg.channel.id in C.ignore_channels):
@@ -145,13 +145,17 @@ def _do_reaction(msg:Msg) -> (str, str):
             clan = other.choice(clan_keys)
             other.later_coro(other.rand(30, 90),
                              manager.do_embrace_and_say(msg, msg.author, clan=clan))
-            # return 'embrace', clan
+            # get 100% to comment of chosen clan
+            beckett = True
+            found_keys = clan
     elif embrace_or_return:
         return '', ''
 
     gt = msg.check_good_time(beckett)
     if gt:
         return 'gt', gt
+    elif gt == '':
+        m_type = 'was-good-time no-response'
 
     if found_keys:
         if not beckett and ram.mute_light_channels.intersection({msg.channel.id, 'all'}):
@@ -192,7 +196,7 @@ def _do_reaction(msg:Msg) -> (str, str):
             return '/shrug', r'¯\_(ツ)_/¯'
 
         if beckett:
-            m_type = _beckett_m_type(msg)
+            m_type = m_type or _beckett_m_type(msg)
             ans = _beckett_ans(m_type, msg.author)
             if ans:
                 return m_type, ans
@@ -251,7 +255,7 @@ def _beckett_ans(m_type, author_id):
     keys = {'sm_resp'}
     punct = True
     name_phr = False
-    if m_type == 'no-response':
+    if 'no-response' in m_type:
         ans = 'no-response'
     elif m_type in {'wlc', 'bye', 'yes', 'no', 'hi_plus', 'not_funny', 'fun_smiles'}:
         keys.add(m_type)

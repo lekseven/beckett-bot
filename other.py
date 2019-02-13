@@ -11,6 +11,7 @@ import discord
 import constants as C
 import log
 import manager
+import local_memory as ram
 
 # for weather
 
@@ -293,6 +294,13 @@ async def test_status(state):
         status = discord.Status.do_not_disturb
     # else:
     #     await C.client.change_presence(game=None, status=discord.Status.online, afk=False)
+    await C.client.change_presence(game=game, status=status, afk=False)
+
+
+async def set_game(name=''):
+    game = discord.Game(name=name) if name else None
+    ram.game = game or False
+    status = C.prm_server.me.status
     await C.client.change_presence(game=game, status=status, afk=False)
 
 

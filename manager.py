@@ -42,6 +42,8 @@ class Msg:
         self.rep_ch = ram.rep_channels.get(self.author, set())
         self.gt = people.get_gt(self.author)
 
+        self._after_init()
+
     def _after_init(self):
         if self.is_vtm:
             people.set_last_m(self.author)
@@ -151,12 +153,12 @@ class Msg:
     def check_good_time(self, beckett):
         gt_key = com.f_gt_key(self.original, self.text, self.words.copy(), beckett)
         if gt_key:
-            h18 = 64800  # 18h in sec
-            if (other.get_sec_total() - self.gt[gt_key['g_key']]) > h18: # not beckett and
+            if people.gt_passed_for(self.author, gt_key['g_key'], h=18):
                 phr = com.phrase_gt(gt_key, self.author)
                 if phr:
                     people.set_gt(self.author, gt_key['g_key'])
                     return phr
+            return ''
         return False
 
     def get_commands(self):
@@ -310,6 +312,7 @@ async def do_embrace(user, clan=None):
                 if other.find(mem.roles, id=C.roles[clan]) and mem.id != user.id:
                     clan_users.add(mem.id)
             clan_users.difference_update(C.not_sir)
+            #
             sir = other.choice(list(clan_users))
             text = com.get_t('embrace_msg', sir=f'<@{sir}>', child=f'<@{user.id}>')
         else:

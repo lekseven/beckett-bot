@@ -22,7 +22,7 @@ class LogWrite:
     def write(self, s):
         self.std.write(s)
         self.logfile.write(s)
-        self.flush()
+        # self.flush()
 
     def flush(self):
         self.std.flush()
@@ -40,7 +40,7 @@ class ErrWrite:
             self.logfile.write(other.t2s(frm='![%T]!\t') + s)
         else:
             self.logfile.write(s)
-        self.flush()
+        # self.flush()
 
     def flush(self):
         self.std.flush()
