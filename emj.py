@@ -304,15 +304,12 @@ async def on_message(message: discord.Message, beckett_mention):
         if author == C.users['Natali'] and prob < 0.9:
             log.jD('Like Natali in staff')
             pause_and_add(message, ('purple_heart', 'heart_eyes', 'heart_eyes_cat', 'heartpulse'))
-            return
         elif author in {C.users['Doriana'], C.users['Tilia'], C.users['Buffy']} and prob < 0.4:
             log.jD('Like Doriana or Tilia or Buffy in staff')
             pause_and_add(message, ('heart', 'hearts', 'heart_eyes', 'black_heart'))
-            return
         elif author in {C.users['Hadley'], C.users['cycl0ne'], C.users['Magdavius']} and prob < 0.4:
             log.jD('Like Hadley or cycl0ne or Magdavius in staff')
             pause_and_add(message, ('thumbsup', 'ok_hand', 'heart_eyes_cat'))
-            return
 
     if prob > 0.5:
         for sm in ('((', 'Т_Т', 'T_T', ':С', ':C', '😭', '😢', '😣', '😖', '😫', '😩', 's_blood_cry'):
@@ -335,54 +332,47 @@ async def on_message(message: discord.Message, beckett_mention):
         elif prob < 0.01:
             log.jD('Like Natali chance 0.01')
             pause_and_add(message, ('purple_heart', 'heart_eyes', 'heart_eyes_cat'))
-        return
 
-    if author == C.users['Doriana']:
+    elif author == C.users['Doriana']:
         if beckett_mention and prob < 0.1:
             log.jD('Like Doriana for Beckett chance 0.1')
             pause_and_add(message, e('octopus'))
         elif prob < 0.005:
             log.jD('Like Doriana chance 0.005')
             pause_and_add(message, e('black_heart'))
-        return
 
-    if author == C.users['Hadley']:
+    elif author == C.users['Hadley']:
         if beckett_mention and prob < 0.1:
             log.jD('Like Hadley for Beckett chance 0.1')
             pause_and_add(message, (e_str('a_Toreador_light'), e_str('a_Toreador_wave')))
         elif prob < 0.005:
             log.jD('Like Hadley chance 0.005')
             pause_and_add(message, e('Logo_Toreador'))
-        return
 
-    if author == C.users['Tony']:
+    elif author == C.users['Tony']:
         if beckett_mention and prob < 0.1:
             log.jD('Like Tony for Beckett chance 0.1')
             pause_and_add(message, e('Logo_Ventrue'))
         # elif prob < 0.005:
         #     log.jD('Like Tony chance 0.005')
         #     await C.client.add_reaction(message, e('ok_hand'))
-        return
 
-    if author == C.users['Rainfall']:
+    elif author == C.users['Rainfall']:
         if beckett_mention and prob < 0.1:
             log.jD('Like Rainfall for Beckett chance 0.1')
             pause_and_add(message, e('green_heart'))
         elif prob < 0.005:
             log.jD('Like Rainfall chance 0.005')
             pause_and_add(message, e('racehorse'))
-        return
 
-    if author == '237604798499651594': # Барон Рихтер
+    elif author == '237604798499651594': # Барон Рихтер
         await C.client.add_reaction(message, e('poop'))
-        return
 
     if other.t2s(frm='%d.%m') == '14.02':   # Valentine's Day
         if author in {C.users['Natali'], C.users['Tilia']}:
             pause_and_add(message, {'❤', '💛', '💙', '💜', '❣', '💕', '💞', '💓', '💗', '💖', '💝', '♥'})
         elif prob < 0.1:
             pause_and_add(message, {'💌', '💟', })
-        return
 
 
 def pause_and_add(message, emoji:str or discord.Emoji, t=-1):

@@ -255,7 +255,9 @@ def _beckett_ans(m_type, author_id):
     keys = {'sm_resp'}
     punct = True
     name_phr = False
-    if 'no-response' in m_type:
+    if m_type is None:
+        ans = ''
+    elif 'no-response' in m_type:
         ans = 'no-response'
     elif m_type in {'wlc', 'bye', 'yes', 'no', 'hi_plus', 'not_funny', 'fun_smiles'}:
         keys.add(m_type)
