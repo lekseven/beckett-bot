@@ -122,18 +122,19 @@ async def delete_reaction(message):
 def _do_reaction(msg:Msg) -> (str, str):
     m_type = None
     embrace_or_return = False
-    if (ram.mute_channels.intersection({msg.channel.id, 'all'})
-            or msg.author in ram.ignore_users or msg.channel.id in C.ignore_channels):
-        if msg.channel.id == C.channels['ask']:
-            embrace_or_return = True
-        else:
-            return '', ''
 
     msg.prepare2()
     beckett_reference = bool(C.beckett_refs.intersection(msg.words))
     beckett_mention = bool(C.beckett_names.intersection(msg.words))
     beckett = beckett_reference or beckett_mention
     other.later_coro(0, emj.on_message(msg.message, beckett))
+
+    if (ram.mute_channels.intersection({msg.channel.id, 'all'})
+            or msg.author in ram.ignore_users or msg.channel.id in C.ignore_channels):
+        if msg.channel.id == C.channels['ask']:
+            embrace_or_return = True
+        else:
+            return '', ''
 
     found_keys = com.check_phrase(msg.text, msg.words)
     prob = other.rand()
@@ -143,8 +144,8 @@ def _do_reaction(msg:Msg) -> (str, str):
         clan_keys = list(C.clan_names.intersection(found_keys))
         if clan_keys:
             clan = other.choice(clan_keys)
-            other.later_coro(other.rand(30, 90),
-                             manager.do_embrace_and_say(msg, msg.author, clan=clan))
+            other.later_coro(other.rand(20, 50),
+                             manager.do_embrace_and_say(msg.author, clan_name=clan))
             # get 100% to comment of chosen clan
             beckett = True
             found_keys = clan
@@ -188,7 +189,7 @@ def _do_reaction(msg:Msg) -> (str, str):
                     return 'diceflip', other.rand_diceflip(dice_count)
         elif msg.original[1:].startswith('tableflip') and (msg.admin or msg.channel.id == C.channels['bar']):
             if not {msg.author}.intersection({C.users['Buffy'], C.users['Tilia'], }) and not msg.admin and prob < 0.2:
-                return 'tableflip_phrase', com.get_t('tableflip_cmd_phrase')
+                return 'tableflip_phrase', com.get_t('tableflip_cmd_phrase', user=f'<@{msg.author}>')
             else:
                 return '/tableflip', '* *бросаю за <@{id}>* *\n{table}'.format(id=msg.author,
                                                                                table=other.rand_tableflip())

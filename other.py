@@ -362,7 +362,7 @@ def later(t, fun):
 
 def pr_error(e, cat='beckett', text='Error'):
     ei = sys.exc_info()
-    log.E("{{{cat}}} {text}:".format(cat=cat, text=text), e, ei[0], ei[1])
+    log.E("{{{cat}}} {text}: {e}\n\t!!! {ei[0]} {ei[1]}".format(cat=cat, text=text, e=e, ei=ei))
 
 
 def is_float(num):

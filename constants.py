@@ -51,6 +51,7 @@ users = {
     'Samael': '306465564933619723',
     'Lorkhan': '483616547487875072',
     'CrimsonKing': '271491887435612161',
+    'miss Alex': '418047765902393365',
     #test
     'Dummy': '452303933856153601',
     'Dracula': '491399986156666893',
@@ -154,7 +155,8 @@ roles = {'Prince': '398223824514056202',
          'Silence': '449666656143409162',
          'Priest': '451687545412124672',
          'Ductus': '451687735355375626',
-         # 'Gargoyle': '453169623576084480',  # test Server
+            # test Server
+         # 'Gargoyle': '453169623576084480',
          }
 
 role_by_id = {value: key for (key, value) in roles.items()}
@@ -163,7 +165,7 @@ clan_names = {'Malkavian', 'Toreador', 'Brujah', 'Ventrue', 'Nosferatu', 'Gangre
               'Ravnos', 'Followers of Set', 'Assamite', 'Giovanni',
               'Tzimisce', 'Lasombra', 'Noble Pander',
               'Cappadocian', 'Lasombra Antitribu',
-              'Котичек', 'Namaru',
+              # 'Котичек', 'Namaru',
               # 'Gargoyle',  # test Server
               }
 clan_ids = {key for key in role_by_id if role_by_id[key] in clan_names}

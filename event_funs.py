@@ -224,7 +224,7 @@ async def on_member_update_u(before: discord.Member, after: discord.Member):
                 await other.set_game(after.game.name)
 
         user_g = user_games.pop(after.id, {'name': '', 'h': 0})
-        if (before.game and before.game.name and after.id not in ram.ignore_users and
+        if other.rand() < 0.5 and (before.game and before.game.name and after.id not in ram.ignore_users and
                 people.was_writing(after.id, 48) and user_g['h'] >= TMR_IN_H):
             phr = com.get_t('game', user=f'<@{after.id}>', game=f"«{user_g['name']}»")
             com.write_msg(C.main_ch, phr)
@@ -254,12 +254,28 @@ async def on_member_update_u(before: discord.Member, after: discord.Member):
 
     if before.roles != after.roles:
         smth_happend = True
-        old_roles = [('@' + r.name) for r in before.roles if r not in after.roles]
-        new_roles = [('@' + r.name) for r in after.roles if r not in before.roles]
+        old_roles = [('@&' + r.name) for r in before.roles if r not in after.roles]
+        new_roles = [('@&' + r.name) for r in after.roles if r not in before.roles]
         if old_roles:
             log.I(f'<on_member_update> {a_n} lost role(s): {", ".join(old_roles)}.')
         if new_roles:
             log.I(f'<on_member_update> {a_n} get role(s): {", ".join(new_roles)}.')
+            new_clan_roles = C.clan_ids.intersection({r.id for r in after.roles if r not in before.roles})
+            if len(before.roles) == 1 and new_clan_roles:
+                clan = C.role_by_id[other.choice(new_clan_roles)]
+                log.jI(f'<on_member_update> {a_n} get new clan role "{clan}" => call do_embrace.')
+                text = await manager.do_embrace(after, clan_name=clan)
+                com.write_msg(C.main_ch, text)
+            elif len(before.roles) > 1 and C.roles['Noble Pander'] in new_clan_roles:
+                log.jI(f'<on_member_update> {a_n} go to Pander => delete other clan roles if it\'s exist.')
+                del_clans_id = C.clan_ids.difference({C.roles['Noble Pander']})
+                rem_roles = {r for r in after.roles if r.id in del_clans_id}
+                if rem_roles:
+                    await C.client.remove_roles(after, *rem_roles)
+                    str_rem_r = f"<@&{'>, <@&'.join(r.id for r in rem_roles)}>"
+                    phr = com.get_t('to_Pander', user=f'<@{after.id}>',
+                                    old_clans=str_rem_r, pander=f"<@&{C.roles['Noble Pander']}>")
+                    com.write_msg(C.main_ch, phr)
 
     if before.status != after.status or not smth_happend:
         people.online_change(after.id, after.status, force=before.status == after.status)
