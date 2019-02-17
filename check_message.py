@@ -144,8 +144,7 @@ def _do_reaction(msg:Msg) -> (str, str):
         clan_keys = list(C.clan_names.intersection(found_keys))
         if clan_keys:
             clan = other.choice(clan_keys)
-            other.later_coro(other.rand(20, 50),
-                             manager.do_embrace_and_say(msg.author, clan_name=clan))
+            other.later_coro(other.rand(20, 50), manager.do_check_and_embrace(msg.author, clan_name=clan))
             # get 100% to comment of chosen clan
             beckett = True
             found_keys = clan

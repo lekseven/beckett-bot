@@ -264,8 +264,8 @@ async def on_member_update_u(before: discord.Member, after: discord.Member):
             if len(before.roles) == 1 and new_clan_roles:
                 clan = C.role_by_id[other.choice(new_clan_roles)]
                 log.jI(f'<on_member_update> {a_n} get new clan role "{clan}" => call do_embrace.')
-                text = await manager.do_embrace(after, clan_name=clan)
-                com.write_msg(C.main_ch, text)
+                manager.just_embrace_say(after, clan_name=clan)
+                # com.write_msg(C.main_ch, text)
             elif len(before.roles) > 1 and C.roles['Noble Pander'] in new_clan_roles:
                 log.jI(f'<on_member_update> {a_n} go to Pander => delete other clan roles if it\'s exist.')
                 del_clans_id = C.clan_ids.difference({C.roles['Noble Pander']})

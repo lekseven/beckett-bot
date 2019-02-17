@@ -836,8 +836,8 @@ async def purge_bet(msg: _Msg):
 
 async def embrace(msg: _Msg):
     """\
-    !embrace username: случайно (если нет клана) обратить пользователя, выдать сира, сообщить в !reports
-    !embrace role username: обратить пользователя в role, выдать сира, сообщить в !report
+    !embrace username: случайно (если нет клана) обратить пользователя, выдать сира, сообщить во флуд
+    !embrace role username: обратить пользователя в role, выдать сира, сообщить во флуд
     """
     if len(msg.args) < 2:
         # get help
@@ -868,9 +868,10 @@ async def embrace(msg: _Msg):
         else:
             name = msg.original[len('!embrace '):]
     user = other.find_member(C.vtm_server, name)
-    text = await manager.do_embrace(user, clan)
-    if text:
-        await msg.report(text)
+    if user:
+        clan = await manager.just_embrace(user, clan)
+        # text = await manager.just_embrace_say(user, clan, get_text=True)
+        # await msg.report(text)
     else:
         await msg.qanswer("Не могу найти такого пользователя.")
 

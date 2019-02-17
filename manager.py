@@ -277,58 +277,68 @@ async def voting(channel, text='', timeout=60, votes=None, count=3):
     return False
 
 
-async def do_embrace_and_say(name, clan_name=None):
+async def do_check_and_embrace(name, clan_name=None):
     user = other.find_member(C.vtm_server, name)
-    #roles = {role.id for role in user.roles[1:]}
-    #if not roles.intersection(C.clan_ids):
-    if len(user.roles) == 1: # only everybody
-        text = await do_embrace(user, clan_name=clan_name)
+    if len(user.roles) == 1:
+        await just_embrace(user, clan_name=clan_name)
+        # just_embrace_say(user, clan_name)
+        # text = await do_embrace(user, clan_name=clan_name)
+        # com.write_msg(C.main_ch, text)
+    else:
+        log.D('<do_check_and_embrace> Will not embrace, there are other roles.')
+
+
+async def just_embrace(user, clan_name=None):
+    if not user:
+        return False
+
+    if not clan_name:
+        for r in user.roles:
+            if r.id in C.clan_ids:
+                clan_name = C.role_by_id[r.id]
+                break
+    clan_name = clan_name or other.choice(C.clan_names)
+    roles = [r for r in {other.find(C.vtm_server.roles, id=C.roles[clan_name])} if r]
+    if clan_name in C.sabbat_clans:
+        roles.append(other.find(C.vtm_server.roles, id=C.roles['Sabbat']))
+    if roles:
+        try:
+            await C.client.add_roles(user, *roles)
+        except C.discord.Forbidden:
+            log.jW("Bot can't change roles.")
+        except Exception as e:
+            other.pr_error(e, 'do_embrace', 'Error in changing roles')
+
+    return clan_name
+
+
+def just_embrace_say(user, clan_name, get_text=False):
+    if not (user or clan_name):
+        return False
+
+    clan_users = set()
+    pander = (clan_name == 'Noble Pander')
+    if not pander:
+        for mem in C.client.get_all_members():
+            if other.find(mem.roles, id=C.roles[clan_name]) and mem.id != user.id:
+                clan_users.add(mem.id)
+        clan_users.difference_update(C.not_sir)
+        if clan_users:
+            sir = other.choice(list(clan_users))
+            text = com.get_t('embrace_msg', sir=f'<@{sir}>', child=f'<@{user.id}>')
+        else:
+            text = com.get_t('embrace_unic', clan=f'<@&{C.roles[clan_name]}>', child=f'<@{user.id}>')
+    else:
+        text = com.get_t('embrace_pander', child=f'<@{user.id}>')
+
+    if clan_name in C.sabbat_clans and not pander:
+        text += "\n" + com.get_t('embrace_sabbat')
+
+    if get_text:
+        return text
+    else:
         com.write_msg(C.main_ch, text)
 
-
-async def do_embrace(user, clan_name=None):
-    if user:
-        if not clan_name:
-            for r in user.roles:
-                if r.id in C.clan_ids:
-                    clan_name = C.role_by_id[r.id]
-                    break
-        clan_name = clan_name or other.choice(C.clan_names)
-        roles = [r for r in {other.find(C.vtm_server.roles, id=C.roles[clan_name])} if r]
-        pander = False
-        if clan_name in C.sabbat_clans:
-            roles.append(other.find(C.vtm_server.roles, id=C.roles['Sabbat']))
-            pander = (clan_name == 'Noble Pander')
-        if roles:
-            try:
-                await C.client.add_roles(user, *roles)
-            except C.discord.Forbidden:
-                log.jW("Bot can't change roles.")
-            except Exception as e:
-                other.pr_error(e, 'do_embrace', 'Error in changing roles')
-            #print("Other error in changing roles")
-        # omg
-        clan_users = set()
-        if not pander:
-            for mem in C.client.get_all_members():
-                if other.find(mem.roles, id=C.roles[clan_name]) and mem.id != user.id:
-                    clan_users.add(mem.id)
-            clan_users.difference_update(C.not_sir)
-            if clan_users:
-                sir = other.choice(list(clan_users))
-                text = com.get_t('embrace_msg', sir=f'<@{sir}>', child=f'<@{user.id}>')
-            else:
-                text = com.get_t('embrace_unic', clan=f'<@&{C.roles[clan_name]}>', child=f'<@{user.id}>')
-        else:
-            text = com.get_t('embrace_pander', child=f'<@{user.id}>')
-
-        if clan_name in C.sabbat_clans and not pander:
-            text += "\n" + com.get_t('embrace_sabbat')
-
-        return text
-
-    else:
-        return False  #await msg.qanswer("Не могу найти такого пользователя.")
 
 # Roll commands
 
