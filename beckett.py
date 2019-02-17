@@ -17,11 +17,13 @@ import event_funs as ev
 
 @C.client.event
 async def on_ready():
+    ram.debug = C.is_test
     await other.busy()
     log.I('Logged in as ', C.client.user, ' (', C.client.user.id, ')')
     prepare_const2()
     emj.prepare()
     await ev.load()
+    ram.debug = ram.debug or C.is_test
     if not discord.opus.is_loaded():
         lb = find_library("opus")
         log.jD('opus lib: ', lb) # i can't find it on heroku
@@ -31,7 +33,6 @@ async def on_ready():
             log.jW('opus lib not load!')
     ev.start_timers()
     log.I('Beckett ready for work now, after starting at ', ram.t_start.strftime('[%D %T]'))
-    ram.debug = ram.debug or C.is_test
     log.p('======= ' * 10)
     C.Ready = True
     await other.test_status(ram.game)

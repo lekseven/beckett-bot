@@ -175,8 +175,8 @@ def _do_reaction(msg:Msg) -> (str, str):
                 if msg.admin:
                     return 'rand_tableflip', other.rand_tableflip()
                 elif msg.channel.id == C.channels['bar']:
-                    if {msg.author}.intersection({C.users['Buffy'], C.users['Tilia'], }):
-                        if prob < 0.2:
+                    if {msg.author}.intersection({C.users['Buffy'], C.users['Tilia'], }) or prob < 0.01:
+                        if other.rand() < 0.2:
                             return 'tableflip_phrase', com.get_t('tableflip_phrase')
                         else:
                             return 'rand_tableflip', other.rand_tableflip()

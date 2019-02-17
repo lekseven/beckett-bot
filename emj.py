@@ -7,8 +7,9 @@ import other
 import log
 
 
-# Emojis [20.11.2018]:
+# Emojis [17.02.2019]:
 ems_id = {
+    # VtM server
     '400662865935204363': 'm_drunk',
     '400662865972822026': 'p_Lacr',
     '400662866157502476': 'p_nosferatu',
@@ -59,12 +60,44 @@ ems_id = {
     '490273371116797954': 'm_Tarkin_face',
     '490287532400050176': 'm_Tilia_fase',
     '506940161389756426': 'm_r_heart',
+    '525924557102645257': 's_dice',
+    '534065125867388938': 'logo_dementation',
     # test
-    # '453173916517662720': 'z_GDAbyudG2',
     '532673320785674317': 'sgushchenka',
-    # a
+    '453173916517662720': 'z_GDAbyudG2',
+    '453175977011576852': 'z_Demonic_Skeleton',
+    '462006076322086912': 'AnkhV20_0',
+    '511958814719737903': 'Tremere_Symbol',
+    '511961991787577364': 'TremereDA',
+    '528228711460372480': 's_Koldun',
+    '531578112383778829': 'hungry',
+    '531579324126593025': 'shenRage',
+    '532272830964826132': 'DD',
+    '532273649747755020': 'Do',
+    '532331427874734093': 'dem',
+    '532331428000825365': 'dem_m',
+    '532331428181180426': 'dem_r',
+    '532331439828762626': 'dem_rg',
+    '532366476687179776': 'thaum',
+    '532366483796262922': 'thau',
+    '532366493107748874': 'thaumaturgy',
+    '533790911860047873': 't_net2',
+    # anim
     '526062214944260137': 'a_Toreador_light',
     '526062156609880064': 'a_Toreador_wave',
+    '524915757419593738': 'a_Jack',
+    '525015703997120533': 'a_Beckett',
+    '525050014104420377': 'a_blood_cup',
+    '525070843177598986': 'a_bulba',
+    '525333494683926528': 'a_Tremere_red1',
+    '525333561960693772': 'a_Tremere_colors',
+    '525338099480395776': 'a_Tremere_red2',
+    '525370411454824448': 'a_Tremere_pur1',
+    '525370985847717901': 'a_Tremere_pur2',
+    '525446674143772712': 'a_Tremere_colors2',
+    '527473236305379338': 'a_fire',
+    '527474422509207573': 'a_campfire',
+    '528132608631111681': 'a_newyear',
 }
 
 extra_em = {}
@@ -87,7 +120,8 @@ def e(name):
         return None
     if name in emojis:
         return emojis[name]
-    elif not C.is_test:
+    # elif not C.is_test:
+    else:
         log.jW('{e} there no emoji ' + name)
     return None
 
@@ -99,7 +133,8 @@ def e_str(name):
         return f':{em_name[name]}:'
     elif name in emojis:
         return emojis[name]
-    elif not C.is_test:
+    # elif not C.is_test:
+    else:
         log.jW('{e} there no emoji ' + name)
     return None
 
@@ -135,6 +170,7 @@ def prepare():
         C.users['Natali']: (':tea::chocolate_bar:', ),
         C.users['AyrinSiverna']: ('', ),
         C.users['miss Alex']: ('', ),
+        C.users['Buffy']: (other.rand_tableflip(), )
     }
     morn_to_add_sm = {
         C.users['Kuro']: ('tea',),
@@ -144,11 +180,12 @@ def prepare():
         C.users['cycl0ne']: ('p_jonesy', 'smiley_cat'),
         C.users['AyrinSiverna']: ('Logo_Toreador', 'heart', 'hearts', 'rose', 'tulip'),
         C.users['Doriana']: ('hugging', 'relaxed', 's_shchupalko0'),
-        C.users['CrimsonKing']: ('carrot', 's_shchupalko0'),
-        C.users['Vladislav Shrike']: ('punch', 'metal'),
+        C.users['CrimsonKing']: ('carrot', 'cucumber', 's_shchupalko0'),
+        C.users['Vladislav Shrike']: ('punch', 'metal', 'Logo_Brujah', ),
         C.users['miss Alex']: ('sgushchenka', 's_shchupalko3', 's_shchupalko1'),
         C.users['Samael']: 'lizard', C.users['Creol']: 'hugging',
         C.users['Hadley']: 'smiley', C.users['Soul']: 'coffee',
+        C.users['Lorkhan']: ('wave', 'Logo_Brujah', 'cowboy', )
     }
     for name in morn_to_add:
         morn_add[name] = (morn_to_add[name], ) if isinstance(morn_to_add[name], str) else tuple(morn_to_add[name])
@@ -159,11 +196,13 @@ def prepare():
 
 def save_em():
     special = {
-        'Natali': {'purple_heart', 'Ankh', 'Ankh_Toreador', 't_torik11', 't_torik21', 'Logo_Toreador', },
+        'Natali': {'purple_heart', 'Ankh', 't_torik21', 'Logo_Toreador', },
         'Doriana': {'black_heart', 'octopus', 'unicorn', 'Logo_Lasombra', },
         'Tony': {'p_Lacr', 'Logo_Ventrue', }, # 'ok_hand', 'thumbsup',
-        'Manf': {'m_draniki', 'm_bulba', 'star_and_crescent'},
-        'Hadley': {'Logo_Toreador', 'thumbsup'},
+        'Manf': {'m_draniki', 'm_bulba', 'star_and_crescent', },
+        'Hadley': {'Logo_Toreador', 'thumbsup', },
+        'Buffy': {'m_wafer', 's_bita', },
+        'Tilia': {'p_jonesy', 'logo_dementation', },
         # 'Kuro': {'point_up', 'Logo_Tremere', 'thumbsup'}, # for test
     }
     rand = {'t_jiznbol1', 't_jiznbol2', 'm_Tarkin_f', 'slight_smile', 'joy', 'laughing', 'rofl',
@@ -173,6 +212,7 @@ def save_em():
             'p_tetjaadmin', 't_ojwse', 'm_lopata'}
 
     for s in C.client.servers: #type: discord.Server
+        # log.jD(f'<emj> {s.name} check:')
         for em in s.emojis:  #type: discord.Emoji
             pre = 'a' if em.name.startswith('a_') else ''
             em_str = '<{1}:{0.name}:{0.id}>'.format(em, pre)
@@ -184,6 +224,9 @@ def save_em():
                 emojis[ems_id[em.id]] = em
                 extra_em[ems_id[em.id]] = em_str
                 # emojis['<:{0}:{1}>'.format(em.id, ems_id[em.id])] = ems_id[em.id]
+            else:
+                # log.p(f"'{em.id}': '{em.name}',")
+                pass
             if em.name not in emojis:
                 emojis[em.name] = em
                 extra_em[em.name] = em_str
