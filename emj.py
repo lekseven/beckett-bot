@@ -343,8 +343,11 @@ async def on_reaction_remove(reaction, user):
 
 
 async def on_message(message: discord.Message, beckett_mention):
-    prob = other.rand()
     author = message.author.id
+    if author in ram.ignore_users:
+        return
+
+    prob = other.rand()
 
     if message.channel.id == C.channels['stuff'] and (message.attachments or message.embeds):
         log.jD(f'emj.in_staff, prob = {prob}.')
