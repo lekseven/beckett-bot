@@ -187,11 +187,12 @@ def prepare():
         C.users['Hadley']: 'smiley', C.users['Soul']: 'coffee',
         C.users['Lorkhan']: ('wave', 'Logo_Brujah', 'cowboy', )
     }
-    for name in morn_to_add:
-        morn_add[name] = (morn_to_add[name], ) if isinstance(morn_to_add[name], str) else tuple(morn_to_add[name])
-    for name in morn_to_add_sm:
-        val = (morn_to_add_sm[name], ) if isinstance(morn_to_add_sm[name], str) else tuple(morn_to_add_sm[name])
-        morn_add[name] = morn_add.get(name, tuple()) + tuple((e_str(em) or '') for em in val)
+    # degradation
+    # for name in morn_to_add:
+    #     morn_add[name] = (morn_to_add[name], ) if isinstance(morn_to_add[name], str) else tuple(morn_to_add[name])
+    # for name in morn_to_add_sm:
+    #     val = (morn_to_add_sm[name], ) if isinstance(morn_to_add_sm[name], str) else tuple(morn_to_add_sm[name])
+    #     morn_add[name] = morn_add.get(name, tuple()) + tuple((e_str(em) or '') for em in val)
 
 
 def save_em():
@@ -286,7 +287,8 @@ async def on_reaction_add(reaction, user):
         except discord.Forbidden:
             log.jW("Bot haven't permissions here.")
 
-    if message.author == server.me or message.author == user:
+    # degradation
+    if True or message.author == server.me or message.author == user:
         return
 
     if user.id in name_em:

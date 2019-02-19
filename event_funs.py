@@ -224,7 +224,8 @@ async def on_member_update_u(before: discord.Member, after: discord.Member):
                 await other.set_game(after.game.name)
 
         user_g = user_games.pop(after.id, {'name': '', 'h': 0})
-        if other.rand() < 0.5 and (before.game and before.game.name and after.id not in ram.ignore_users and
+        # degradation
+        if False and other.rand() < 0.5 and (before.game and before.game.name and after.id not in ram.ignore_users and
                 people.was_writing(after.id, 48) and user_g['h'] >= TMR_IN_H):
             phr = com.get_t('game', user=f'<@{after.id}>', game=f"«{user_g['name']}»")
             com.write_msg(C.main_ch, phr)
@@ -248,7 +249,8 @@ async def on_member_update_u(before: discord.Member, after: discord.Member):
         else:
             log.I(f'<on_member_update> {{???}} {a_n} - avatar change, but there are no avatar_urls...')
 
-        if after.avatar_url and after.id not in ram.ignore_users and people.was_writing(after.id, 48):
+        # degradation
+        if False and after.avatar_url and after.id not in ram.ignore_users and people.was_writing(after.id, 48):
             phr = com.get_t('new_avatar', user=f'<@{after.id}>')
             com.write_msg(C.main_ch, phr)
 
@@ -279,7 +281,8 @@ async def on_member_update_u(before: discord.Member, after: discord.Member):
 
     if before.status != after.status or not smth_happend:
         people.online_change(after.id, after.status, force=before.status == after.status)
-        g_key = people.online_ev(after.id) if (after.id not in ram.ignore_users) else False
+        # degradation
+        g_key = False # people.online_ev(after.id) if (after.id not in ram.ignore_users) else False
         if g_key:
             gt_key = {'g_key': g_key, 'g_type': 0}
             phr = com.phrase_gt(gt_key, after.id)
@@ -547,19 +550,24 @@ def timer_quarter_h():
     try:
         log.D('+ Quarter hour timer event!')
         save()
-        for usr in user_games:
-            user_games[usr]['h'] += 1
-            g_name = user_games[usr]['name'].lower()
-            if (usr not in ram.ignore_users and user_games[usr]['h'] % TMR_IN_H == 0
-                    and all(word in g_name for word in VTMB)):
-                phr = com.get_t('vtmb', user=f'<@{usr}>')
-                com.write_msg(C.main_ch, phr)
+        # degradation
+        # _timer_check_games()
         timer_quarter_works += 1
         log.D('+ Timer event finished!')
         mn = 4 if timer_quarter_works % TMR_IN_H == 0 else 1
         log.p('------------------------------------- ' * mn)
     except Exception as e:
         other.pr_error(e, 'timer_quarter_h')
+
+
+def _timer_check_games():
+    for usr in user_games:
+        user_games[usr]['h'] += 1
+        g_name = user_games[usr]['name'].lower()
+        if (usr not in ram.ignore_users and user_games[usr]['h'] % TMR_IN_H == 0
+                and all(word in g_name for word in VTMB)):
+            phr = com.get_t('vtmb', user=f'<@{usr}>')
+            com.write_msg(C.main_ch, phr)
 
 
 def stop_half_min_timer():
