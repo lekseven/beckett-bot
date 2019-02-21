@@ -407,6 +407,14 @@ async def on_message(message: discord.Message, beckett_mention):
         #     log.jD('Like Tony chance 0.005')
         #     await C.client.add_reaction(message, e('ok_hand'))
 
+    elif author == C.users['AyrinSiverna']:
+        if beckett_mention and prob < 0.25:
+            log.jD('Like AyrinSiverna for Beckett chance 0.25')
+            pause_and_add(message, (e('Ankh_Sabbat'), e('t_torik21'), e('Logo_Toreador'), e('hearts')))
+        elif prob < 0.005:
+            log.jD('Like AyrinSiverna chance 0.005')
+            pause_and_add(message, e('Logo_Toreador'))
+
     elif author == C.users['Rainfall']:
         if beckett_mention and prob < 0.1:
             log.jD('Like Rainfall for Beckett chance 0.1')
