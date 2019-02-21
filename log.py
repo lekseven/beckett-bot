@@ -230,7 +230,13 @@ async def format_mess(msg, time=False, date=False, dbase=None):
         t_n = other.t2s()
         s_time = ('(from {0})'.format(t_m) if (time or (t_n[:-1] != t_m[:-1]) or
                                                (int(t_n[-1]) - int(t_m[-1]) > 1)) else '')
-        ch_name = ('#@' + str(msg.channel.user)) if msg.channel.is_private else str(msg.channel.name)
+        if msg.channel.is_private:
+            ch_name = '@#' + str(msg.channel.user)
+        elif msg.channel not in C.open_channels:
+            ch_name = '##' + str(msg.channel.name)
+        else:
+            ch_name = '#' + str(msg.channel.name)
+
         t = ('(from {0})'.format(other.t2s(msg.timestamp, '%d|%m|%y %T')) if date else s_time)
         cont = msg.content or (('≤System≥ ' + msg.system_content) if msg.system_content else '')
         cont = cont.replace('\n', '\n\t')  # type: str
@@ -292,7 +298,10 @@ async def on_mess(msg, kind):
         if C.is_test and msg.server.id == C.vtm_server.id:
             return False
         if msg.server.id != C.prm_server.id:
-            s_server = '<{0}>'.format(msg.server.name)
+            if msg.server.id not in C.usual_servers:
+                s_server = '<${0}>'.format(msg.server.name)
+            else:
+                s_server = '<{0}>'.format(msg.server.name)
 
     time = (kind != 'on_message')
     save_all_links = (kind == 'on_message_delete')

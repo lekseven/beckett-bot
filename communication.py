@@ -410,12 +410,12 @@ def phrase_gt(gt=None, uid=None):
     str_weather = ''
     if gt['g_key'] == 'g_morn' and uid in emj.morn_add:
         phr += ' ' + other.choice(emj.morn_add[uid])
-        if uid == C.users['Natali']:
-            try:
-                log.I('try get_weather for Natali')
-                str_weather = '\n:newspaper: ' + get_weather()
-            except Exception as e:
-                other.pr_error(e, 'get_weather')
+    if uid == C.users['Natali']:
+        try:
+            log.I('try get_weather for Natali')
+            str_weather = '\n:newspaper: ' + get_weather()
+        except Exception as e:
+            other.pr_error(e, 'get_weather')
     return other.name_phr(uid, phr) + str_weather
 
 

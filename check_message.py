@@ -127,8 +127,7 @@ def _do_reaction(msg:Msg) -> (str, str):
     beckett_reference = bool(C.beckett_refs.intersection(msg.words))
     beckett_mention = bool(C.beckett_names.intersection(msg.words))
     beckett = beckett_reference or beckett_mention
-    # degradation
-    # other.later_coro(0, emj.on_message(msg.message, beckett))
+    other.later_coro(0, emj.on_message(msg.message, beckett))
 
     if (ram.mute_channels.intersection({msg.channel.id, 'all'})
             or msg.author in ram.ignore_users or msg.channel.id in C.ignore_channels):
@@ -217,14 +216,12 @@ def _beckett_m_type(msg)->str:
         return 'wlc'
     elif msg.words.intersection(data.sm_resp['hi_plus']):
         return 'hi_plus'
-    # degradation
-    # elif msg.words.intersection(data.sm_resp['fun_smiles']):
-    #     return 'fun_smiles'
+    elif msg.words.intersection(data.sm_resp['fun_smiles']):
+        return 'fun_smiles'
     elif msg.words.intersection(data.sm_resp['bye']):
         return 'bye'
-    # degradation
-    # elif msg.words.intersection(data.sm_resp['check_like']) and not no:
-    #     return 'love'
+    elif msg.words.intersection(data.sm_resp['check_like']) and not no:
+        return 'love'
     elif 'любимый клан' in msg.text:
         if other.rand() > 0.09:
             return 'apoliticality'

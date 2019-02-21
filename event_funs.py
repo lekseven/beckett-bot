@@ -550,8 +550,7 @@ def timer_quarter_h():
     try:
         log.D('+ Quarter hour timer event!')
         save()
-        # degradation
-        # _timer_check_games()
+        _timer_check_games()
         timer_quarter_works += 1
         log.D('+ Timer event finished!')
         mn = 4 if timer_quarter_works % TMR_IN_H == 0 else 1

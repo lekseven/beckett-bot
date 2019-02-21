@@ -60,9 +60,12 @@ users = {
 servers = {
     'vtm': vtm_server,
     'test': tst_server,
+    'Teahouse': '484780257103183883',
     'Sabbat': '425523547297808384',
     'Tilia': '493452777519841280',
 }
+
+usual_servers = {servers[key] for key in ('vtm', 'test', 'Teahouse')}
 
 channels = {
     'flood': '398645007944384513',
@@ -70,12 +73,12 @@ channels = {
     'rules': '519253006726987780',    #'419207215472181268',
     'ask': '398728556424986624',
     '4-sop': '398728854534881280',
-    'counsel': '417777460772470785',
     'bookshelf': '459295179837407242',
     'stuff': '411647652246323200',
     'test': '419968987112275979',
     'rpg': '458975748611375104',
     #
+    'counsel': '417777460772470785',
     'primogens': '417777460772470785',
     # clan
     'chantry': '402222682403504138',
@@ -107,6 +110,7 @@ channels = {
     #
     'Tilia_main': '493452778145054731',
 }
+open_channels = {channels[key] for key in ('flood', 'f_wood', 'rules', 'ask', '4-sop', 'bookshelf', 'stuff', 'rpg')}
 
 superusers = {users['Kuro'], users['Magdavius'], }  # users['Natali'],  # Manf & Doriana checked by roles
 

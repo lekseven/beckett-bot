@@ -187,12 +187,11 @@ def prepare():
         C.users['Hadley']: 'smiley', C.users['Soul']: 'coffee',
         C.users['Lorkhan']: ('wave', 'Logo_Brujah', 'cowboy', )
     }
-    # degradation
-    # for name in morn_to_add:
-    #     morn_add[name] = (morn_to_add[name], ) if isinstance(morn_to_add[name], str) else tuple(morn_to_add[name])
-    # for name in morn_to_add_sm:
-    #     val = (morn_to_add_sm[name], ) if isinstance(morn_to_add_sm[name], str) else tuple(morn_to_add_sm[name])
-    #     morn_add[name] = morn_add.get(name, tuple()) + tuple((e_str(em) or '') for em in val)
+    for name in morn_to_add:
+        morn_add[name] = (morn_to_add[name], ) if isinstance(morn_to_add[name], str) else tuple(morn_to_add[name])
+    for name in morn_to_add_sm:
+        val = (morn_to_add_sm[name], ) if isinstance(morn_to_add_sm[name], str) else tuple(morn_to_add_sm[name])
+        morn_add[name] = morn_add.get(name, tuple()) + tuple((e_str(em) or '') for em in val)
 
 
 def save_em():
@@ -287,8 +286,7 @@ async def on_reaction_add(reaction, user):
         except discord.Forbidden:
             log.jW("Bot haven't permissions here.")
 
-    # degradation
-    if True or message.author == server.me or message.author == user:
+    if message.author == server.me or message.author == user:
         return
 
     if user.id in name_em:
@@ -353,17 +351,17 @@ async def on_message(message: discord.Message, beckett_mention):
 
     if message.channel.id == C.channels['stuff'] and (message.attachments or message.embeds):
         log.jD(f'emj.in_staff, prob = {prob}.')
-        if author == C.users['Natali'] and prob < 0.9:
+        if author == C.users['Natali'] and prob < 0.5:
             log.jD('Like Natali in staff')
             pause_and_add(message, ('purple_heart', 'heart_eyes', 'heart_eyes_cat', 'heartpulse'))
-        elif author in {C.users['Doriana'], C.users['Tilia'], C.users['Buffy']} and prob < 0.4:
+        elif author in {C.users['Doriana'], C.users['Tilia'], C.users['Buffy']} and prob < 0.2:
             log.jD('Like Doriana or Tilia or Buffy in staff')
             pause_and_add(message, ('heart', 'hearts', 'heart_eyes', 'black_heart'))
-        elif author in {C.users['Hadley'], C.users['cycl0ne'], C.users['Magdavius']} and prob < 0.4:
+        elif author in {C.users['Hadley'], C.users['cycl0ne'], C.users['Magdavius']} and prob < 0.2:
             log.jD('Like Hadley or cycl0ne or Magdavius in staff')
             pause_and_add(message, ('thumbsup', 'ok_hand', 'heart_eyes_cat'))
 
-    if prob > 0.5:
+    if prob < 0.01:
         for sm in ('((', 'Т_Т', 'T_T', ':С', ':C', '😭', '😢', '😣', '😖', '😫', '😩', 's_blood_cry'):
             if sm in message.content:
                 log.jD(f'Add jiznbol for {sm}.')
@@ -377,33 +375,33 @@ async def on_message(message: discord.Message, beckett_mention):
                     break
 
     if author == C.users['Natali']:
-        if beckett_mention:
+        if beckett_mention and prob < 0.25:
             log.jD('Like Natali for Beckett')
             pause_and_add(message, (*('purple_heart',) * 5, 'relaxed', 'blush',
                                                 'kissing_closed_eyes', 'kissing_heart', 'slight_smile'))
-        elif prob < 0.01:
-            log.jD('Like Natali chance 0.01')
+        elif prob < 0.005:
+            log.jD('Like Natali chance 0.005')
             pause_and_add(message, ('purple_heart', 'heart_eyes', 'heart_eyes_cat'))
 
     elif author == C.users['Doriana']:
-        if beckett_mention and prob < 0.1:
-            log.jD('Like Doriana for Beckett chance 0.1')
+        if beckett_mention and prob < 0.25:
+            log.jD('Like Doriana for Beckett chance 0.25')
             pause_and_add(message, e('octopus'))
         elif prob < 0.005:
             log.jD('Like Doriana chance 0.005')
             pause_and_add(message, e('black_heart'))
 
     elif author == C.users['Hadley']:
-        if beckett_mention and prob < 0.1:
-            log.jD('Like Hadley for Beckett chance 0.1')
+        if beckett_mention and prob < 0.25:
+            log.jD('Like Hadley for Beckett chance 0.25')
             pause_and_add(message, (e_str('a_Toreador_light'), e_str('a_Toreador_wave')))
         elif prob < 0.005:
             log.jD('Like Hadley chance 0.005')
             pause_and_add(message, e('Logo_Toreador'))
 
     elif author == C.users['Tony']:
-        if beckett_mention and prob < 0.1:
-            log.jD('Like Tony for Beckett chance 0.1')
+        if beckett_mention and prob < 0.001:
+            log.jD('Like Tony for Beckett chance 0.001')
             pause_and_add(message, e('Logo_Ventrue'))
         # elif prob < 0.005:
         #     log.jD('Like Tony chance 0.005')
