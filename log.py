@@ -232,7 +232,7 @@ async def format_mess(msg, time=False, date=False, dbase=None):
                                                (int(t_n[-1]) - int(t_m[-1]) > 1)) else '')
         if msg.channel.is_private:
             ch_name = '@#' + str(msg.channel.user)
-        elif msg.channel not in C.open_channels:
+        elif msg.channel.id not in C.open_channels:
             ch_name = '##' + str(msg.channel.name)
         else:
             ch_name = '#' + str(msg.channel.name)
