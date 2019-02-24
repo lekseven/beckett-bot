@@ -126,7 +126,7 @@ def _do_reaction(msg:Msg) -> (str, str):
     msg.prepare2()
     beckett_reference = bool(C.beckett_refs.intersection(msg.words))
     beckett_mention = bool(C.beckett_names.intersection(msg.words))
-    beckett = beckett_reference or beckett_mention
+    beckett = beckett_reference or beckett_mention or msg.personal
     other.later_coro(0, emj.on_message(msg.message, beckett))
 
     if (ram.mute_channels.intersection({msg.channel.id, 'all'})
@@ -175,7 +175,7 @@ def _do_reaction(msg:Msg) -> (str, str):
                 if msg.admin:
                     return 'rand_tableflip', other.rand_tableflip()
                 elif msg.channel.id == C.channels['bar']:
-                    if {msg.author}.intersection({C.users['Buffy'], C.users['Tilia'], }) or prob < 0.01:
+                    if C.roles['Primogens'] in msg.roles or prob < 0.01:
                         if other.rand() < 0.2:
                             return 'tableflip_phrase', com.get_t('tableflip_phrase')
                         else:
@@ -201,7 +201,7 @@ def _do_reaction(msg:Msg) -> (str, str):
             if ans:
                 return m_type, ans
 
-        if beckett_reference or (beckett_mention and other.rand() < 0.25):
+        if beckett_reference or (beckett and other.rand() < 0.25):
             m_type = 'For_Prince' if msg.author == C.users['Natali'] and prob < 0.4 else 'beckett'
             ans_phr = com.get_t(m_type)
             return m_type, ans_phr

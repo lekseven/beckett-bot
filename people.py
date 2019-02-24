@@ -242,7 +242,7 @@ class Gn:
             if self.role != '0':
                 role = other.find(C.vtm_server.roles, id=self.role)
                 if role:
-                    C.loop.create_task(C.client.add_roles(m, *[role]))
+                    other.later_coro(5, C.client.add_roles(m, *[role]))
         self.status = 'del'
         usr = Usr(self.id, name=nm, karma=self.karma, status='add', last_m=other.get_sec_total())
         if res:

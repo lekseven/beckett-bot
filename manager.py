@@ -55,6 +55,9 @@ class Msg:
 
     def prepare2(self, fun=''):
         text = self.text.replace(fun, '')
+        em_text = emj.em_set.intersection(text)
+        for em in em_text:
+            text = text.replace(em, ' ' + em + ' ')
         self.args = ([fun] or []) + text.translate(C.punct2space).split()
         self.words = set(self.args).difference({'', ' '})
 
@@ -317,7 +320,8 @@ def just_embrace_say(user, clan_name, get_text=False):
         return False
 
     clan_users = set()
-    pander = (clan_name == 'Noble Pander')
+    pander = (clan_name == 'Pander')
+    sir = None
     if not pander:
         for mem in C.client.get_all_members():
             if other.find(mem.roles, id=C.roles[clan_name]) and mem.id != user.id:
@@ -338,6 +342,7 @@ def just_embrace_say(user, clan_name, get_text=False):
         return text
     else:
         com.write_msg(C.main_ch, text)
+        return sir
 
 
 # Roll commands

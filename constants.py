@@ -75,8 +75,11 @@ channels = {
     '4-sop': '398728854534881280',
     'bookshelf': '459295179837407242',
     'stuff': '411647652246323200',
+    'music': '474650076241854474',
     'test': '419968987112275979',
     'rpg': '458975748611375104',
+    'concept': '531211211514183702',
+    'tender': '546992644258136065',
     #
     'counsel': '417777460772470785',
     'primogens': '417777460772470785',
@@ -91,10 +94,12 @@ channels = {
     'independent': '402224715844026380',
     'sabbat': '402224499480854548',
     # voice channels
-    'voice': '422157208017436673',
-    'garden': '423559892759085072',
+    'voice': '536959039456935941',
+    'radio': '536959145895526410',
     'ingame': '460752648967290900',
-    'v_sabbat': '421986369783463946',
+    'v_primogens': '548969776672931861',
+    'v_sabbat': '523086022498582528',
+    'nwo': '531959106659942435',
     # test channels
     'beckett': '459193166185234444',
     'vtm_news': '453172109460635658',
@@ -110,7 +115,8 @@ channels = {
     #
     'Tilia_main': '493452778145054731',
 }
-open_channels = {channels[key] for key in ('flood', 'f_wood', 'rules', 'ask', '4-sop', 'bookshelf', 'stuff', 'rpg')}
+open_channels = {channels[key] for key in ('flood', 'f_wood', 'rules', 'ask', '4-sop',
+                                           'bookshelf', 'stuff', 'rpg', 'music', 'concept', 'tender')}
 
 superusers = {users['Kuro'], users['Magdavius'], }  # users['Natali'],  # Manf & Doriana checked by roles
 
@@ -133,7 +139,7 @@ roles = {'Prince': '398223824514056202',
          'Scourge': '420621473036632064',
          'Seneschal': '398244393003384843',
          'Harpy': '419657934293827593',
-         'Primogens and Emissary': '417776802535047178',
+         'Primogens': '417776802535047178',
          'Malkavian': '398972693480996886',
          'Toreador': '398974249659924480',
          'Brujah': '398974429012426762',
@@ -147,7 +153,7 @@ roles = {'Prince': '398223824514056202',
          'Giovanni': '402141570389770262',
          'Tzimisce': '398971806695817219',
          'Lasombra': '398973052475408389',
-         'Noble Pander': '415642642597019658',
+         'Pander': '415642642597019658',
          'Cappadocian': '421278030372012043',
          'Lasombra Antitribu': '420599142218465292',
          'Котичек': '510161887342624798',
@@ -167,14 +173,33 @@ role_by_id = {value: key for (key, value) in roles.items()}
 
 clan_names = {'Malkavian', 'Toreador', 'Brujah', 'Ventrue', 'Nosferatu', 'Gangrel', 'Tremere',
               'Ravnos', 'Followers of Set', 'Assamite', 'Giovanni',
-              'Tzimisce', 'Lasombra', 'Noble Pander',
+              'Tzimisce', 'Lasombra', 'Pander',
               'Cappadocian', 'Lasombra Antitribu',
               # 'Котичек', 'Namaru',
               # 'Gargoyle',  # test Server
               }
 clan_ids = {key for key in role_by_id if role_by_id[key] in clan_names}
 #clan_roles = set(roles[i] for i in clan_names)
-sabbat_clans = {'Tzimisce', 'Lasombra', 'Noble Pander'}
+sabbat_clans = {'Tzimisce', 'Lasombra', 'Pander'}
+clan_channels = {
+    roles['Malkavian']: channels['malknet'],
+    roles['Toreador']: channels['gallery'],
+    roles['Brujah']: channels['bar'],
+    roles['Ventrue']: channels['parlor'],
+    roles['Nosferatu']: channels['shreknet'],
+    roles['Gangrel']: channels['gangrel_clan'],
+    roles['Tremere']: channels['chantry'],
+    roles['Ravnos']: channels['independent'],
+    roles['Followers of Set']: channels['independent'],
+    roles['Assamite']: channels['independent'],
+    roles['Giovanni']: channels['independent'],
+    roles['Cappadocian']: channels['independent'],
+    roles['Tzimisce']: channels['sabbat'],
+    roles['Lasombra']: channels['sabbat'],
+    roles['Pander']: channels['sabbat'],
+    roles['Lasombra Antitribu']: channels['gallery'],
+    # roles['Gargoyle']: channels['test_mode_only'],
+}
 #sabbat_roles = set(roles[i] for i in sabbat_clans)
 not_sir = {'235088799074484224'}  # Радио "Harpy" 66.6FM
 voice_alert = {users['Dummy'], users['Natali'],}

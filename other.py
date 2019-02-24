@@ -124,11 +124,11 @@ def s2s(total_sec):
     return ', '.join(s) if s else 'flash'
 
 
-def sec2ts(total_sec, frm="%H:%M:%S"):
+def sec2ts(total_sec, frm="%H:%M:%S", check_utc=True):
     if total_sec == 0:
         return '0'
     timedata = datetime.datetime.fromtimestamp(int(total_sec))
-    return t2utc(timedata).strftime(frm)
+    return (t2utc(timedata) if check_utc else timedata).strftime(frm)
 
 
 async def get_ban_user(server, s_name):

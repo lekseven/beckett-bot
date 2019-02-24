@@ -19,6 +19,7 @@ timer_quarter_h_handle = None
 timer_half_min_handle = None
 voice_alert_msg = {}
 voice_alert_ids = {}
+not_embrace = set()
 timer_quarter_works = 0
 TMR_IN_H = 4
 
@@ -92,16 +93,7 @@ async def on_voice_state_update_u(before, after):
             log.D('<voice> Note event')
             await other.type2sent(after, note)
 
-    if after.id in C.voice_alert:
-        com.rem_from_queue(C.main_ch.id, voice_alert_ids.setdefault(after.id, []))
-        voice_alert_ids.pop(after.id)
-        if after.id in voice_alert_msg:
-            while voice_alert_msg[after.id]:
-                try:
-                    await C.client.delete_message(voice_alert_msg[after.id].pop())
-                except Exception as e:
-                    other.pr_error(e, 'on_voice_state_update_u', 'delete_message error')
-
+    await _del_voice_alert(after.id)
     user = None
     ch = None
     if C.is_test or (after.id in C.voice_alert and v_new and len(v_new.voice_members) == 1):
@@ -109,6 +101,7 @@ async def on_voice_state_update_u(before, after):
         ch = v_new # type: discord.Channel
     elif v_old and len(v_old.voice_members) == 1 and v_old.voice_members[0].id in C.voice_alert:
         user = v_old.voice_members[0]
+        await _del_voice_alert(user.id)
         ch = v_old # type: discord.Channel
 
     if user and ch:
@@ -129,6 +122,19 @@ async def on_voice_state_update_u(before, after):
             # mess = await C.client.send_message(C.main_ch, com.voice_event(user, ch, s_call))
             # voice_alert_msg[user.id] = mess
             # await other.type2sent(C.main_ch, com.voice_event(user, ch, s_call))
+
+
+async def _del_voice_alert(uid):
+    if uid not in C.voice_alert:
+        return
+    com.rem_from_queue(C.main_ch.id, voice_alert_ids.setdefault(uid, []))
+    voice_alert_ids.pop(uid)
+    if uid in voice_alert_msg:
+        while voice_alert_msg[uid]:
+            try:
+                await C.client.delete_message(voice_alert_msg[uid].pop())
+            except Exception as e:
+                other.pr_error(e, 'on_voice_state_update_u', 'delete_message error')
 
 
 async def on_voice_state_update_o(server, before, after):
@@ -165,6 +171,7 @@ async def on_member_join_u(member):
             timer_quarter_h()
 
     if people.Usr.check_new(member):
+        not_embrace.add(uid)
         await log.pr_news('{0} ({0.mention}) comeback!'.format(member))
         await C.client.send_message(C.main_ch, com.comeback_msg(uid, people.time_out(uid), people.clan(uid)))
     else:
@@ -263,20 +270,26 @@ async def on_member_update_u(before: discord.Member, after: discord.Member):
         if new_roles:
             log.I(f'<on_member_update> {a_n} get role(s): {", ".join(new_roles)}.')
             new_clan_roles = C.clan_ids.intersection({r.id for r in after.roles if r not in before.roles})
-            if len(before.roles) == 1 and new_clan_roles:
-                clan = C.role_by_id[other.choice(new_clan_roles)]
-                log.jI(f'<on_member_update> {a_n} get new clan role "{clan}" => call do_embrace.')
-                manager.just_embrace_say(after, clan_name=clan)
-                # com.write_msg(C.main_ch, text)
-            elif len(before.roles) > 1 and C.roles['Noble Pander'] in new_clan_roles:
+            if after.id not in not_embrace and len(before.roles) == 1 and new_clan_roles:
+                clan_id = other.choice(new_clan_roles)
+                clan_name = C.role_by_id[clan_id]
+                log.jI(f'<on_member_update> {a_n} get new clan role "{clan_name}" => call do_embrace.')
+                sir_id = manager.just_embrace_say(after, clan_name=clan_name)
+                if sir_id:
+                    if clan_id in C.clan_channels:
+                        clan_ch = C.clan_channels[clan_id]
+                        phr = com.get_t(all_keys=('clan_welcome', clan_ch), user=f'<@{after.id}>', sir=f'<@{sir_id}>')
+                        com.write_msg(clan_ch, phr)
+
+            elif len(before.roles) > 1 and C.roles['Pander'] in new_clan_roles:
                 log.jI(f'<on_member_update> {a_n} go to Pander => delete other clan roles if it\'s exist.')
-                del_clans_id = C.clan_ids.difference({C.roles['Noble Pander']})
+                del_clans_id = C.clan_ids.difference({C.roles['Pander']})
                 rem_roles = {r for r in after.roles if r.id in del_clans_id}
                 if rem_roles:
                     await C.client.remove_roles(after, *rem_roles)
                     str_rem_r = f"<@&{'>, <@&'.join(r.id for r in rem_roles)}>"
                     phr = com.get_t('to_Pander', user=f'<@{after.id}>',
-                                    old_clans=str_rem_r, pander=f"<@&{C.roles['Noble Pander']}>")
+                                    old_clans=str_rem_r, pander=f"<@&{C.roles['Pander']}>")
                     com.write_msg(C.main_ch, phr)
 
     if before.status != after.status or not smth_happend:
@@ -514,8 +527,9 @@ async def load():
     t1 = os__getmtime('data_to_process.py')
     t2 = os__getmtime('data_to_use.py')
     if t1 > t2:
-        log.W(f'Date of "data_to_process.py" is {other.sec2ts(t1, "%d/%m/%y %H:%M:%S")}, '
-              f'when "data_to_use.py" from {other.sec2ts(t2, "%d/%m/%y %H:%M:%S")} => try to recreate "data_to_use".')
+        log.W(f'Date of "data_to_process.py" is {other.sec2ts(t1, "%d/%m/%y %H:%M:%S", check_utc=False)}, '
+              f'when "data_to_use.py" from {other.sec2ts(t2, "%d/%m/%y %H:%M:%S", check_utc=False)} '
+              f'=> try to recreate "data_to_use".')
         com.make_d2u()
     load_texts_used()
     load_mem()

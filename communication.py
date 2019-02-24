@@ -195,7 +195,7 @@ def make_d2u():
     data_used = []
     saved_args = ('data_used', 'good_time', 'resp_keys', 'resp_values', 'resp_data')
     l_args = locals()
-    time_upd = other.t2s(frm="%x %X")
+    time_upd = other.t2s(frm="%d/%m/%y %H:%M:%S")
     with open('data_to_use.py', "w") as file:
         print('"""\nThis document was created from data_to_process.py by command !data_process'
               f'\nDon\'t edit it by yourself.\nCreated: {time_upd}.\n"""\n\n', file=file)
@@ -515,6 +515,16 @@ def voice_note(user):
 
 
 def write_msg(ch, text=None, emb=None, extra=0, save_obj=None, fun:callable=None, a_fun:callable=None):
+
+    if not text and not emb:
+        return ''
+
+    if isinstance(ch, str):
+        ch_name = ch
+        ch = other.get_channel(ch_name)
+        if not ch:
+            log.W(f"<write_msg> can't find channel {ch_name}.")
+            return ''
 
     if text is None:
         ti, tn = 1, 0
