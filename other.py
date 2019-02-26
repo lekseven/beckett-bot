@@ -537,3 +537,14 @@ def uname(memb:discord.Member):
 
 def deepcopy(o):
     return copy.deepcopy(o)
+
+
+def s_in_s(s_child, s_parent, all=False):
+    for s in s_child:
+        if s in s_parent:
+            if not all:
+                return s
+        else:
+            if all:
+                return False
+    return all

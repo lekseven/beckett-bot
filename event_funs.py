@@ -14,6 +14,7 @@ import emj
 import people
 import manager
 import log
+import data
 
 timer_quarter_h_handle = None
 timer_half_min_handle = None
@@ -96,15 +97,15 @@ async def on_voice_state_update_u(before, after):
     await _del_voice_alert(after.id)
     user = None
     ch = None
-    if C.is_test or (after.id in C.voice_alert and v_new and len(v_new.voice_members) == 1):
+    if C.is_test or (after.id in C.voice_alert and v_new):
         user = after
         ch = v_new # type: discord.Channel
-    elif v_old and len(v_old.voice_members) == 1 and v_old.voice_members[0].id in C.voice_alert:
+    elif v_old and v_old.voice_members[0].id in C.voice_alert:
         user = v_old.voice_members[0]
         await _del_voice_alert(user.id)
         ch = v_old # type: discord.Channel
 
-    if user and ch:
+    if user and ch and len(ch.voice_members) == 1 and not other.s_in_s(('radio', 'радио'), ch.name.lower()):
         log.D('<voice> Event to @here')
         every_prm = ch.overwrites_for(ch.server.default_role)
         if every_prm.connect or (every_prm.connect is None and ch.server.default_role.permissions.connect):
@@ -534,8 +535,7 @@ async def load():
     load_texts_used()
     load_mem()
     await people.get() # check=(not C.is_test)
-    pass
-    pass
+    _check_day_ev()
 
 
 def save():
@@ -599,8 +599,13 @@ def start_half_min_timer():
 def timer_half_min():
     start_half_min_timer()
     try:
+        now = other.get_now()
+        sec_total = int(now.timestamp())
+        if now.hour == 0 and now.minute == 0:
+            log.I('[=== New day! ===]')
+            _check_day_ev(now)
         for uid, user in ram.silence_users.items():
-            if other.get_sec_total() > user['time']:
+            if sec_total > user['time']:
                 other.later_coro(1, manager.silence_end(uid))
                 other.later(15, timer_quarter_h)
     except Exception as e:
@@ -649,3 +654,39 @@ async def cmd_people_time_sync():
     await people.time_sync()
     log.jD('- people.time_sync done, save mem')
     save_mem()
+
+
+# ev = {months: {days: events}} # keys:int
+day_events = {key:{} for key in range(1,13)}
+day_events[1][1] = C.events['New Year']
+day_events[2][14] = C.events['Valentine\'s Day']
+day_events[3][8] = C.events['8 March']
+day_events[10][31] = C.events['Halloween']
+# for test
+day_events[2][27] = (C.events['Test2'], C.users['Dummy'])
+day_events[2][28] = C.events['Test']
+day_events[3][2] = C.events['Test2']
+
+
+def _check_day_ev(now=None):
+    if not now:
+        now = other.get_now()
+
+    for ev in data.day_events:
+        if ev in C.events_name:
+            log.jI(f'<Day event> {C.events_name[ev]} finished.')
+        elif ev in C.usernames:
+            log.jI(f'<Day event> {C.usernames[ev]} birthday finished.')
+
+    data.day_events = set()
+    ev = day_events.get(now.month, {}).get(now.day, ())
+    if isinstance(ev, str) or isinstance(ev, int):
+        ev = (ev,)
+    data.day_events.update(ev)
+
+    for ev in data.day_events:
+        if ev in C.events_name:
+            log.jI(f'<Day event> Today is {C.events_name[ev]}!')
+        elif ev in C.usernames:
+            log.jI(f'<Day event> Today is {C.usernames[ev]} birthday!')
+            com.write_msg(C.users['Kuro'], f'<Day event> Today is <@{ev}> birthday!')

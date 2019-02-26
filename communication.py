@@ -521,9 +521,9 @@ def write_msg(ch, text=None, emb=None, extra=0, save_obj=None, fun:callable=None
 
     if isinstance(ch, str):
         ch_name = ch
-        ch = other.get_channel(ch_name)
+        ch = other.get_channel(ch_name) or other.find_user(ch_name)
         if not ch:
-            log.W(f"<write_msg> can't find channel {ch_name}.")
+            log.W(f"<write_msg> can't find channel or user {ch_name}.")
             return ''
 
     if text is None:

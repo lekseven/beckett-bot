@@ -18,10 +18,11 @@ class Msg:
 
         :type message: discord.Message
         """
-        self.author = message.author.id
-        self.member = C.vtm_server.get_member(self.author)
+        self.auid = message.author.id
+        self.author = message.author
+        self.member = C.vtm_server.get_member(self.auid)
         self.personal = not message.server
-        self.cmd_server = ((self.author in ram.cmd_server and C.client.get_server(ram.cmd_server[self.author])) or
+        self.cmd_server = ((self.auid in ram.cmd_server and C.client.get_server(ram.cmd_server[self.auid])) or
                            (C.prm_server if self.personal else message.server))
         self.server_id = None if self.personal else message.server.id
         self.is_vtm = self.server_id == C.vtm_server.id
@@ -32,21 +33,22 @@ class Msg:
         self.args = []
         self.words = set()
         self.channel = message.channel
+        self.chid = message.channel.id
         self.roles = {role.id for role in self.member.roles[1:]} if (self.member and self.is_vtm) else set()
-        self.prince = self.author == C.users['Natali']
-        self.super = self.author in C.superusers
+        self.prince = self.auid == C.users['Natali']
+        self.super = self.auid in C.superusers
         self.admin = self.super or self.prince or self.roles.intersection({C.roles['Sheriff'], C.roles['Scourge']})
-        self.torpor = (not self.prince and self.author in ram.torpor_users and (
-                self.channel.id in ram.torpor_users[self.author] or 'All' in ram.torpor_users[self.author]))
-        self.cmd_ch = ram.cmd_channels.get(self.author, set())
-        self.rep_ch = ram.rep_channels.get(self.author, set())
-        self.gt = people.get_gt(self.author)
+        self.torpor = (not self.prince and self.auid in ram.torpor_users and (
+                self.channel.id in ram.torpor_users[self.auid] or 'All' in ram.torpor_users[self.auid]))
+        self.cmd_ch = ram.cmd_channels.get(self.auid, set())
+        self.rep_ch = ram.rep_channels.get(self.auid, set())
+        self.gt = people.get_gt(self.auid)
 
         self._after_init()
 
     def _after_init(self):
         if self.is_vtm:
-            people.set_last_m(self.author)
+            people.set_last_m(self.auid)
 
     def prepare(self, fun=''):
         text = self.original[len('!' + fun + ' '):]  #self.text.replace('!' + fun + ' ', '')
@@ -156,10 +158,10 @@ class Msg:
     def check_good_time(self, beckett):
         gt_key = com.f_gt_key(self.original, self.text, self.words.copy(), beckett)
         if gt_key:
-            if people.gt_passed_for(self.author, gt_key['g_key'], h=18):
-                phr = com.phrase_gt(gt_key, self.author)
+            if people.gt_passed_for(self.auid, gt_key['g_key'], h=18):
+                phr = com.phrase_gt(gt_key, self.auid)
                 if phr:
-                    people.set_gt(self.author, gt_key['g_key'])
+                    people.set_gt(self.auid, gt_key['g_key'])
                     return phr
             return ''
         return False

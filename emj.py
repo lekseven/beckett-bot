@@ -1,6 +1,7 @@
 import discord
 
-from data_emoji import emojis
+from data_emoji import emojis, emojis_long, emojis_color
+import data
 import constants as C
 import local_memory as ram
 import other
@@ -110,7 +111,7 @@ rand_em = set()
 name_em = {}
 em_set = set()
 em_name = {}
-hearts = {'❤', '💛', '💚', '💙', '💜', '❣', '💕', '💞', '💓', '💗', '💖', '💘', '💝', '💟', '♥', } # '💔',
+hearts = data.hearts
 
 morn_add = {}
 
@@ -124,6 +125,15 @@ def e(name):
     else:
         log.jW('{e} there no emoji ' + name)
     return None
+
+
+def e_or_s(name):
+    if not isinstance(name, str):
+        return name
+    if name in emojis:
+        return emojis[name]
+    else:
+        return name
 
 
 def e_str(name):
@@ -152,9 +162,23 @@ def em2text(text):
     return text
 
 
+def get_em_names(text:str):
+    names = set()
+    txt = text
+    for em in emojis_long:
+        if em in txt:
+            names.add(em)
+            txt = txt.replace(em, '')
+    names.update(em_set.intersection(txt))
+    dct_names = {text.find(name):name for name in names}
+    names_order = [dct_names[i] for i in sorted(dct_names)]
+    return names_order
+
+
 def prepare():
     log.I('Prepare emj')
     save_em()
+    emojis_long.update({(em + sk) for sk in skins[1:] for em in emojis_color})
     for name in emojis:
         em_name[emojis[name]] = name
         em_set.add(emojis[name])
@@ -179,7 +203,7 @@ def prepare():
         C.users['Tilia']: (*('sun_with_face',) * 3, 'm_Tilia_fase', 'm_wafer', 'smiley_cat', 'sgushchenka'),
         C.users['cycl0ne']: ('p_jonesy', 'smiley_cat'),
         C.users['AyrinSiverna']: ('Logo_Toreador', 'heart', 'hearts', 'rose', 'tulip'),
-        C.users['Doriana']: ('hugging', 'relaxed', 's_shchupalko0'),
+        C.users['Doriana']: ('hugging', 'relaxed', 's_shchupalko0', 'black_heart'),
         C.users['CrimsonKing']: ('carrot', 'cucumber', 's_shchupalko0'),
         C.users['Vladislav Shrike']: ('punch', 'metal', 'Logo_Brujah', ),
         C.users['miss Alex']: ('sgushchenka', 's_shchupalko3', 's_shchupalko1'),
@@ -217,6 +241,7 @@ def save_em():
             pre = 'a' if em.name.startswith('a_') else ''
             em_str = '<{1}:{0.name}:{0.id}>'.format(em, pre)
             extra_em[em_str] = em_str
+            emojis_long.add(em_str)
             if pre:
                 extra_em[str(em)] = em_str
                 anim_em[str(em)] = em
@@ -230,6 +255,7 @@ def save_em():
             if em.name not in emojis:
                 emojis[em.name] = em
                 extra_em[em.name] = em_str
+            emojis[em_str] = em
             emojis[em.id] = em
             extra_em[em.id] = em_str
             # if not C.is_test:
@@ -270,14 +296,19 @@ async def on_reaction_add(reaction, user):
     message = reaction.message # type: discord.Message
     emoji = reaction.emoji # type: discord.Emoji
 
+    # cmd part (ignore "ignore" and etc)
     if user.id in ram.emoji_users and not message.channel.is_private:
-        if other.find(message.reactions, emoji=emoji, me=True):
-            await C.client.remove_reaction(message, emoji, user)
-            await C.client.remove_reaction(message, emoji, server.me)
-        else:
-            await C.client.remove_reaction(message, emoji, user)
-            await C.client.add_reaction(message, emoji)
-        return
+        try:
+            if other.find(message.reactions, emoji=emoji, me=True):
+                await C.client.remove_reaction(message, emoji, user)
+                await C.client.remove_reaction(message, emoji, server.me)
+            else:
+                await C.client.remove_reaction(message, emoji, user)
+                await C.client.add_reaction(message, emoji)
+        except Exception as er:
+            other.pr_error(er, 'on_reaction_add', 'Unexpected error')
+        finally:
+            return
 
     if user.id == C.users['Kuro'] and e('middle_finger') in emoji:
         log.D('Get *that* smile, try delete message')
@@ -286,7 +317,16 @@ async def on_reaction_add(reaction, user):
         except discord.Forbidden:
             log.jW("Bot haven't permissions here.")
 
-    if message.author == server.me or message.author == user:
+    # usual part
+    if message.author in (server.me, user) or ram.ignore_users.intersection((message.author, user)):
+        return
+
+    # Further just copy emoji, so if one of possibility is triggered -> return
+    #  (there is no sense in more copies of one emoji)
+
+    # copy emoji for birthday messages
+    if data.day_events.intersection(message.raw_mentions):
+        pause_and_add(message, emoji)
         return
 
     if user.id in name_em:
@@ -296,17 +336,18 @@ async def on_reaction_add(reaction, user):
             pause_and_add(message, emoji)
             return
 
+    if server.id == C.vtm_server.id:
+        if emoji == e('Logo_Gangrel') and other.find(C.vtm_server.get_member(user.id).roles, id=C.roles['Gangrel']):
+            log.jD('Copy Gangrel reaction')
+            pause_and_add(message, emoji)
+            return
+
     if emoji in rand_em:
         chance = other.rand()
         if chance <= 0.01:
             log.jD('Copy some reaction')
             pause_and_add(message, emoji)
             return
-
-    if server.id == C.vtm_server.id:
-        if emoji == e('Logo_Gangrel') and other.find(C.vtm_server.get_member(user.id).roles, id=C.roles['Gangrel']):
-            log.jD('Copy Gangrel reaction')
-            pause_and_add(message, emoji)
 
     # len(message.reactions) < 20
     # if str(user) == 'Kuro#3777':
@@ -342,104 +383,18 @@ async def on_reaction_remove(reaction, user):
     #     await C.client.remove_reaction(message, emoji, C.server.me)
 
 
-async def on_message(message: discord.Message, beckett_mention):
-    author = message.author.id
-    if author in ram.ignore_users:
-        return
-
-    prob = other.rand()
-
-    if message.channel.id == C.channels['stuff'] and (message.attachments or message.embeds):
-        log.jD(f'emj.in_staff, prob = {prob}.')
-        if author == C.users['Natali'] and prob < 0.5:
-            log.jD('Like Natali in staff')
-            pause_and_add(message, ('purple_heart', 'heart_eyes', 'heart_eyes_cat', 'heartpulse'))
-        elif author in {C.users['Doriana'], C.users['Tilia'], C.users['Buffy']} and prob < 0.2:
-            log.jD('Like Doriana or Tilia or Buffy in staff')
-            pause_and_add(message, ('heart', 'hearts', 'heart_eyes', 'black_heart'))
-        elif author in {C.users['Hadley'], C.users['cycl0ne'], C.users['Magdavius']} and prob < 0.2:
-            log.jD('Like Hadley or cycl0ne or Magdavius in staff')
-            pause_and_add(message, ('thumbsup', 'ok_hand', 'heart_eyes_cat'))
-
-    if prob < 0.01:
-        for sm in ('((', 'Т_Т', 'T_T', ':С', ':C', '😭', '😢', '😣', '😖', '😫', '😩', 's_blood_cry'):
-            if sm in message.content:
-                log.jD(f'Add jiznbol for {sm}.')
-                pause_and_add(message, ('t_jiznbol1', 't_jiznbol2'))
-                break
-        else:
-            for sm in ('))', ':D', 'XD', '😃', '😁', '😀', '😄', 'm_wafer', 'm_Tilia_fase', '😂', '😆', '😹', '🤣'):
-                if sm in message.content:
-                    log.jD(f'Add fun for {sm}.')
-                    pause_and_add(message, ('smiley', 'slight_smile', 'grin', 'grinning', 'smile', 'upside_down'))
-                    break
-
-    if author == C.users['Natali']:
-        if beckett_mention and prob < 0.25:
-            log.jD('Like Natali for Beckett')
-            pause_and_add(message, (*('purple_heart',) * 5, 'relaxed', 'blush',
-                                                'kissing_closed_eyes', 'kissing_heart', 'slight_smile'))
-        elif prob < 0.005:
-            log.jD('Like Natali chance 0.005')
-            pause_and_add(message, ('purple_heart', 'heart_eyes', 'heart_eyes_cat'))
-
-    elif author == C.users['Doriana']:
-        if beckett_mention and prob < 0.25:
-            log.jD('Like Doriana for Beckett chance 0.25')
-            pause_and_add(message, e('octopus'))
-        elif prob < 0.005:
-            log.jD('Like Doriana chance 0.005')
-            pause_and_add(message, e('black_heart'))
-
-    elif author == C.users['Hadley']:
-        if beckett_mention and prob < 0.25:
-            log.jD('Like Hadley for Beckett chance 0.25')
-            pause_and_add(message, (e_str('a_Toreador_light'), e_str('a_Toreador_wave')))
-        elif prob < 0.005:
-            log.jD('Like Hadley chance 0.005')
-            pause_and_add(message, e('Logo_Toreador'))
-
-    elif author == C.users['Tony']:
-        if beckett_mention and prob < 0.001:
-            log.jD('Like Tony for Beckett chance 0.001')
-            pause_and_add(message, e('Logo_Ventrue'))
-        # elif prob < 0.005:
-        #     log.jD('Like Tony chance 0.005')
-        #     await C.client.add_reaction(message, e('ok_hand'))
-
-    elif author == C.users['AyrinSiverna']:
-        if beckett_mention and prob < 0.25:
-            log.jD('Like AyrinSiverna for Beckett chance 0.25')
-            pause_and_add(message, (e('Ankh_Sabbat'), e('t_torik21'), e('Logo_Toreador'), e('hearts')))
-        elif prob < 0.005:
-            log.jD('Like AyrinSiverna chance 0.005')
-            pause_and_add(message, e('Logo_Toreador'))
-
-    elif author == C.users['Rainfall']:
-        if beckett_mention and prob < 0.1:
-            log.jD('Like Rainfall for Beckett chance 0.1')
-            pause_and_add(message, e('green_heart'))
-        elif prob < 0.005:
-            log.jD('Like Rainfall chance 0.005')
-            pause_and_add(message, e('racehorse'))
-
-    elif author == '237604798499651594': # Барон Рихтер
-        await C.client.add_reaction(message, e('poop'))
-
-    if other.t2s(frm='%d.%m') == '14.02':   # Valentine's Day
-        if author in {C.users['Natali'], C.users['Tilia']}:
-            pause_and_add(message, {'❤', '💛', '💙', '💜', '❣', '💕', '💞', '💓', '💗', '💖', '💝', '♥'})
-        elif prob < 0.1:
-            pause_and_add(message, {'💌', '💟', })
-
-
-def pause_and_add(message, emoji:str or discord.Emoji, t=-1):
+def pause_and_add(message, emoji:str or discord.Emoji, t=-1, all_=False):
 
     if not(isinstance(emoji, str) or isinstance(emoji, discord.Emoji)):
-        emoji = other.choice(emoji)
-    emoji = e(emoji) or emoji
+        emoji = list(emoji) if all_ else [other.choice(emoji)]
+    else:
+        emoji = [emoji]
+    emoji = [e_or_s(em) for em in emoji]
 
-    if t < 0:
-        t = other.rand(5, 10)
+    t_all = 0
+    for em in emoji:
+        if t < 0:
+            t = other.rand(5, 10)
+        t_all += t
 
-    other.later_coro(t, C.client.add_reaction(message, emoji))
+        other.later_coro(t_all, C.client.add_reaction(message, em))

@@ -23,7 +23,7 @@ free_cmds.update(roll_cmds)
 admin_cmds = {
     'unsilence_all',
     'channel', 'unchannel', 'report', 'unreport', 'say', 'sayf', 'emoji', 'dominate',
-    'purge', 'purge_aft', 'purge_ere', 'purge_bet', 'embrace', 'get_offtime', 'get_offlines',
+    'purge', 'purge_aft', 'purge_ere', 'purge_bet', 'embrace', 'get_offtime', 'get_offlines', 'get_active',
     'deny', 'undeny', 'mute', 'unmute', 'mute_list', 'mute_l', 'unmute_l', 'mute_l_list',
 }
 admin_cmds.update(free_cmds)
@@ -134,15 +134,15 @@ async def ignore(msg: _Msg): # TODO more phrases here
     """\
     !ignore: вкл/выкл комментирования Беккетом своих сообщений \
     """
-    if msg.author in ram.ignore_users:
-        ram.ignore_users.remove(msg.author)
-        if msg.author == C.users['cycl0ne']:
+    if msg.auid in ram.ignore_users:
+        ram.ignore_users.remove(msg.auid)
+        if msg.auid == C.users['cycl0ne']:
             await msg.answer("Мяв, время амнистии 😺?")
         else:
             await msg.answer("Что, кто-то по мне соскучился :relaxed:?")
     else:
-        ram.ignore_users.add(msg.author)
-        if msg.author == C.users['cycl0ne']:
+        ram.ignore_users.add(msg.auid)
+        if msg.auid == C.users['cycl0ne']:
             await msg.answer("Я к тебе со всей душой, а ты... 😿")
         else:
             await msg.answer("Не хочешь разговаривать, ну и не надо :confused:.")
@@ -190,16 +190,16 @@ async def roll(msg: _Msg):
 
             if count > 21:
                 if count > 121:
-                    await msg.answer('<@{}>, у тебя перебор, я выиграл 🙂'.format(msg.author))
+                    await msg.answer('<@{}>, у тебя перебор, я выиграл 🙂'.format(msg.auid))
                 else:
-                    await msg.answer('Так много кубов... может стоит `!r` попробовать, <@{}>? 🤔'.format(msg.author))
+                    await msg.answer('Так много кубов... может стоит `!r` попробовать, <@{}>? 🤔'.format(msg.auid))
                 return
 
             if max_dtype > C.i10__42:
-                await msg.answer('Ну, <@{}>, **таких** дайсов мне не завезли 😕'.format(msg.author))
+                await msg.answer('Ну, <@{}>, **таких** дайсов мне не завезли 😕'.format(msg.auid))
                 return
 
-            text = [('<@{}>, @here,\n```diff\n' if 'h' in all_flags else '<@{}>,\n```diff\n').format(msg.author)]
+            text = [('<@{}>, @here,\n```diff\n' if 'h' in all_flags else '<@{}>,\n```diff\n').format(msg.auid)]
             text += manager.get_dices(rolls_args, simple=simple, calc_sum=calc_sum)
             text.append('```')
 
@@ -229,17 +229,17 @@ async def r(msg: _Msg):
     if not error:
 
             if count > 121:
-                await msg.answer(r'Увы, <@{}>, столько дайсов у меня нет ¯\_(ツ)_/¯'.format(msg.author))
+                await msg.answer(r'Увы, <@{}>, столько дайсов у меня нет ¯\_(ツ)_/¯'.format(msg.auid))
                 return
 
             if max_dtype > 1000:
                 if max_dtype > C.i10__42:
-                    await msg.answer('Ну, <@{}>, **таких** дайсов мне не завезли 😕'.format(msg.author))
+                    await msg.answer('Ну, <@{}>, **таких** дайсов мне не завезли 😕'.format(msg.auid))
                 else:
-                    await msg.answer('Ого, какие кубища... может `!roll` попробовать, <@{}>? 🤔'.format(msg.author))
+                    await msg.answer('Ого, какие кубища... может `!roll` попробовать, <@{}>? 🤔'.format(msg.auid))
                 return
 
-            text = ['<@{}>:'.format(msg.author)]
+            text = ['<@{}>:'.format(msg.auid)]
             text += manager.get_dices(rolls_args, short=True, simple=simple, calc_sum=calc_sum)
             if 'h' in all_flags:
                 text.append('@here')
@@ -269,17 +269,17 @@ async def rw(msg: _Msg):
     if not error:
 
             if count > 121:
-                await msg.answer(r'Увы, <@{}>, столько дайсов у меня нет ¯\_(ツ)_/¯'.format(msg.author))
+                await msg.answer(r'Увы, <@{}>, столько дайсов у меня нет ¯\_(ツ)_/¯'.format(msg.auid))
                 return
 
             if max_dtype > 1000:
                 if max_dtype > C.i10__42:
-                    await msg.answer('Ну, <@{}>, **таких** дайсов мне не завезли 😕'.format(msg.author))
+                    await msg.answer('Ну, <@{}>, **таких** дайсов мне не завезли 😕'.format(msg.auid))
                 else:
-                    await msg.answer('Ого, какие кубища... может `!rollw` попробовать, <@{}>? 🤔'.format(msg.author))
+                    await msg.answer('Ого, какие кубища... может `!rollw` попробовать, <@{}>? 🤔'.format(msg.auid))
                 return
 
-            text = ['<@{}>:'.format(msg.author)]
+            text = ['<@{}>:'.format(msg.auid)]
             text += manager.get_dices(rolls_args, short=True, simple=simple, calc_sum=calc_sum)
             if 'h' in all_flags:
                 text.append('@here')
@@ -309,16 +309,16 @@ async def rollw(msg: _Msg):
 
             if count > 21:
                 if count > 121:
-                    await msg.answer('<@{}>, у тебя перебор, я выиграл 🙂'.format(msg.author))
+                    await msg.answer('<@{}>, у тебя перебор, я выиграл 🙂'.format(msg.auid))
                 else:
-                    await msg.answer('Так много кубов... может стоит `!rw` попробовать, <@{}>? 🤔'.format(msg.author))
+                    await msg.answer('Так много кубов... может стоит `!rw` попробовать, <@{}>? 🤔'.format(msg.auid))
                 return
 
             if max_dtype > C.i10__42:
-                await msg.answer('Ну, <@{}>, **таких** дайсов мне не завезли 😕'.format(msg.author))
+                await msg.answer('Ну, <@{}>, **таких** дайсов мне не завезли 😕'.format(msg.auid))
                 return
 
-            text = [('<@{}>, @here,\n```diff\n' if 'h' in all_flags else '<@{}>,\n```diff\n').format(msg.author)]
+            text = [('<@{}>, @here,\n```diff\n' if 'h' in all_flags else '<@{}>,\n```diff\n').format(msg.auid)]
             text += manager.get_dices(rolls_args, simple=simple, calc_sum=calc_sum)
             text.append('```')
 
@@ -340,12 +340,12 @@ async def rollv(msg: _Msg):
     if not error:
             if count > 21:
                 if count > 121:
-                    await msg.answer('<@{}>, у тебя перебор, я выиграл 🙂'.format(msg.author))
+                    await msg.answer('<@{}>, у тебя перебор, я выиграл 🙂'.format(msg.auid))
                 else:
-                    await msg.answer('Так много кубов... может стоит `!rv` попробовать, <@{}>? 🤔'.format(msg.author))
+                    await msg.answer('Так много кубов... может стоит `!rv` попробовать, <@{}>? 🤔'.format(msg.auid))
                 return
 
-            text = [('<@{}>, @here,\n```diff\n' if 'h' in par_keys else '<@{}>,\n```diff\n').format(msg.author)]
+            text = [('<@{}>, @here,\n```diff\n' if 'h' in par_keys else '<@{}>,\n```diff\n').format(msg.auid)]
             text += manager.get_dices_v5(count, diff, hung, simple)
             text.append('```')
 
@@ -367,10 +367,10 @@ async def rv(msg: _Msg):
 
     if not error:
             if count > 121:
-                await msg.answer('<@{}>, у тебя перебор, я выиграл 🙂'.format(msg.author))
+                await msg.answer('<@{}>, у тебя перебор, я выиграл 🙂'.format(msg.auid))
                 return
 
-            text = ['<@{}>:'.format(msg.author)]
+            text = ['<@{}>:'.format(msg.auid)]
             text += manager.get_dices_v5(count, diff, hung, simple, short=True)
             if 'h' in par_keys:
                 text.append('@here')
@@ -502,9 +502,9 @@ async def kick(msg: _Msg):
         return
 
     text = ('<@{0}> вынес на рассмотрение изгнание <@{1}>. Для принятия решения необходимо __ещё 3 голоса__ "за".'
-            '\nНа голосование у вас 10 минут.').format(msg.author, user.id)
+            '\nНа голосование у вас 10 минут.').format(msg.auid, user.id)
 
-    votes = await manager.voting(msg.channel, text=text, timeout=600, votes={msg.author}, count=4)
+    votes = await manager.voting(msg.channel, text=text, timeout=600, votes={msg.auid}, count=4)
     if votes:
         text1 = 'Голосами от <@{0}> решение о кике <@{1}> **принято**.'.format('>, <@'.join(votes), user.id)
         await msg.qanswer(text1)
@@ -527,11 +527,11 @@ async def dominate(msg: _Msg):
     if len(msg.args) < 2:
         await msg.qanswer(other.comfortable_help([str(dominate.__doc__)]))
         return
-    if not msg.admin and msg.author != C.users['Creol']:
+    if not msg.admin and msg.auid != C.users['Creol']:
         await msg.answer(r'Нет у вас доминирования ¯\_(ツ)_/¯')
         return
 
-    auth = other.find_member(C.vtm_server, msg.author)
+    auth = other.find_member(C.vtm_server, msg.auid)
     who = other.find_member(C.vtm_server, msg.args[1])
     if not auth or not who:
         await msg.qanswer(other.comfortable_help([str(dominate.__doc__)]))
@@ -594,11 +594,47 @@ async def get_offlines(msg: _Msg):
                 sorted_users = [r_users[role_][key] for key in sorted(r_users[role_])]
                 ans.append('**```{0}[{1}]:```**{2}'.format(role_, len(r_users[role_]), sorted_users[0]))
                 ans += sorted_users[1:]
-        ans_20 = other.split_list(ans, 20)
-        ans = ['\n'.join(v) for v in ans_20]
-        await msg.qanswer(ans)
+        await msg.qanswer('\n'.join(ans))
     else:
         await msg.qanswer('Пользователей не пишущих уже {0} дней нет :slight_smile:.'.format(s_num))
+
+
+async def get_active(msg: _Msg):
+    """\
+    !get_active d: узнать, кто писал за последние d дней
+    """
+    s_ds = msg.original[len('!get_active '):].replace(',', '.').replace(' ', '')
+    if len(msg.args) < 2 or not other.is_float(s_ds):
+        await msg.qanswer(other.comfortable_help([str(get_active.__doc__)]))
+        return
+    r_users = {}
+    for role_ in C.vtm_server.role_hierarchy:
+        r_users[role_.name] = {}
+    ds = float(s_ds)
+    check_t = int(ds * 24 * 3600)
+    count = 0
+    for uid, usr in people.usrs.items():
+        t_off = people.offtime(usr.id)
+        if t_off <= check_t:
+            count += 1
+            u = other.find_member(C.vtm_server, uid)
+            r_users[u.top_role.name][usr.last_m] = ('{0} - писал(а) {1} назад.'
+                                       .format(u.mention, other.sec2str(t_off)))
+    s_num = str(ds if ds != int(ds) else int(ds))
+    if count:
+        s_users = 'Пользователи[{0}] пишущие за последние'.format(count) if count > 1 else 'Уникум не пишущий'
+        s_days = ['дней', 'день', 'дня', 'дня', 'дня']
+        end_s_num = int(s_num[-1])
+        ans = ['{0} {1} {2}:'.format(s_users, s_num, s_days[end_s_num < 5 and end_s_num])]
+        r_users['Без ролей'] = r_users.pop('@everyone')
+        for role_ in r_users:
+            if r_users[role_]:
+                sorted_users = [r_users[role_][key] for key in sorted(r_users[role_], reverse=True)]
+                ans.append('**```{0}[{1}]:```**{2}'.format(role_, len(r_users[role_]), sorted_users[0]))
+                ans += sorted_users[1:]
+        await msg.qanswer('\n'.join(ans))
+    else:
+        await msg.qanswer('Пользователей писавших за последние {0} дней нет :slight_smile:.'.format(s_num))
 
 
 # region Interaction commands
@@ -610,8 +646,8 @@ async def channel(msg: _Msg):
     if len(msg.args) > 1:
         #ram.cmd_channels.setdefault(msg.author, set()).update(set(msg.args[1:]))
         # ram.cmd_channels.setdefault(msg.author, set()).update(other.get_channels(msg.args[1:]))
-        ram.cmd_channels.setdefault(msg.author, set()).update(other.find_channels_or_users(msg.args[1:]))
-        msg.cmd_ch = ram.cmd_channels.get(msg.author, set())
+        ram.cmd_channels.setdefault(msg.auid, set()).update(other.find_channels_or_users(msg.args[1:]))
+        msg.cmd_ch = ram.cmd_channels.get(msg.auid, set())
 
     # await msg.qanswer(('<#' + '>, <#'.join(msg.cmd_ch) + '>') if msg.cmd_ch else 'All')
     text = other.ch_list(msg.cmd_ch)
@@ -624,11 +660,11 @@ async def unchannel(msg: _Msg):
     !unchannel: отчищает список сохранённых каналов \
     """
     if len(msg.args) < 2:
-        ram.cmd_channels[msg.author] = set()
+        ram.cmd_channels[msg.auid] = set()
     else:
-        ram.cmd_channels.setdefault(msg.author, set()).difference_update(other.get_channels(msg.args[1:]))
+        ram.cmd_channels.setdefault(msg.auid, set()).difference_update(other.get_channels(msg.args[1:]))
 
-    msg.cmd_ch = ram.cmd_channels.get(msg.author, set())
+    msg.cmd_ch = ram.cmd_channels.get(msg.auid, set())
     # await msg.qanswer(('<#' + '>, <#'.join(msg.cmd_ch) + '>') if msg.cmd_ch else 'All')
     text = other.ch_list(msg.cmd_ch)
     await msg.qanswer((', '.join(text)) if text else 'All')
@@ -640,8 +676,8 @@ async def report(msg: _Msg):
     !report: выводит список сохранённых каналов \
     """
     if len(msg.args) > 1:
-        ram.rep_channels.setdefault(msg.author, set()).update(other.find_channels_or_users(msg.args[1:]))
-        msg.rep_ch = ram.rep_channels.get(msg.author, set())
+        ram.rep_channels.setdefault(msg.auid, set()).update(other.find_channels_or_users(msg.args[1:]))
+        msg.rep_ch = ram.rep_channels.get(msg.auid, set())
 
     text = other.ch_list(msg.rep_ch)
     await msg.qanswer((', '.join(text)) if text else 'None')
@@ -653,11 +689,11 @@ async def unreport(msg: _Msg):
     !unreport: отчищает список сохранённых каналов \
     """
     if len(msg.args) < 2:
-        ram.rep_channels[msg.author] = set()
+        ram.rep_channels[msg.auid] = set()
     else:
-        ram.rep_channels.setdefault(msg.author, set()).difference_update(other.find_channels_or_users(msg.args[1:]))
+        ram.rep_channels.setdefault(msg.auid, set()).difference_update(other.find_channels_or_users(msg.args[1:]))
 
-    msg.rep_ch = ram.rep_channels.get(msg.author, set())
+    msg.rep_ch = ram.rep_channels.get(msg.auid, set())
     text = other.ch_list(msg.rep_ch)
     await msg.qanswer((', '.join(text)) if text else 'None')
 
@@ -693,11 +729,11 @@ async def emoji(msg: _Msg):
     """\
     !emoji: вкл/выкл эмоджи Беккета за пользователя \
     """
-    if msg.author in ram.emoji_users:
-        ram.emoji_users.discard(msg.author)
+    if msg.auid in ram.emoji_users:
+        ram.emoji_users.discard(msg.auid)
         await msg.qanswer('Emoji mode off')
     else:
-        ram.emoji_users.add(msg.author)
+        ram.emoji_users.add(msg.auid)
         await msg.qanswer('Emoji mode on')
 
 
@@ -869,7 +905,7 @@ async def embrace(msg: _Msg):
             name = msg.original[len('!embrace '):]
     user = other.find_member(C.vtm_server, name)
     if user:
-        clan = await manager.just_embrace(user, clan)
+        await manager.just_embrace(user, clan) # clan =
         # text = await manager.just_embrace_say(user, clan, get_text=True)
         # await msg.report(text)
     else:
@@ -894,7 +930,7 @@ async def deny(msg: _Msg):
                 '<@' + user + '>:\t<#' + '>, <#'.join(ram.torpor_users[user]) + '>' for user in ram.torpor_users))
 
     # else - deny by id (from args) in channels (from mem.cmd_channels)
-    nope = {C.users['Natali'], C.users['bot'], msg.author}
+    nope = {C.users['Natali'], C.users['bot'], msg.auid}
     ch = msg.cmd_ch or {'All'}
     users = other.find_users(msg.args[1:]).difference(nope)
     members = other.get_mentions(users)
@@ -1456,13 +1492,13 @@ async def server(msg: _Msg):
                 serv = s
                 break
         if serv:
-            ram.cmd_server[msg.author] = serv.id
+            ram.cmd_server[msg.auid] = serv.id
             ans.append('\nYou choose {0.name} now.'.format(serv))
-        elif msg.author in ram.cmd_server:
-            ram.cmd_server.pop(msg.author)
+        elif msg.auid in ram.cmd_server:
+            ram.cmd_server.pop(msg.auid)
             ans.append('\nNo command server.')
     else:
-        serv = msg.author in ram.cmd_server and C.client.get_server(ram.cmd_server[msg.author])
+        serv = msg.auid in ram.cmd_server and C.client.get_server(ram.cmd_server[msg.auid])
         if serv:
             ans.append('\nNow command server is {0.name}'.format(serv))
         else:
@@ -1473,7 +1509,7 @@ async def server(msg: _Msg):
 
 async def info_channels(msg: _Msg):
     ans = []
-    servs = (msg.author in ram.cmd_server and [C.client.get_server(ram.cmd_server[msg.author])]) or C.client.servers
+    servs = (msg.auid in ram.cmd_server and [C.client.get_server(ram.cmd_server[msg.auid])]) or C.client.servers
     for s in servs:  # type: discord.Server
         ans.append('{0.name} [{0.id}] ({0.owner} [{0.owner.id}]):'.format(s))
         v = {}
@@ -1644,82 +1680,16 @@ async def haha2(msg: _Msg):
 
 
 # region Test
-keys = []
-msgs = {}
-
-
-async def tst(msg: _Msg):
-    # t = com.get_resp('test')
-    # if t:
-    #     await msg.qanswer(t['text'])
-    t = ('И помни: индивидуализм - это путь, преграждаемый множеством препятствий и иногда агрессивно настроенной '
-            'толпой, но, при всей его сложности - единственно стоящий.',
-         'Рад с тобой познакомиться, но мне еще предстоит проверить некоторые слухи.',)
-    # t *= 20
-    p = 10
-
-    def call(msgs):
-        for m in msgs: #type: discord.Message
-            print('call:', m.channel, m.content)
-
-    async def a_call(msgs):
-        for m in msgs: #type: discord.Message
-            await C.client.pin_message(m)
-
-    print(com.msg_queue)
-    print(com.msg_args)
-    print('---')
-    keys.append(com.write_msg(msg.channel, t, extra=p, save_obj=msgs, fun=call))
-    print(com.msg_queue)
-    print(com.msg_args)
-    com.write_msg(msg.channel, 'Ха-ха-ха!', extra=p, save_obj=msgs, fun=call)
-    print(com.msg_queue)
-    print(com.msg_args)
-    # await C.client.add_reaction(msg.message, emj.extra_em[emj.e('a_Tremere_colors2')])
-    # await msg.qanswer('<:p_tetjaadmin:448231060275462144> <a:Tremere_red1:525333494683926528>')
-
-    # text = '\n'.join([str(i*10) + ') ' + (('1234 ' * 20) * 30) for i in range(3)])
-    # await msg.qanswer(text)
-    pass
-    pass
-
-
-async def tst2(msg: _Msg):
-    t = com.get_t('test9')
-    print(t or 'No test9')
-    # print('tst2')
-    # com.rem_from_queue(msg.channel.id, keys)
-    # print(com.msg_queue)
-    # print(com.msg_args)
-    # com.msg_args = {}
-    # for k in keys:
-    #     if k in com.msg_queue.get(msg.channel.id, []):
-    #         com.msg_queue[msg.channel.id].remove(k)
-
-
-async def tst3(msg: _Msg):
-    # print(msgs)
-    t = com.get_text_obj('testA')
-    print(t)
-
-
-async def tst4(msg: _Msg):
-    t = com.get_text_obj(('testA', 'testB',), 'testC')
-    print(t)
-    # for o in msgs:
-    #     for m in msgs[o]:
-    #         await C.client.delete_message(m)
-
 
 async def tst_2(msg: _Msg):
     if len(msg.args) < 2:
         await msg.qanswer(other.comfortable_help([str(dominate.__doc__)]))
         return
-    if not msg.admin and msg.author != C.users['Creol']:
+    if not msg.admin and msg.auid != C.users['Creol']:
         await msg.answer(r'Нет у вас доминирования ¯\_(ツ)_/¯')
         return
 
-    auth = msg.find_member(msg.author)
+    auth = msg.find_member(msg.auid)
     who = msg.find_member(msg.args[1])
     if not auth or not who:
         await msg.qanswer(other.comfortable_help([str(dominate.__doc__)]))
@@ -1738,11 +1708,6 @@ async def tst_2(msg: _Msg):
     # await C.client.send_file(ch, 'pic/mushroom spores.jpg',content=
     # '*Беккет нынче по лесу гулял,\nГрибочки по тихому он собирал,'
     # '\nНочь вся прошла - Бекки устал,\nИ споры грибные он тут услыхал...*')
-
-
-async def roles(msg: _Msg):
-    #await msg.answer(', '.join(msg.roles))
-    return
 
 
 async def get_invite(msg: _Msg):

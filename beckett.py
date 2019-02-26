@@ -34,12 +34,9 @@ async def on_ready():
     ev.start_timers()
     log.I('Beckett ready for work now, after starting at ', ram.t_start.strftime('[%D %T]'))
     log.p('======= ' * 10)
+    test_fun() # for debugging an testing
     C.Ready = True
     await other.test_status(ram.game)
-
-    pass
-    pass
-    # ev.force_exit()
 
 
 def prepare_const():
@@ -227,6 +224,12 @@ def main_loop():
         log.I("ClientRun is completed without errors.")
     finally:
         ev.on_final_exit()
+
+
+def test_fun():
+    return
+    pass
+    pass
 
 
 # main_loop[try] -> ERROR -> main_loop[except] -> main_loop[finally] -> sys.exit(0)

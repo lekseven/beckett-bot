@@ -26,7 +26,7 @@ class Msg(manager.Msg):
             cmds.intersection_update(cmd.admin_cmds)
         elif not self.admin:
             free = cmd.free_cmds
-            if {self.author}.intersection({C.users['Creol'], C.users['Tony']}):
+            if {self.auid}.intersection({C.users['Creol'], C.users['Tony']}):
                 free.add('dominate')
             cmds.intersection_update(free)
 
@@ -36,7 +36,7 @@ class Msg(manager.Msg):
 async def reaction(message, edit=False):
     msg = Msg(message)
 
-    if msg.author == C.users['bot']:
+    if msg.auid == C.users['bot']:
         if msg.original == data.tremer_joke:
             other.later_coro(20, msg.delete())
         return
@@ -47,9 +47,9 @@ async def reaction(message, edit=False):
 
     if C.roles['Silence'] in msg.roles:
         await msg.delete()
-        ram.silence_ans[msg.author] = ram.silence_ans.setdefault(msg.author, 0) + 1
-        if ram.silence_ans[msg.author] < 4:
-            await msg.answer(f'Неугодный <@{msg.author}> пытается нам нечто сказать, но заноза в сердце мешает...')
+        ram.silence_ans[msg.auid] = ram.silence_ans.setdefault(msg.auid, 0) + 1
+        if ram.silence_ans[msg.auid] < 4:
+            await msg.answer(f'Неугодный <@{msg.auid}> пытается нам нечто сказать, но заноза в сердце мешает...')
         return
 
     # delete messages containing forbidden links
@@ -57,7 +57,7 @@ async def reaction(message, edit=False):
         if any(link in msg.text for link in data.forbiddenLinks):
             log.I(f'<reaction> forbidden Links')
             await msg.delete()
-            await msg.answer(com.get_t('threats', name=msg.author))
+            await msg.answer(com.get_t('threats', name=msg.auid))
             return
 
     resp = _data_msgs_check(msg)
@@ -127,10 +127,10 @@ def _do_reaction(msg:Msg) -> (str, str):
     beckett_reference = bool(C.beckett_refs.intersection(msg.words))
     beckett_mention = bool(C.beckett_names.intersection(msg.words))
     beckett = beckett_reference or beckett_mention or msg.personal
-    other.later_coro(0, emj.on_message(msg.message, beckett))
+    _emj_on_message(msg, beckett)
 
     if (ram.mute_channels.intersection({msg.channel.id, 'all'})
-            or msg.author in ram.ignore_users or msg.channel.id in C.ignore_channels):
+            or msg.auid in ram.ignore_users or msg.channel.id in C.ignore_channels):
         if msg.channel.id == C.channels['ask']:
             embrace_or_return = True
         else:
@@ -144,7 +144,7 @@ def _do_reaction(msg:Msg) -> (str, str):
         clan_keys = list(C.clan_names.intersection(found_keys))
         if clan_keys:
             clan = other.choice(clan_keys)
-            other.later_coro(other.rand(20, 50), manager.do_check_and_embrace(msg.author, clan_name=clan))
+            other.later_coro(other.rand(20, 50), manager.do_check_and_embrace(msg.auid, clan_name=clan))
             # get 100% to comment of chosen clan
             beckett = True
             found_keys = clan
@@ -187,22 +187,22 @@ def _do_reaction(msg:Msg) -> (str, str):
                 if dice_count > 0:
                     return 'diceflip', other.rand_diceflip(dice_count)
         elif msg.original[1:].startswith('tableflip') and (msg.admin or msg.channel.id == C.channels['bar']):
-            if not {msg.author}.intersection({C.users['Buffy'], C.users['Tilia'], }) and not msg.admin and prob < 0.2:
-                return 'tableflip_phrase', com.get_t('tableflip_cmd_phrase', user=f'<@{msg.author}>')
+            if not C.roles['Primogens'] in msg.roles and not msg.admin and prob < 0.2:
+                return 'tableflip_phrase', com.get_t('tableflip_cmd_phrase', user=f'<@{msg.auid}>')
             else:
-                return '/tableflip', '* *бросаю за <@{id}>* *\n{table}'.format(id=msg.author,
+                return '/tableflip', '* *бросаю за <@{id}>* *\n{table}'.format(id=msg.auid,
                                                                                table=other.rand_tableflip())
         elif msg.original[1:].startswith('shrug'):
             return '/shrug', r'¯\_(ツ)_/¯'
 
         if beckett:
             m_type = m_type or _beckett_m_type(msg)
-            ans = _beckett_ans(m_type, msg.author)
+            ans = _beckett_ans(m_type, msg.auid)
             if ans:
                 return m_type, ans
 
         if beckett_reference or (beckett and other.rand() < 0.25):
-            m_type = 'For_Prince' if msg.author == C.users['Natali'] and prob < 0.4 else 'beckett'
+            m_type = 'For_Prince' if msg.auid == C.users['Natali'] and prob < 0.4 else 'beckett'
             ans_phr = com.get_t(m_type)
             return m_type, ans_phr
 
@@ -313,3 +313,98 @@ def data_tp_del(ch_id, id_):
         if id_ in o:
             o.pop(id_)
     return fun
+
+
+def _emj_on_message(msg:Msg, beckett):
+    message = msg.message
+    author = msg.auid
+
+    if author in ram.ignore_users:
+        return
+
+    pause_and_add, e, e_str = emj.pause_and_add, emj.e, emj.e_str
+    prob = other.rand()
+
+    sm_for_beckett = {
+        C.users['Natali']: (*('purple_heart',) * 5, 'relaxed', 'blush',
+                                                        'kissing_closed_eyes', 'kissing_heart', 'slight_smile'),
+        C.users['Doriana']: ('octopus',),
+        C.users['Hadley']: ('a_Toreador_light', 'a_Toreador_wave',),
+        C.users['AyrinSiverna']: ('Ankh_Sabbat', 't_torik21', 'Logo_Toreador', 'hearts',),
+        C.users['Rainfall']: ('green_heart',),
+        C.users['Tony']: ('Logo_Ventrue',),
+    }
+    prob_for_beckett = {
+        C.users['Natali']: 0.4,
+    }
+    sm_for_nothing = {
+        C.users['Natali']: ('purple_heart', 'heart_eyes', 'heart_eyes_cat'),
+        C.users['Doriana']: ('black_heart',),
+        C.users['Hadley']: ('Logo_Toreador',),
+        C.users['AyrinSiverna']: ('Logo_Toreador',),
+        C.users['Rainfall']: ('racehorse',),
+    }
+    prob_for_nothing = {
+        C.users['Natali']: 0.01,
+    }
+    sm_by_jiznbol = ('((', 'Т_Т', 'T_T', ':С', ':C', '😭', '😢', '😣', '😖', '😫', '😩', 's_blood_cry')
+    sm_by_fun = ('))', ':D', 'XD', '😃', '😁', '😀', '😄', 'm_wafer', 'm_Tilia_fase', '😂', '😆', '😹', '🤣')
+
+    if msg.chid == C.channels['stuff'] and (message.attachments or message.embeds):
+        log.jD(f'emj.in_staff, prob = {prob}.')
+        if author == C.users['Natali'] and prob < 0.5:
+            log.jD('Like Natali in staff')
+            pause_and_add(message, ('purple_heart', 'heart_eyes', 'heart_eyes_cat', 'heartpulse'))
+        elif author in {C.users['Doriana'], C.users['Tilia'], C.users['Buffy']} and prob < 0.2:
+            log.jD('Like Doriana or Tilia or Buffy in staff')
+            pause_and_add(message, ('heart', 'hearts', 'heart_eyes', 'black_heart'))
+        elif author in {C.users['Hadley'], C.users['cycl0ne'], C.users['Magdavius']} and prob < 0.2:
+            log.jD('Like Hadley or cycl0ne or Magdavius in staff')
+            pause_and_add(message, ('thumbsup', 'ok_hand', 'heart_eyes_cat'))
+
+    if prob > 0.99:
+        if other.s_in_s(sm_by_jiznbol, msg.original):
+            pause_and_add(message, ('t_jiznbol1', 't_jiznbol2'))
+        elif other.s_in_s(sm_by_fun, msg.original):
+            pause_and_add(message, ('smiley', 'slight_smile', 'grin', 'grinning', 'smile', 'upside_down'))
+
+    if beckett and author in sm_for_beckett and prob < prob_for_beckett.get(author, 0.25):
+        log.jD(f'Like {C.usernames[author]} for Beckett with chance {prob_for_beckett.get(author, 0.25)}.')
+        pause_and_add(message, sm_for_beckett[author])
+    elif author in sm_for_nothing and prob < prob_for_nothing.get(author, 0.005):
+        log.jD(f'Like {C.usernames[author]} with chance {prob_for_nothing.get(author, 0.005)}.')
+        pause_and_add(message, sm_for_nothing[author])
+
+    # Day Events
+
+    if C.events['Valentine\'s Day'] in data.day_events:
+        prob = other.rand()
+        if author in {C.users['Natali'], C.users['Tilia']}:
+            pause_and_add(message, {'❤', '💛', '💙', '💜', '❣', '💕', '💞', '💓', '💗', '💖', '💝', '♥'})
+        elif prob < 0.1:
+            pause_and_add(message, {'💌', '💟', })
+
+    if C.events['8 March'] in data.day_events:
+        prob = other.rand()
+        if author == C.users['Natali'] and prob < 0.1:
+            pause_and_add(message, ('a_Toreador_light', 'a_Toreador_wave'))
+        elif C.roles['Tzimisce'] in msg.roles:
+            pause_and_add(message, 'wilted_rose')
+        elif author in C.female:
+            if C.roles['Toreador'] in msg.roles and prob < 0.1:
+                pause_and_add(message, 'Logo_Toreador')
+            else:
+                pause_and_add(message, ('🌺', '🌻', '🌹', '🌷', '🌼', '🌸', '💐'))
+
+    if C.events['Test'] in data.day_events:
+        if message.server.id == C.tst_server.id:
+            em_in_text = emj.get_em_names(msg.original)
+            pause_and_add(message, em_in_text, 0, all_=True)
+            # pause_and_add(message, '😃')
+
+    if C.events['Test2'] in data.day_events:
+        if message.server.id == C.tst_server.id:
+            pause_and_add(message, 'relaxed')
+
+    if author in data.day_events:
+        pause_and_add(message, ('🎂', '🍰', '🎈', '🎁', '🎊', '🎉',))

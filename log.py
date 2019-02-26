@@ -230,12 +230,15 @@ async def format_mess(msg, time=False, date=False, dbase=None):
         t_n = other.t2s()
         s_time = ('(from {0})'.format(t_m) if (time or (t_n[:-1] != t_m[:-1]) or
                                                (int(t_n[-1]) - int(t_m[-1]) > 1)) else '')
+
         if msg.channel.is_private:
             ch_name = '@#' + str(msg.channel.user)
-        elif msg.channel.id not in C.open_channels:
-            ch_name = '##' + str(msg.channel.name)
         else:
-            ch_name = '#' + str(msg.channel.name)
+            every_prm = msg.channel.overwrites_for(msg.server.default_role)
+            if msg.server.id == C.vtm_server.id and every_prm.read_messages is False:
+                ch_name = '##' + str(msg.channel.name)
+            else:
+                ch_name = '#' + str(msg.channel.name)
 
         t = ('(from {0})'.format(other.t2s(msg.timestamp, '%d|%m|%y %T')) if date else s_time)
         cont = msg.content or (('≤System≥ ' + msg.system_content) if msg.system_content else '')
