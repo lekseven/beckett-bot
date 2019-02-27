@@ -23,6 +23,7 @@ voice_alert_ids = {}
 not_embrace = set()
 timer_quarter_works = 0
 TMR_IN_H = 4
+day_ev_check = 0
 
 user_games = {}
 VTMB = {'vampire', 'masquerade', 'bloodlines'}
@@ -597,13 +598,14 @@ def start_half_min_timer():
 
 
 def timer_half_min():
+    global day_ev_check
     start_half_min_timer()
     try:
         now = other.get_now()
         sec_total = int(now.timestamp())
-        if now.hour == 0 and now.minute == 0:
+        if now.hour == 0 and now.minute == 0 and day_ev_check != now.day:
             log.I('[=== New day! ===]')
-            _check_day_ev(now)
+            _check_day_ev(now, on_midnight=True)
         for uid, user in ram.silence_users.items():
             if sec_total > user['time']:
                 other.later_coro(1, manager.silence_end(uid))
@@ -656,30 +658,20 @@ async def cmd_people_time_sync():
     save_mem()
 
 
-# ev = {months: {days: events}} # keys:int
-day_events = {key:{} for key in range(1,13)}
-day_events[1][1] = C.events['New Year']
-day_events[2][14] = C.events['Valentine\'s Day']
-day_events[3][8] = C.events['8 March']
-day_events[10][31] = C.events['Halloween']
-# for test
-day_events[2][27] = (C.events['Test2'], C.users['Dummy'])
-day_events[2][28] = C.events['Test']
-day_events[3][2] = C.events['Test2']
-
-
-def _check_day_ev(now=None):
+def _check_day_ev(now=None, on_midnight=False):
+    global day_ev_check
     if not now:
         now = other.get_now()
 
-    for ev in data.day_events:
-        if ev in C.events_name:
-            log.jI(f'<Day event> {C.events_name[ev]} finished.')
-        elif ev in C.usernames:
-            log.jI(f'<Day event> {C.usernames[ev]} birthday finished.')
+    if on_midnight:
+        for ev in data.day_events:
+            if ev in C.events_name:
+                log.jI(f'<Day event> {C.events_name[ev]} finished.')
+            elif ev in C.usernames:
+                log.jI(f'<Day event> {C.usernames[ev]} birthday finished.')
 
     data.day_events = set()
-    ev = day_events.get(now.month, {}).get(now.day, ())
+    ev = data.data_events.get(now.month, {}).get(now.day, ())
     if isinstance(ev, str) or isinstance(ev, int):
         ev = (ev,)
     data.day_events.update(ev)
@@ -690,3 +682,5 @@ def _check_day_ev(now=None):
         elif ev in C.usernames:
             log.jI(f'<Day event> Today is {C.usernames[ev]} birthday!')
             com.write_msg(C.users['Kuro'], f'<Day event> Today is <@{ev}> birthday!')
+
+    day_ev_check = now.day

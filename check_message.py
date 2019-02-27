@@ -377,6 +377,15 @@ def _emj_on_message(msg:Msg, beckett):
 
     # Day Events
 
+    # if birthday user is mentioned in msg -> copy emoji from msg under this msg
+    if data.day_events.intersection(message.raw_mentions):
+        em_in_text = emj.get_em_names(msg.original)
+        pause_and_add(message, em_in_text, 1, all_=True)
+    # birthday emojis to birthday user
+    if author in data.day_events:
+        pause_and_add(message, ('🎂', '🍰', '🎈', '🎁', '🎊', '🎉', '💰', '💸', '💵', '💴', '💶', '💷',
+                                '🖼', '🌠', '🎇', '🎆', '📯', '🆙', '🎯', '🎰', '🥇', '🏅', '🎖', '🏆', '💛',))
+
     if C.events['Valentine\'s Day'] in data.day_events:
         prob = other.rand()
         if author in {C.users['Natali'], C.users['Tilia']}:
@@ -384,7 +393,7 @@ def _emj_on_message(msg:Msg, beckett):
         elif prob < 0.1:
             pause_and_add(message, {'💌', '💟', })
 
-    if C.events['8 March'] in data.day_events:
+    elif C.events['8 March'] in data.day_events:
         prob = other.rand()
         if author == C.users['Natali'] and prob < 0.1:
             pause_and_add(message, ('a_Toreador_light', 'a_Toreador_wave'))
@@ -405,6 +414,3 @@ def _emj_on_message(msg:Msg, beckett):
     if C.events['Test2'] in data.day_events:
         if message.server.id == C.tst_server.id:
             pause_and_add(message, 'relaxed')
-
-    if author in data.day_events:
-        pause_and_add(message, ('🎂', '🍰', '🎈', '🎁', '🎊', '🎉',))

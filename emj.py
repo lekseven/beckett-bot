@@ -318,7 +318,7 @@ async def on_reaction_add(reaction, user):
             log.jW("Bot haven't permissions here.")
 
     # usual part
-    if message.author in (server.me, user) or ram.ignore_users.intersection((message.author, user)):
+    if message.author in (server.me, user) or ram.ignore_users.intersection((message.author.id, user.id)):
         return
 
     # Further just copy emoji, so if one of possibility is triggered -> return
