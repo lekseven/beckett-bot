@@ -44,5 +44,5 @@ date_events[12][27] = C.users['Doriana']
 
 # for test
 # date_events[3][1] = (C.events['Test2'], C.users['Dummy'])
-date_events[3][2] = C.events['Test']
-date_events[3][3] = C.events['Test2']
+# date_events[3][2] = C.events['Test']
+# date_events[3][3] = C.events['Test2']

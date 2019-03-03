@@ -468,13 +468,3 @@ def _emj_on_message(msg:Msg, beckett):
                 pause_and_add(message, 'Logo_Toreador')
             else:
                 pause_and_add(message, ('🌺', '🌻', '🌹', '🌷', '🌼', '🌸', '💐'))
-
-    if C.events['Test'] in data.day_events:
-        if message.server.id == C.tst_server.id:
-            em_in_text = emj.get_em_names(msg.original)
-            pause_and_add(message, em_in_text, 0, all_=True)
-            # pause_and_add(message, '😃')
-
-    if C.events['Test2'] in data.day_events:
-        if message.server.id == C.tst_server.id:
-            pause_and_add(message, 'relaxed')
