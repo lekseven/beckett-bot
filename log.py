@@ -3,10 +3,10 @@ import os
 import re
 from contextlib import redirect_stdout, redirect_stderr
 import dropbox
+
 import constants as C
 import local_memory as ram
 import other
-import discord
 
 log_path = 'Logs/'
 log_name = ''
@@ -22,7 +22,7 @@ class LogWrite:
     def write(self, s):
         self.std.write(s)
         self.logfile.write(s)
-        # self.flush()
+        self.flush()
 
     def flush(self):
         self.std.flush()
@@ -40,7 +40,7 @@ class ErrWrite:
             self.logfile.write(other.t2s(frm='![%T]!\t') + s)
         else:
             self.logfile.write(s)
-        # self.flush()
+        self.flush()
 
     def flush(self):
         self.std.flush()
@@ -75,6 +75,17 @@ def send_log():
     drop_path = '/Test_logs/' if C.is_test else '/Logs/'
     drop_log_name = 'log[{0}_{1}]({2}).txt'.format(
         ram.t_start.strftime('{%d|%m|%y %T}'), ram.t_finish.strftime('{%d|%m|%y %T}'), other.delta2s(ram.t_work))
+    dropbox_send(log_full, drop_log_name, drop_path)
+    I('Sending log done.')
+
+
+def cmd_send_log():
+    I('Sending log by cmd...')
+    drop_path = '/Test_logs/' if C.is_test else '/Logs/'
+    now = other.get_now()
+    delta = now - ram.t_start
+    drop_log_name = 'log_cmd[{0}_{1}]({2}).txt'.format(
+        ram.t_start.strftime('{%d|%m|%y %T}'), now.strftime('{%d|%m|%y %T}'), other.delta2s(delta))
     dropbox_send(log_full, drop_log_name, drop_path)
     I('Sending log done.')
 
@@ -219,7 +230,7 @@ async def mess_plus(message, save_disc_links=False, save_all_links=False, update
 
 async def format_mess(msg, time=False, date=False, dbase=None):
     """
-    :type msg: discord.Message
+    :type msg: C.Types.Message
     :type time: Bool
     :type date: Bool
     :type dbase: dict
@@ -286,7 +297,7 @@ async def format_mess(msg, time=False, date=False, dbase=None):
 
 async def on_mess(msg, kind):
     """
-    :type msg: discord.Message
+    :type msg: C.Types.Message
     :param kind: str
     """
     desc = {'on_message': 'on_msg', 'on_message_edit': 'on_edt', 'on_message_delete': 'on_del'}

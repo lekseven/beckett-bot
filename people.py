@@ -3,15 +3,14 @@ import psycopg2
 import psycopg2.extras
 import sys
 import other
-import discord
 import log
 
 gt_keys = {'g_morn', 'g_day', 'g_ev', 'g_n'}
 
 usrs = {} # type: dict[id, Usr]
 gone = {} # type: dict[id, Gn]
-bans = [] # type: list[discord.User]
-bans_id = set() # type: {discord.User.id}
+bans = [] # type: list[C.Types.User]
+bans_id = set() # type: {C.Types.User.id}
 other_usrs = {}
 users_online = {} # type: dict[id, list]
 
@@ -55,7 +54,7 @@ class Usr:
     def add(memb, status=''):
         """
 
-        :param discord.Member memb:
+        :param C.Types.Member memb:
         :param str status:
         :return Usr:
         """
@@ -89,7 +88,7 @@ class Usr:
     def go(self, memb=None, res=False):
         """
 
-        :param discord.Member memb:
+        :param C.Types.Member memb:
         :param  boolean res:
         :return:
         """
@@ -98,7 +97,7 @@ class Usr:
         nm = self.name
         if memb:
             if hasattr(memb, 'roles'):
-                for r in memb.roles: # type: discord.Role
+                for r in memb.roles: # type: C.Types.Role
                     if r.id in C.clan_ids:
                         role = r.id
                         break
@@ -188,13 +187,13 @@ class Gn:
     def add(memb, status=''):
         """
 
-        :param discord.Member memb:
+        :param C.Types.Member memb:
         :param str status:
         :return Gn:
         """
         role = '0'
         if hasattr(memb, 'roles'):
-            for r in memb.roles:  # type: discord.Role
+            for r in memb.roles:  # type: C.Types.Role
                 if r.id in C.clan_ids:
                     role = r.id
                     break
@@ -355,7 +354,7 @@ async def check_now():
     log.I('- start check people')
     s_mems = set()
     # noinspection PyTypeChecker
-    for mem in C.vtm_server.members: # type: discord.Member
+    for mem in C.vtm_server.members: # type: C.Types.Member
         s_mems.add(mem.id)
         uname = other.uname(mem)
         if mem.id not in usrs:
@@ -558,7 +557,7 @@ def rewrite():
 def distribute(smb, t=None):
     """
 
-    :param discord.Member or discord.User smb:
+    :param C.Types.Member or C.Types.User smb:
     :param dt.datetime.datetime t:
     :return:
     """

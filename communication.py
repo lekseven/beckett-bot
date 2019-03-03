@@ -3,96 +3,20 @@ from hashlib import md5 as hashlib__md5
 from importlib import reload as importlib__reload
 from lxml.html import fromstring as lxml__fromstring
 from requests import get as requests__get
+from string import whitespace as string__whitespace
 
 import constants as C
 import emj
 import other
 import log
 
-import data_to_process as d2p
-import data_to_use as d2u
+import d.data_to_process as d2p
+import d.data_to_use as d2u
+from d import data_com
 
 msg_queue = {}
 msg_args = {}
 msg_type_count = {}
-
-'''
-def prepare():
-    log.I('Prepare communication:')
-    log.jI('\t -make dictionary good_type')
-    for g_key in D.good_time:
-        g_period = []
-        for d_type in D.good_time[g_key]:
-            g_type = {'simple': set(d_type['simple']), 'check_phrases': [], 'response': []}
-            if 'key' in d_type:
-                for noun in d_type['key']['noun']:
-                    for adj in d_type['key']['adj']:
-                        g_type['check_phrases'].append(noun + ' ' + adj)
-                        g_type['check_phrases'].append(adj + ' ' + noun)
-
-            for noun in d_type['noun']:
-                for adj in d_type['adj']:
-                    g_type['check_phrases'].append(noun + ' ' + adj)
-                    g_type['check_phrases'].append(adj + ' ' + noun)
-                    g_type['response'].append(adj + ' ' + noun)
-                    # g_type['response'].append(adj.title() + ' ' + noun + ', <@{name}>.')
-                    # g_type['response'].append('<@{name}>, ' + adj + ' ' + noun + '.')
-            g_period.append(g_type)
-        good_time[g_key] = g_period
-
-    log.jI('\t -make morning add')
-    morn_add = {
-        'Kuro': ':tea:', 'Natali': ':tea::chocolate_bar:', 'Soul': ':coffee:',
-        'Buffy': ':sun_with_face:', 'Tilia': ':sun_with_face:',
-        'Doriana': ':hugging:', 'Creol': ':hugging:',
-    }
-    for name in morn_add:
-        if name in C.users:
-            morning_add[C.users[name]] = morn_add[name]
-
-    log.jI('\t -make resp_keys')
-    # searching resp_keys can be done with regex, but test show,
-    # that intersection with set(words) and "in"-check(collocations) in for-cycle are faster (≈ in 10 times)
-    for key in D.dataKeys:
-        keys = D.dataKeys[key]
-        dct = {'words': set(), 'colls': set()}
-        if isinstance(keys, dict):
-            if 'clear' in keys:
-                dct['words'].update(keys['clear'])
-            if 'noun' in keys:
-                dct['words'].update(make_words(keys['noun'], D.noun_endings))
-            if 'adj' in keys:
-                dct['words'].update(make_words(keys['adj'], D.adj_endings))
-            if 'eng' in keys:
-                dct['words'].update(make_words(keys['eng'], D.eng_endings))
-            if 'clear_collocation' in keys:
-                dct['colls'].update(keys['clear_collocation'])
-            if 'n_c' in keys:
-                for coll in keys['n_c']:
-                    dct['colls'].update(make_words(make_words([coll[0]], D.noun_endings), [' ' + coll[1]]))
-            if 'a_c' in keys:
-                for coll in keys['a_c']:
-                    dct['colls'].update(make_words(make_words([coll[0]], D.adj_endings), [' ' + coll[1]]))
-        else:
-            dct['words'].update(keys)
-        resp_keys[key] = dct
-    log.jI('\t -make resp_values & resp_data')
-    for key in D.responses:
-        resp_values[key] = []
-        for phr in D.responses[key]:
-            if isinstance(phr, str):
-                h = hashlib.md5(phr.encode('utf-8')).hexdigest()
-                resp_data[h] = {'text': phr}
-                resp_values[key] += [h]
-            elif not (isinstance(phr, dict) and 'text' in phr):
-                log.jW('fail phrase in response data: ', phr)
-            else:
-                h = hashlib.md5(phr['text'].encode('utf-8')).hexdigest()
-                resp_data[h] = phr
-                resp_values[key] += [h]
-
-    log.I('Prepare communication done.')
-'''
 
 
 def make_d2u():
@@ -196,7 +120,7 @@ def make_d2u():
     saved_args = ('data_used', 'good_time', 'resp_keys', 'resp_values', 'resp_data')
     l_args = locals()
     time_upd = other.t2s(frm="%d/%m/%y %H:%M:%S")
-    with open('data_to_use.py', "w") as file:
+    with open('d/data_to_use.py', "w") as file:
         print('"""\nThis document was created from data_to_process.py by command !data_process'
               f'\nDon\'t edit it by yourself.\nCreated: {time_upd}.\n"""\n\n', file=file)
         print(*(f'{name} = {repr(l_args[name])}' for name in saved_args), file=file, sep='\n\n')
@@ -297,11 +221,11 @@ def get_text_obj(any_keys=None, all_keys=None):
         return error_ans
 
     not_used_texts = texts.difference(d2u.data_used)
-    log.D(f'<com.get_text_obj> txts: {len(texts)}, not_used_t: {len(not_used_texts)}, data_used: {len(d2u.data_used)}.')
+    # log.D(f'<com.get_text_obj> txts: {len(texts)}, not_used_t: {len(not_used_texts)}, data_used: {len(d2u.data_used)}.')
 
     if not not_used_texts:
-        log.D(f'<com.get_text_obj> answers for any({", ".join(any_keys)}) and all({", ".join(all_keys)}) '
-              f'were all used, clear this texts in data_used.')
+        # log.D(f'<com.get_text_obj> answers for any({", ".join(any_keys)}) and all({", ".join(all_keys)}) '
+        #       f'were all used, clear this texts in data_used.')
         d2u.data_used = [k for k in d2u.data_used if k not in texts] # we need order in data_used, so not .difference
         not_used_texts = texts
 
@@ -317,21 +241,21 @@ def get_text_obj(any_keys=None, all_keys=None):
             if len(topic_t) == len(topic_unused):
                 continue
             count_unused = len(topic_unused) - 1
-            log.D(f'<com.get_text_obj> topic_t: {len(topic_t)}, count_unused: {count_unused}.')
+            # log.D(f'<com.get_text_obj> topic_t: {len(topic_t)}, count_unused: {count_unused}.')
             # if left one phrase -> free all of used
             if count_unused < 2:
-                log.D(f'<com.get_text_obj> free all topic_t in data_used ')
+                # log.D(f'<com.get_text_obj> free all topic_t in data_used ')
                 d2u.data_used = [k for k in d2u.data_used if k not in topic_t]
             # if left less then 1/4 of phrases -> free half (early) of used
             elif count_unused <= len(topic_t) >> 2:
-                log.D(f'<com.get_text_obj> free half topic_t in data_used ')
+                # log.D(f'<com.get_text_obj> free half topic_t in data_used ')
                 # cycle by data_used, because we need order by time of adding
                 old_data = [k for k in d2u.data_used if k in topic_t]
                 data_to_free = old_data[0:len(old_data) >> 1] # early half of used
                 d2u.data_used = [k for k in d2u.data_used if k not in data_to_free]
 
     d2u.data_used.append(ans_h)
-    log.D(f'<com.get_text_obj> data_used: {repr(d2u.data_used)}')
+    # log.D(f'<com.get_text_obj> data_used: {repr(d2u.data_used)}')
     return ans
 
 
@@ -515,6 +439,7 @@ def voice_note(user):
 
 
 def write_msg(ch, text=None, emb=None, extra=0, save_obj=None, fun:callable=None, a_fun:callable=None):
+    not_count_sym = {'_', '*', '`'}
 
     if not text and not emb:
         return ''
@@ -529,7 +454,8 @@ def write_msg(ch, text=None, emb=None, extra=0, save_obj=None, fun:callable=None
     if text is None:
         ti, tn = 1, 0
     else:
-        ln_text = len(text) if isinstance(text, str) else sum(len(i) for i in text)
+        ln_text = (len([s for s in text if s not in not_count_sym]) if isinstance(text, str)
+                   else sum(len([s for s in txt_i if s not in not_count_sym]) for txt_i in text))
         tn = min(1500, ln_text) / 30 + extra
         ti = 0
 
@@ -614,7 +540,65 @@ async def delete_msg(message=None, ch_i=None, msg_id=None):
         except Exception as e:
             other.pr_error(e, 'com.delete_msg.get_message', 'Unexpected error')
             return
-    try:
-        await C.client.delete_message(message)
-    except Exception as e:
-        other.pr_error(e, 'com.delete_msg', 'Unexpected error')
+    await other.delete_msg(message)
+
+
+def text2leet(text, prob=0.5):
+    new_text = []
+    esc = {'*', '_', '~', '`', '|', '\\',}
+    for symb in text:
+        if symb in data_com.dct_leet and other.rand() <= prob:
+            new_s = other.choice(data_com.dct_leet[symb]) # type: str
+            esc_s = esc.intersection(new_s)
+            if esc_s and symb not in esc:
+                for s in esc_s:
+                    new_s = new_s.replace(s, '\\' + s)
+        else:
+            new_s = symb
+        new_text.append(new_s)
+    return ''.join(new_text)
+
+
+def text2malk(text, prob=0.5):
+    if '```' in text:
+        return text
+    f_set = {'`', '**`', '**', '_`', '_`', '_', '_',} # '~~', # italic more often then others
+    esc = {'*', '_', '~', '`', '|', '\\', }
+    was_esc = False
+    last_f = '0'
+
+    new_text = []
+    for i, symb in enumerate(text): # type: int, str
+        if symb in string__whitespace:
+            new_text.append(symb)
+            continue
+        elif was_esc and symb in esc:
+            was_esc = False
+            new_text.append(symb)
+            last_f = symb
+            continue
+        elif symb == '\\':
+            next_symb = text[i+1:]
+            if next_symb and next_symb[0] in esc:
+                was_esc = True
+                new_text.append(symb)
+            continue
+        elif symb in esc:
+            continue
+
+        was_esc = False
+        if symb != '.' and other.rand() <= prob:
+            prob2 = other.rand()
+            new_s = symb.upper() if prob2 <= 0.4 else symb
+            if prob2 > 0.1:
+                f = other.choice({s for s in f_set if s[0] != last_f[0]})
+                last_f = f
+                new_text.append(f + new_s + f[::-1])
+            else:
+                last_f = new_s
+                new_text.append(new_s)
+        else:
+            last_f = symb
+            new_text.append(symb)
+
+    return ''.join(new_text)

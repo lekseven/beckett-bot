@@ -1,6 +1,4 @@
-import discord
-
-from data_emoji import emojis, emojis_long, emojis_color
+from d.data_emoji import emojis, emojis_long, emojis_color
 import data
 import constants as C
 import local_memory as ram
@@ -11,10 +9,10 @@ import log
 # Emojis [17.02.2019]:
 ems_id = {
     # VtM server
-    '400662865935204363': 'm_drunk',
+    #'400662865935204363': 'm_drunk',
     '400662865972822026': 'p_Lacr',
     '400662866157502476': 'p_nosferatu',
-    '400662866371543040': 'p_janett',
+    #'400662866371543040': 'p_janett',
     '400664721155555328': 'p_Lucta_de_Aragon',
     '418877362470518784': 'Ankh',
     '420657829007982593': 'm_Tarkin_Miliy',
@@ -63,6 +61,7 @@ ems_id = {
     '506940161389756426': 'm_r_heart',
     '525924557102645257': 's_dice',
     '534065125867388938': 'logo_dementation',
+    '550995225808601119': 'me_today',
     # test
     '532673320785674317': 'sgushchenka',
     '453173916517662720': 'z_GDAbyudG2',
@@ -235,9 +234,9 @@ def save_em():
                'sun_with_face', 'sunny', 'sunrise_over_mountains', 'city_sunset', 'bat', 'Logo_Malkavian',
             'p_tetjaadmin', 't_ojwse', 'm_lopata'}
 
-    for s in C.client.servers: #type: discord.Server
+    for s in C.client.servers: #type: C.Types.Server
         # log.jD(f'<emj> {s.name} check:')
-        for em in s.emojis:  #type: discord.Emoji
+        for em in s.emojis:  #type: C.Types.Emoji
             pre = 'a' if em.name.startswith('a_') else ''
             em_str = '<{1}:{0.name}:{0.id}>'.format(em, pre)
             extra_em[em_str] = em_str
@@ -249,9 +248,8 @@ def save_em():
                 emojis[ems_id[em.id]] = em
                 extra_em[ems_id[em.id]] = em_str
                 # emojis['<:{0}:{1}>'.format(em.id, ems_id[em.id])] = ems_id[em.id]
-            else:
-                # log.p(f"'{em.id}': '{em.name}',")
-                pass
+            elif s.id in (C.vtm_server.id, C.tst_server.id):
+                log.jW(f"{s.name} has new emoji\t '{em.id}': '{em.name}',")
             if em.name not in emojis:
                 emojis[em.name] = em
                 extra_em[em.name] = em_str
@@ -260,6 +258,9 @@ def save_em():
             extra_em[em.id] = em_str
             # if not C.is_test:
             #     log.jW('{save_em} new smile '+str(em))
+    for id_ in ems_id:
+        if ems_id[id_] not in emojis:
+            log.jW(f"There are no emoji \t'{id_}': '{ems_id[id_]}'.")
 
     for name in special:
         name_em[C.users[name]] = set()
@@ -267,14 +268,14 @@ def save_em():
             em = e(e_name)
             if em:
                 name_em[C.users[name]].add(em)
-            elif not C.is_test:
+            else:
                 log.jW("{{save_em}} can't find {0} in emojis (1)".format(e_name))
 
     for e_name in rand:
         em = e(e_name)
         if em:
             rand_em.add(em)
-        elif not C.is_test:
+        else:
             log.jW("{{save_em}} can't find {0} in emojis (2)".format(e_name))
 
 
@@ -285,16 +286,16 @@ def is_emj(em):
 async def on_reaction_add(reaction, user):
     """
 
-    :type reaction: discord.Reaction
-    :type user: discord.User
+    :type reaction: C.Types.Reaction
+    :type user: C.Types.User
     :return:
     """
     server = reaction.message.server
-    if user == server.me:
+    if server and user == server.me:
         return
 
-    message = reaction.message # type: discord.Message
-    emoji = reaction.emoji # type: discord.Emoji
+    message = reaction.message # type: C.Types.Message
+    emoji = reaction.emoji # type: C.Types.Emoji
 
     # cmd part (ignore "ignore" and etc)
     if user.id in ram.emoji_users and not message.channel.is_private:
@@ -313,8 +314,8 @@ async def on_reaction_add(reaction, user):
     if user.id == C.users['Kuro'] and e('middle_finger') in emoji:
         log.D('Get *that* smile, try delete message')
         try:
-            await C.client.delete_message(message)
-        except discord.Forbidden:
+            await other.delete_msg(message)
+        except C.Exceptions.Forbidden:
             log.jW("Bot haven't permissions here.")
 
     # usual part
@@ -359,16 +360,16 @@ async def on_reaction_add(reaction, user):
 async def on_reaction_remove(reaction, user):
     """
 
-        :type reaction: discord.Reaction
-        :type user: discord.User
+        :type reaction: C.Types.Reaction
+        :type user: C.Types.User
         :return:
         """
     server = reaction.message.server
     if user == server.me:
         return
 
-    message = reaction.message  # type: discord.Message
-    emoji = reaction.emoji  # type: discord.Emoji
+    message = reaction.message  # type: C.Types.Message
+    emoji = reaction.emoji  # type: C.Types.Emoji
 
     if message.author == server.me or message.author == user:
         return
@@ -383,9 +384,9 @@ async def on_reaction_remove(reaction, user):
     #     await C.client.remove_reaction(message, emoji, C.server.me)
 
 
-def pause_and_add(message, emoji:str or discord.Emoji, t=-1, all_=False):
+def pause_and_add(message, emoji:str or C.Types.Emoji, t=-1, all_=False):
 
-    if not(isinstance(emoji, str) or isinstance(emoji, discord.Emoji)):
+    if not(isinstance(emoji, str) or isinstance(emoji, C.Types.Emoji)):
         emoji = list(emoji) if all_ else [other.choice(emoji)]
     else:
         emoji = [emoji]
@@ -398,3 +399,21 @@ def pause_and_add(message, emoji:str or discord.Emoji, t=-1, all_=False):
         t_all += t
 
         other.later_coro(t_all, C.client.add_reaction(message, em))
+
+
+def pause_and_rem(message, emoji:str or C.Types.Emoji, member=None, t=-1, all_=False):
+    member = member or C.prm_server.me
+
+    if not(isinstance(emoji, str) or isinstance(emoji, C.Types.Emoji)):
+        emoji = list(emoji) if all_ else [other.choice(emoji)]
+    else:
+        emoji = [emoji]
+    emoji = [e_or_s(em) for em in emoji]
+
+    t_all = 0
+    for em in emoji:
+        if t < 0:
+            t = other.rand(1, 5)
+        t_all += t
+
+        other.later_coro(t_all, C.client.remove_reaction(message, em, member))

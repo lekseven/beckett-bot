@@ -1,12 +1,11 @@
 import aiohttp
 import re
 import sys
-import datetime
 import random
 import copy
 from io import BytesIO as io_BytesIO
 from ast import literal_eval as ast__literal_eval
-import discord
+from discord.utils import get as find
 
 import constants as C
 import log
@@ -16,8 +15,6 @@ import local_memory as ram
 # for weather
 
 #import local_memory as ram
-
-find = discord.utils.get
 
 
 def comfortable_help(docs):
@@ -65,9 +62,9 @@ def str_keys(ch_dict, keys, pre=''):
 
 
 def t2utc(timedata=None):
-    td = timedata or datetime.datetime.utcnow()
-    td = td.replace(tzinfo=td.tzinfo or datetime.timezone.utc)
-    td = td.astimezone(datetime.timezone(datetime.timedelta(hours=3)))
+    td = timedata or C.Types.Datetime.utcnow()
+    td = td.replace(tzinfo=td.tzinfo or C.Types.Timezone.utc)
+    td = td.astimezone(C.Types.Timezone(C.Types.Timedelta(hours=3)))
     return td
 
 
@@ -127,7 +124,7 @@ def s2s(total_sec):
 def sec2ts(total_sec, frm="%H:%M:%S", check_utc=True):
     if total_sec == 0:
         return '0'
-    timedata = datetime.datetime.fromtimestamp(int(total_sec))
+    timedata = C.Types.Datetime.fromtimestamp(int(total_sec))
     return (t2utc(timedata) if check_utc else timedata).strftime(frm)
 
 
@@ -147,7 +144,7 @@ def find_member(server, i):  # i must be id, server nickname, true nickname or f
     """
     :param server:
     :param i:
-    :rtype: discord.Member
+    :rtype: C.Types.Member
     """
     if server:
         p_name1 = i.translate(C.punct2space).replace(' ', '')
@@ -163,7 +160,7 @@ def find_members(server, names):
     """
     :param server:
     :param iterator names:
-    :rtype: set(discord.Member)
+    :rtype: set(C.Types.Member)
     """
     res = set()
     for name in names:
@@ -244,7 +241,7 @@ def find_channels_or_users(names):
 async def get_channel_or_user(name):
     """
        :param str name:
-       :rtype: Discord.Channel
+       :rtype: C.Types.Channel
        """
     s = get_channel(name)
     if not s:
@@ -253,7 +250,7 @@ async def get_channel_or_user(name):
             try:
                 mess = await C.client.send_message(user, '.')
                 s = mess.channel
-                await C.client.delete_message(mess)
+                await delete_msg(mess)
             except Exception as e:
                 pr_error(e, 'get_channels_or_users', 'send_message error')
     return s or None
@@ -273,7 +270,7 @@ async def get_channels_or_users(names):
                 try:
                     mess = await C.client.send_message(user, '.')
                     s = mess.channel
-                    await C.client.delete_message(mess)
+                    await delete_msg(mess)
                 except Exception as e:
                     pr_error(e, 'get_channels_or_users', 'send_message error')
                     continue
@@ -286,26 +283,26 @@ async def get_channels_or_users(names):
 
 async def test_status(state):
     game = None
-    status = discord.Status.online
+    status = C.Types.Status.online
     if isinstance(state, str):
-        game = discord.Game(name=state)
+        game = C.Types.Game(name=state)
     elif state:
-        game = discord.Game(name='«Тестирование идёт...»')
-        status = discord.Status.do_not_disturb
+        game = C.Types.Game(name='«Тестирование идёт...»')
+        status = C.Types.Status.do_not_disturb
     # else:
-    #     await C.client.change_presence(game=None, status=discord.Status.online, afk=False)
+    #     await C.client.change_presence(game=None, status=C.Types.Status.online, afk=False)
     await C.client.change_presence(game=game, status=status, afk=False)
 
 
 async def set_game(name=''):
-    game = discord.Game(name=name) if name else None
+    game = C.Types.Game(name=name) if name else None
     ram.game = game or False
     status = C.prm_server.me.status
     await C.client.change_presence(game=game, status=status, afk=False)
 
 
 async def busy():
-    await C.client.change_presence(game=None, status=discord.Status.idle, afk=True)
+    await C.client.change_presence(game=None, status=C.Types.Status.idle, afk=True)
 
 
 # async def Ready():
@@ -325,7 +322,7 @@ def ch_list(id_list):
 def is_super(usr):
     """
 
-    :param discord.Member usr:
+    :param C.Types.Member usr:
     :return:
     """
     if (usr.id in C.superusers or usr.id == C.users['bot'] or
@@ -334,7 +331,7 @@ def is_super(usr):
 
 
 def name_phr(uid, phr, name='', punct=True):
-    if not(isinstance(phr, str) or isinstance(phr, discord.Emoji)):
+    if not(isinstance(phr, str) or isinstance(phr, C.Types.Emoji)):
         phr = choice(phr)
     name = f'({name})' if name else ''
     pun = (',', '.') if punct else ('', '')
@@ -394,7 +391,7 @@ def find_def_ch(server):
     if server.default_channel:
         return server.default_channel
     t = {}
-    for ch in server.channels:  # type: discord.Channel
+    for ch in server.channels:  # type: C.Types.Channel
         if str(ch.type) == 'text':
             t[ch.position] = ch
 
@@ -402,17 +399,20 @@ def find_def_ch(server):
     return channels[0]
 
 
-def rand_flip():
+def rand_flip(len_wave=0):
     eye = choice('°', '•', '◕', '~', '・', '￣', 'ᵔ', '^', '-', '❛', 'ಠ', '≖', '👁', )
-    mouth = choice('□', '◡', 'o', '‿', r'\_', '︿', '∀', '▽', '。', 'ᴥ', '👃', )
-    wave = choice('彡', '︵', '︵︵', '︵︵︵',)
+    mouth = choice('□', '◡', 'o', '‿', r'\_', '︿', '∀', '▽', '。', 'ᴥ', ':nose::skin-tone-1:', )
+    if len_wave > 1:
+        wave = '︵' * len_wave
+    else:
+        wave = choice('彡', *('︵' * rand(1, 10),) * 4)
     return '(╯{0}{1}{0}）╯{2}'.format(eye, mouth, wave)
 
 
-def rand_tableflip():
+def rand_tableflip(len_wave=0, len_table=0):
     # (╯°□°）╯︵ ┻━┻
-    table = choice(('┻━┻', '┻━━┻', '┻━━━┻', '┻━━━━┻', '┻━━━━━┻', '┻━━━━━━┻', '┻━━━━━━━┻', ))
-    return '{0} {1}'.format(rand_flip(), table)
+    table = f'┻{"━" * (len_table if len_table > 1 else rand(1,10))}┻'
+    return '{0} {1}'.format(rand_flip(len_wave), table)
 
 
 def rand_diceflip(count=1):
@@ -450,10 +450,14 @@ async def type2sent(ch, text=None, emb=None, extra=0):
 
 
 def split_text(text, pre_split=''):
-    MAX_LEN = 2000
-
     if not text:
         return []
+
+    MAX_LEN = 2000
+
+    tst_text = pre_split.join(text) if not isinstance(text, str) else text
+    if (tst_text.count('*') + tst_text.count('_') + tst_text.count('`')) > len(tst_text)/2:
+        MAX_LEN = MAX_LEN/2
 
     if not isinstance(text, str):
         if pre_split:
@@ -482,7 +486,7 @@ def split_text(text, pre_split=''):
     elif len(text) < MAX_LEN:
         yield text
     else:
-        spls = ('\n', '. ', ' ')
+        spls = ('\n', '. ', '.', ' ')
         for spl in spls:
             if spl in text:
                 yield from split_text(text.split(spl), spl)
@@ -531,7 +535,7 @@ def rand(a:int=None, b:int=None):
         return random.randint(a, b)
 
 
-def uname(memb:discord.Member):
+def uname(memb:C.Types.Member):
     return str(memb) + ('(' + memb.display_name + ')' if memb.name != memb.display_name else '')
 
 
@@ -539,12 +543,23 @@ def deepcopy(o):
     return copy.deepcopy(o)
 
 
-def s_in_s(s_child, s_parent, all=False):
+def s_in_s(s_child, s_parent, all_=False):
     for s in s_child:
         if s in s_parent:
-            if not all:
+            if not all_:
                 return s
         else:
-            if all:
+            if all_:
                 return False
-    return all
+    return all_
+
+
+async def delete_msg(message):
+    try:
+        await C.client.delete_message(message)
+    except C.Exceptions.Forbidden:
+        log.jW("Bot haven't permissions to delete messages here.")
+    except C.Exceptions.NotFound:
+        log.jW("Can't find the message to delete.")
+    except Exception as e:
+        pr_error(e, 'delete_msg', 'Unexpected error')

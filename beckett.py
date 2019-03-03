@@ -1,10 +1,10 @@
 # -*- coding: utf8 -*-
 #import data
-from os import environ as os__environ
 import signal
+from os import environ as os__environ
 from ctypes.util import find_library
 from functools import partial as functools__partial
-import discord
+from discord import opus as discord__opus
 
 import constants as C
 import check_message
@@ -19,22 +19,22 @@ import event_funs as ev
 async def on_ready():
     ram.debug = C.is_test
     await other.busy()
-    log.I('Logged in as ', C.client.user, ' (', C.client.user.id, ')')
+    log.I(f'Logged in as {C.client.user} (id: {C.client.user.id}, Test: {C.is_test})')
     prepare_const2()
     emj.prepare()
     await ev.load()
     ram.debug = ram.debug or C.is_test
-    if not discord.opus.is_loaded():
+    if not discord__opus.is_loaded():
         lb = find_library("opus")
         log.jD('opus lib: ', lb) # i can't find it on heroku
         if lb:
-            discord.opus.load_opus(lb)
+            discord__opus.load_opus(lb)
         else:
-            log.jW('opus lib not load!')
+            log.jI('opus lib not load!')
     ev.start_timers()
     log.I('Beckett ready for work now, after starting at ', ram.t_start.strftime('[%D %T]'))
     log.p('======= ' * 10)
-    test_fun() # for debugging an testing
+    await test_fun() # for debugging an testing
     C.Ready = True
     await other.test_status(ram.game)
 
@@ -42,7 +42,7 @@ async def on_ready():
 def prepare_const():
     log.I('- prepare_const')
 
-    C.is_test = os__environ.get('Server_Test') or False
+    C.is_test = bool(os__environ.get('Server_Test'))
 
     C.DISCORD_TOKEN = os__environ.get('DISCORD_TOKEN')
 
@@ -89,7 +89,7 @@ def prepare_const():
 
     C.DROPBOX_ID = os__environ.get('DROPBOX_ID')
 
-    ram.t_start = other.t2utc()
+    ram.t_start = other.get_now()
     log.I('+ prepare_const done')
 
 
@@ -179,7 +179,7 @@ async def on_server_role_update(before, after):
 
 
 @C.client.event
-async def on_message(message:discord.Message):
+async def on_message(message:C.Types.Message):
     ev.on_user_life_signs(message.author.id)
     if await log.on_mess(message, 'on_message'):
         await check_message.reaction(message)
@@ -187,7 +187,7 @@ async def on_message(message:discord.Message):
 
 # noinspection PyUnusedLocal
 @C.client.event
-async def on_message_edit(before:discord.Message, after:discord.Message):
+async def on_message_edit(before:C.Types.Message, after:C.Types.Message):
     ev.on_user_life_signs(after.author.id)
     if await log.on_mess(after, 'on_message_edit'):
         await check_message.reaction(after, edit=True)
@@ -226,7 +226,7 @@ def main_loop():
         ev.on_final_exit()
 
 
-def test_fun():
+async def test_fun():
     return
     pass
     pass

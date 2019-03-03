@@ -3,7 +3,6 @@
     here only functions as bot-commands (!cmd) with obj of check_message.Msg as arg:
         async def cmd(msg)
 """
-import discord
 import sys
 
 import other
@@ -536,7 +535,7 @@ async def dominate(msg: _Msg):
     if not auth or not who:
         await msg.qanswer(other.comfortable_help([str(dominate.__doc__)]))
         return
-    emb = discord.Embed(title=msg.original[len('!dominate ' + msg.args[1] + ' '):], color=auth.color)
+    emb = C.Types.Embed(title=msg.original[len('!dominate ' + msg.args[1] + ' '):], color=auth.color)
     emb.set_author(name=auth.nick or auth.name, icon_url=auth.avatar_url)
     emb.set_image(url='https://cdn.discordapp.com/attachments/420056219068399617/450428811725766667/dominate.gif')
     #emb.set_footer(text='')
@@ -1146,9 +1145,9 @@ async def pin(msg: _Msg):
         try:
             mess = await C.client.get_message(ch, mess_id)
             await C.client.pin_message(mess)
-        except discord.Forbidden:
+        except C.Exceptions.Forbidden:
             log.jW("Bot haven't permissions here.")
-        except discord.NotFound:
+        except C.Exceptions.NotFound:
             log.jW("Bot can't find message.")
 
 
@@ -1167,9 +1166,9 @@ async def unpin(msg: _Msg):
         try:
             mess = await C.client.get_message(ch, mess_id)
             await C.client.unpin_message(mess)
-        except discord.Forbidden:
+        except C.Exceptions.Forbidden:
             log.jW("Bot haven't permissions here.")
-        except discord.NotFound:
+        except C.Exceptions.NotFound:
             log.jW("Bot can't find message.")
 
 
@@ -1195,11 +1194,11 @@ async def delete(msg: _Msg):
     for mess_id in msg.args[2:]:
         try:
             mess = await C.client.get_message(ch, mess_id)
-            await C.client.delete_message(mess)
+            await other.delete_msg(mess)
             done = True
-        except discord.Forbidden:
+        except C.Exceptions.Forbidden:
             log.jW("Bot haven't permissions here.")
-        except discord.NotFound:
+        except C.Exceptions.NotFound:
             log.jW("Bot can't find message.")
 
     if done:
@@ -1239,7 +1238,7 @@ async def play(msg: _Msg):
 
 async def info(msg: _Msg):
     ans = []
-    for s in C.client.servers:  # type: discord.Server
+    for s in C.client.servers:  # type: C.Types.Server
         ans.append(s.name + ' {' + s.id + '}')
         ans.append('\tOwner: ' + str(s.owner) + ' (' + s.owner.mention + ')')
         ans.append('\tCount: ' + str(s.member_count))
@@ -1248,7 +1247,7 @@ async def info(msg: _Msg):
             ans.append('\t\t' + role_.name + ' {' + role_.mention + '}')
         v = {}
         t = {}
-        for ch in s.channels: # type: discord.Channel
+        for ch in s.channels: # type: C.Types.Channel
             if str(ch.type) == 'text':
                 t[ch.position] = '\t\t' + ch.name + ' {' + ch.id + '}'
             elif str(ch.type) == 'voice':
@@ -1260,7 +1259,7 @@ async def info(msg: _Msg):
         ans.append('\tVoices: ')
         ans += [v[k] for k in sorted(v)]
         ans.append('\tMembers: ')
-        for m in s.members: # type: discord.Member
+        for m in s.members: # type: C.Types.Member
             usr_name = other.uname(m)
             ans.append('\t\t' + usr_name + ' {' + m.mention + '}')
     f_name = 'info[{0}].txt'.format(other.t2utc().strftime('%d|%m|%y %T'))
@@ -1356,6 +1355,7 @@ async def clear_clans(msg: _Msg):
 async def read(msg: _Msg):
     """
     !read ch N: прочитать N сообщений в ch
+    !read log N: прочитать N сообщений из лога
     """
     if len(msg.args) < 3:
         await msg.qanswer(other.comfortable_help([str(read.__doc__)]))
@@ -1374,13 +1374,13 @@ async def read(msg: _Msg):
         await msg.qanswer(":ok_hand:")
         return
 
-    ch = await other.get_channel_or_user(msg.args[1])  # type: discord.Channel
+    ch = await other.get_channel_or_user(msg.args[1])  # type: C.Types.Channel
     if not ch:
         await msg.qanswer("Can't find channel " + msg.args[1])
         return
 
     if not ch.is_private:
-        pr = ch.permissions_for(ch.server.me)  # type: discord.Permissions
+        pr = ch.permissions_for(ch.server.me)  # type: C.Types.Permissions
         if not pr.read_message_history:
             await msg.qanswer("No permissions for reading <#{0}>!".format(ch.id))
             return
@@ -1409,17 +1409,21 @@ async def read(msg: _Msg):
     await msg.qanswer(":ok_hand:")
 
 
+async def send_log(msg: _Msg):
+    log.cmd_send_log()
+    await msg.qanswer(":ok_hand:")
+
 async def log_channel(msg: _Msg):
     if len(msg.args) < 2:
         await msg.qanswer("!log_channel channel")
         return
 
-    ch = other.get_channel(msg.args[1]) # type: discord.Channel
+    ch = other.get_channel(msg.args[1]) # type: C.Types.Channel
     if not ch:
         await msg.qanswer("Can't find channel " + msg.args[1])
         return
 
-    pr = ch.permissions_for(ch.server.me) # type: discord.Permissions
+    pr = ch.permissions_for(ch.server.me) # type: C.Types.Permissions
     if not pr.read_message_history:
         await msg.qanswer("No permissions for reading <#{0}>!".format(ch.id))
         return
@@ -1481,7 +1485,7 @@ async def log_channel(msg: _Msg):
 
 async def server(msg: _Msg):
     ans = ['All servers:']
-    for s in C.client.servers:  # type: discord.Server
+    for s in C.client.servers:  # type: C.Types.Server
         ans.append('\t{0.name} [{0.id}] ({0.owner} [{0.owner.id}])'.format(s))
 
     serv = None
@@ -1510,11 +1514,11 @@ async def server(msg: _Msg):
 async def info_channels(msg: _Msg):
     ans = []
     servs = (msg.auid in ram.cmd_server and [C.client.get_server(ram.cmd_server[msg.auid])]) or C.client.servers
-    for s in servs:  # type: discord.Server
+    for s in servs:  # type: C.Types.Server
         ans.append('{0.name} [{0.id}] ({0.owner} [{0.owner.id}]):'.format(s))
         v = {}
         t = {}
-        for ch in s.channels:  # type: discord.Channel
+        for ch in s.channels:  # type: C.Types.Channel
             if str(ch.type) == 'text':
                 t[ch.position] = ch.name + ' {' + ch.id + '}'
             elif str(ch.type) == 'voice':
@@ -1641,7 +1645,7 @@ async def connect(msg: _Msg):
     if len(msg.args) > 1:
         ch = other.get_channel(' '.join(msg.args[1:]))
         if ch:
-            if ch.type == discord.ChannelType.voice:
+            if ch.type == C.Types.ChannelType.voice:
                 if C.voice and C.voice.is_connected():
                     await C.voice.move_to(ch)
                 else:
@@ -1694,7 +1698,7 @@ async def tst_2(msg: _Msg):
     if not auth or not who:
         await msg.qanswer(other.comfortable_help([str(dominate.__doc__)]))
         return
-    emb = discord.Embed(title=msg.original[len('!dominate ' + msg.args[1] + ' '):], color=auth.color)
+    emb = C.Types.Embed(title=msg.original[len('!dominate ' + msg.args[1] + ' '):], color=auth.color)
     emb.set_author(name=auth.nick or auth.name, icon_url=auth.avatar_url)
     emb.set_image(url='https://cdn.discordapp.com/attachments/420056219068399617/450428811725766667/dominate.gif')
     emb.add_field(name='f1', value='it is f1')

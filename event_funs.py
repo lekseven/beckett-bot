@@ -1,9 +1,7 @@
 import sys
-import ast
-import datetime
 import psycopg2
 import psycopg2.extras
-import discord
+from ast import literal_eval as ast__literal_eval
 from os.path import getmtime as os__getmtime
 
 import constants as C
@@ -15,6 +13,7 @@ import people
 import manager
 import log
 import data
+from d import data_events
 
 timer_quarter_h_handle = None
 timer_half_min_handle = None
@@ -51,8 +50,8 @@ def check_server(fun):
 
 def upd_server():
     log.I('Update Servers data')
-    C.vtm_server = C.client.get_server(C.VTM_SERVER_ID)  # type: discord.Server
-    C.tst_server = C.client.get_server(C.TST_SERVER_ID)  # type: discord.Server
+    C.vtm_server = C.client.get_server(C.VTM_SERVER_ID)  # type: C.Types.Server
+    C.tst_server = C.client.get_server(C.TST_SERVER_ID)  # type: C.Types.Server
     if not C.vtm_server:
         log.E("Can't find server.")
         force_exit()
@@ -100,11 +99,11 @@ async def on_voice_state_update_u(before, after):
     ch = None
     if C.is_test or (after.id in C.voice_alert and v_new):
         user = after
-        ch = v_new # type: discord.Channel
-    elif v_old and v_old.voice_members[0].id in C.voice_alert:
+        ch = v_new # type: C.Types.Channel
+    elif v_old and v_old.voice_members and v_old.voice_members[0].id in C.voice_alert:
         user = v_old.voice_members[0]
         await _del_voice_alert(user.id)
-        ch = v_old # type: discord.Channel
+        ch = v_old # type: C.Types.Channel
 
     if user and ch and len(ch.voice_members) == 1 and not other.s_in_s(('radio', 'радио'), ch.name.lower()):
         log.D('<voice> Event to @here')
@@ -133,10 +132,7 @@ async def _del_voice_alert(uid):
     voice_alert_ids.pop(uid)
     if uid in voice_alert_msg:
         while voice_alert_msg[uid]:
-            try:
-                await C.client.delete_message(voice_alert_msg[uid].pop())
-            except Exception as e:
-                other.pr_error(e, 'on_voice_state_update_u', 'delete_message error')
+            await other.delete_msg(voice_alert_msg[uid].pop())
 
 
 async def on_voice_state_update_o(server, before, after):
@@ -201,7 +197,7 @@ async def on_member_remove_o(server, member):
     await C.client.send_message(def_ch, com.bye(member.id, member.display_name))
 
 
-async def on_member_update_u(before: discord.Member, after: discord.Member):
+async def on_member_update_u(before: C.Types.Member, after: C.Types.Member):
     # it's triggers on changing status, game playing, avatar, nickname or roles
     #
     if after.id == C.users['bot']:
@@ -310,7 +306,7 @@ async def on_member_update_u(before: discord.Member, after: discord.Member):
 
 
 # noinspection PyUnusedLocal
-async def on_member_update_o(server: discord.Server, before: discord.Member, after: discord.Member):
+async def on_member_update_o(server: C.Types.Server, before: C.Types.Member, after: C.Types.Member):
     """"""
     '''if server.id != C.vtm_server.id:
         return
@@ -438,7 +434,7 @@ def load_mem():
                     if row['val'] == 'set()':
                         v = set()
                     else:
-                        v = ast.literal_eval(row['val'])
+                        v = ast__literal_eval(row['val'])
                 except Exception as e:
                     other.pr_error(e, 'load_mem')
                     log.jW("ast.literal_eval can't eval [%s] = '%s'" % (row['var'], row['val']))
@@ -505,7 +501,7 @@ def save_mem():
     for var, val in variables.items():
         if isinstance(val, dict):
             val = {k: v for k, v in val.items() if v != set()}
-        if isinstance(val, (datetime.datetime, datetime.timedelta)):
+        if isinstance(val, (C.Types.Datetime, C.Types.Timedelta)):
             val = str(val)
         rows.append((var, repr(val),))
     try:
@@ -526,8 +522,8 @@ def save_mem():
 
 
 async def load():
-    t1 = os__getmtime('data_to_process.py')
-    t2 = os__getmtime('data_to_use.py')
+    t1 = os__getmtime('d/data_to_process.py')
+    t2 = os__getmtime('d/data_to_use.py')
     if t1 > t2:
         log.W(f'Date of "data_to_process.py" is {other.sec2ts(t1, "%d/%m/%y %H:%M:%S", check_utc=False)}, '
               f'when "data_to_use.py" from {other.sec2ts(t2, "%d/%m/%y %H:%M:%S", check_utc=False)} '
@@ -542,7 +538,10 @@ async def load():
 def save():
     save_mem()
     people.upd()
-    save_texts_used()
+    if C.is_test:
+        log.jI('It\'s test, pass saving texts.')
+    else:
+        save_texts_used()
 
 
 def stop_quarter_h_timer():
@@ -564,11 +563,16 @@ def timer_quarter_h():
     start_quarter_h_timer()
     try:
         log.D('+ Quarter hour timer event!')
-        save()
         _timer_check_games()
+        _timer_check_silence_in_chat()
         timer_quarter_works += 1
+        save()
+        if timer_quarter_works % TMR_IN_H == 0: # hour_timer
+            # other.later_coro(1, _timer_check_stuff())
+            mn = 4
+        else:
+            mn = 1
         log.D('+ Timer event finished!')
-        mn = 4 if timer_quarter_works % TMR_IN_H == 0 else 1
         log.p('------------------------------------- ' * mn)
     except Exception as e:
         other.pr_error(e, 'timer_quarter_h')
@@ -582,6 +586,28 @@ def _timer_check_games():
                 and all(word in g_name for word in VTMB)):
             phr = com.get_t('vtmb', user=f'<@{usr}>')
             com.write_msg(C.main_ch, phr)
+
+
+def _timer_check_silence_in_chat():
+    if ram.last_vtm_msg and ((other.get_sec_total() - ram.last_vtm_msg) > 18000): # 5 hours
+        log.I('<timer_quarter_h> silence event!')
+        phr = com.get_t('silence',)
+        com.write_msg(C.main_ch, phr)
+
+
+async def _timer_check_stuff():
+    log.jD('timer_check_stuff!')
+    msg2del = set()
+    now = other.get_sec_total()
+    for ch_id in (C.channels['stuff'], C.channels['music']):
+        async for msg in C.client.logs_from(other.get_channel(ch_id), limit=1000000): #type: C.Types.Message
+            msg_time = other.get_sec_total(msg.timestamp)
+            if now - msg_time > C.h48:
+                log.jI(f'break:\n{msg.content}')
+                break
+            elif now - msg_time > C.h24:
+                # log.jI(msg.content)
+                msg2del.add(msg)
 
 
 def stop_half_min_timer():
@@ -639,7 +665,7 @@ def on_exit(signum):
 def on_final_exit():
     log.I('\n', 'People online data:')
     log.p('\n'.join(people.print_online_people()))
-    ram.t_finish = other.t2utc()
+    ram.t_finish = other.get_now()
     ram.t_work = (ram.t_finish - ram.t_start)
     if C.was_Ready:
         save()
@@ -671,7 +697,7 @@ def _check_day_ev(now=None, on_midnight=False):
                 log.jI(f'<Day event> {C.usernames[ev]} birthday finished.')
 
     data.day_events = set()
-    ev = data.data_events.get(now.month, {}).get(now.day, ())
+    ev = data_events.date_events.get(now.month, {}).get(now.day, ())
     if isinstance(ev, str) or isinstance(ev, int):
         ev = (ev,)
     data.day_events.update(ev)

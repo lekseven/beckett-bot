@@ -1,4 +1,3 @@
-import discord
 import operator
 import re
 
@@ -16,11 +15,11 @@ class Msg:
     def __init__(self, message):
         """
 
-        :type message: discord.Message
+        :type message: C.Types.Message
         """
         self.auid = message.author.id
-        self.author = message.author
-        self.member = C.vtm_server.get_member(self.auid)
+        self.author = message.author # type: C.Types.User
+        self.member = C.vtm_server.get_member(self.auid) # type: C.Types.Member
         self.personal = not message.server
         self.cmd_server = ((self.auid in ram.cmd_server and C.client.get_server(ram.cmd_server[self.auid])) or
                            (C.prm_server if self.personal else message.server))
@@ -64,10 +63,7 @@ class Msg:
         self.words = set(self.args).difference({'', ' '})
 
     async def delete(self):
-        try:
-            await C.client.delete_message(self.message)
-        except discord.Forbidden:
-            log.jW("Bot haven't permissions here.")
+        await other.delete_msg(self.message)
 
     async def edit(self, new_msg):  #not permissions
         await C.client.edit_message(self.message, new_msg)
@@ -136,8 +132,10 @@ class Msg:
             if yes:
                 try:
                     await C.client.purge_from(channel, limit=count, check=check, after=aft, before=bef)
-                except discord.Forbidden:
+                except C.Exceptions.Forbidden:
                     log.jW("Bot haven't permissions here.")
+                except Exception as e:
+                    other.pr_error(e, 'Msg.purge', 'Unexpected error')
                 else:
                     await self.qanswer(":ok_hand:")
             else:
@@ -176,7 +174,7 @@ async def turn_silence(user, turn=True, server=None, check=None, force=False):
     server = server or C.prm_server
     new_pr = False if turn else None
     check = set(check or ())
-    for ch in server.channels:  # type: discord.Channel
+    for ch in server.channels:  # type: C.Types.Channel
         if str(ch.type) == 'text':
             bot_prm = ch.permissions_for(server.me)
             if bot_prm.manage_roles:
@@ -202,7 +200,7 @@ async def silence_on(name, t=1.0, force=False):
     :param name: string
     :param t: float
     :param force: bool
-    :rtype: discord.Member
+    :rtype: C.Types.Member
     """
     s = C.prm_server
     user = other.find_member(s, name)
@@ -228,7 +226,7 @@ async def silence_on(name, t=1.0, force=False):
 async def silence_off(name):
     """
     :param name: string
-    :rtype: discord.Member
+    :rtype: C.Types.Member
     """
     s = C.prm_server
     user = other.find_member(s, name)
@@ -309,7 +307,7 @@ async def just_embrace(user, clan_name=None):
     if roles:
         try:
             await C.client.add_roles(user, *roles)
-        except C.discord.Forbidden:
+        except C.Exceptions.Forbidden:
             log.jW("Bot can't change roles.")
         except Exception as e:
             other.pr_error(e, 'do_embrace', 'Error in changing roles')

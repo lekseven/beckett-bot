@@ -1,6 +1,47 @@
 # -*- coding: utf8 -*-
 import discord
 import string
+import datetime
+
+
+class Types:
+    User = discord.User
+    Message = discord.Message
+    Reaction = discord.Reaction
+    Embed = discord.Embed
+    CallMessage = discord.CallMessage
+    GroupCall = discord.GroupCall
+    Server = discord.Server
+    Member = discord.Member
+    VoiceState = discord.VoiceState
+    Colour = discord.Colour
+    Game = discord.Game
+    Emoji = discord.Emoji
+    Role = discord.Role
+    Permissions = discord.Permissions
+    PermissionOverwrite = discord.PermissionOverwrite
+    Channel = discord.Channel
+    PrivateChannel = discord.PrivateChannel
+    Invite = discord.Invite
+    Status = discord.Status
+    ChannelType = discord.ChannelType
+    Datetime = datetime.datetime
+    Timedelta = datetime.timedelta
+    Timezone = datetime.timezone
+
+
+class Exceptions:
+    DiscordException = discord.DiscordException
+    LoginFailure = discord.LoginFailure
+    HTTPException = discord.HTTPException
+    Forbidden = discord.Forbidden
+    NotFound = discord.NotFound
+    InvalidArgument = discord.InvalidArgument
+    GatewayNotFound = discord.GatewayNotFound
+    ConnectionClosed = discord.ConnectionClosed
+    OpusError = discord.opus.OpusError
+    OpusNotLoaded = discord.opus.OpusNotLoaded
+
 
 Ready = False
 was_Ready = False
@@ -492,3 +533,6 @@ events = {
 }
 
 events_name = {value: key for (key, value) in events.items()}
+
+h24 = 86400
+h48 = 172800

@@ -13,6 +13,7 @@ import log
 
 data_msgs = {}
 data_typings = {}
+last_msgs = {} # {uid: [(msg, date)]} # it's for deleting doubles
 
 
 class Msg(manager.Msg):
@@ -35,6 +36,9 @@ class Msg(manager.Msg):
 
 async def reaction(message, edit=False):
     msg = Msg(message)
+
+    if msg.is_vtm:
+        ram.last_vtm_msg = other.get_sec_total()
 
     if msg.auid == C.users['bot']:
         if msg.original == data.tremer_joke:
@@ -60,19 +64,40 @@ async def reaction(message, edit=False):
             await msg.answer(com.get_t('threats', name=msg.auid))
             return
 
+    # delete double messages for last 30 sec
+    if not C.is_test and (not edit or (msg.message.attachments or msg.message.embeds)):
+        txt_now = (msg.original +
+                   ''.join([str(att.get('url', other.rand())) for att in msg.message.attachments]) +
+                   ''.join([str(emb.get('url', other.rand())) for emb in msg.message.embeds]))
+        get_sec_now = other.get_sec_total()
+        new_last_msgs = []
+        user_last_msgs = last_msgs.get(msg.auid, [])
+        for txt, date in user_last_msgs:
+            if (get_sec_now - date) < 31:
+                new_last_msgs.append((txt, date))
+                if txt == txt_now:
+                    await msg.delete()
+                    return
+
+        new_last_msgs.append((txt_now, get_sec_now))
+        last_msgs[msg.auid] = new_last_msgs
+        # log.D(f'last_msgs["{msg.author.name}"]: {len(last_msgs[msg.auid])}.')
+        # log.D(f'txt_now: {txt_now}.')
+
+    # if edit msg with "good_time" or command - do nothing
     resp = _data_msgs_check(msg)
     if edit and resp and (resp['type'].startswith('cmd_') or resp['type'] == 'gt'):
         return
-    else:
-        # if we have !cmd -> doing something
-        if msg.text.startswith('!'):
-            fun = re.match(r'!\w*', msg.text).group(0)[1:]
-            if fun in msg.get_commands():
-                msg.prepare(fun)
-                log.I(f'<reaction> [cmd] {fun}')
-                _data_msgs_add(msg, 'cmd_' + fun)
-                await getattr(cmd, fun)(msg)
-                return
+
+    # if we have !cmd -> doing something
+    if msg.text.startswith('!'):
+        fun = re.match(r'!\w*', msg.text).group(0)[1:]
+        if fun in msg.get_commands():
+            msg.prepare(fun)
+            log.I(f'<reaction> [cmd] {fun}')
+            _data_msgs_add(msg, 'cmd_' + fun)
+            await getattr(cmd, fun)(msg)
+            return
 
     m_type, text = _do_reaction(msg)
 
@@ -168,18 +193,25 @@ def _do_reaction(msg:Msg) -> (str, str):
         if response:
             ans_phr = com.get_text_obj(found_keys)
             if ans_phr['text']:
-                return ans_phr['last_key'], ans_phr['text']
+                t = ans_phr['text']
+                if ans_phr['last_key'] == 'Nosferatu' and other.rand() < 0.4:
+                    t = com.text2leet(ans_phr['text'], 0.25)
+                elif ans_phr['last_key'] == 'Malkavian' and other.rand() < 0.4:
+                    t = com.text2malk(ans_phr['text'], 1)
+                return ans_phr['last_key'], t
     else:
         if '╯' in msg.original or 'shchupalko' in msg.original:
             if '┻' in msg.original:
+                len_table = msg.original.count('━')
+                len_wave = msg.original.count('︵')
                 if msg.admin:
-                    return 'rand_tableflip', other.rand_tableflip()
+                    return 'rand_tableflip', other.rand_tableflip(len_wave, len_table)
                 elif msg.channel.id == C.channels['bar']:
                     if C.roles['Primogens'] in msg.roles or prob < 0.01:
                         if other.rand() < 0.2:
                             return 'tableflip_phrase', com.get_t('tableflip_phrase')
                         else:
-                            return 'rand_tableflip', other.rand_tableflip()
+                            return 'rand_tableflip', other.rand_tableflip(len_wave, len_table)
                 else:
                     return 'unflip', '┬─┬ ノ( ゜-゜ノ)'
             else:
@@ -195,13 +227,12 @@ def _do_reaction(msg:Msg) -> (str, str):
         elif msg.original[1:].startswith('shrug'):
             return '/shrug', r'¯\_(ツ)_/¯'
 
-        if beckett:
-            m_type = m_type or _beckett_m_type(msg)
-            ans = _beckett_ans(m_type, msg.auid)
-            if ans:
-                return m_type, ans
+        m_type = m_type or (_beckett_m_type(msg) if beckett else _not_beckett_m_type(msg))
+        ans = _beckett_ans(m_type, msg.auid)
+        if ans:
+            return m_type, ans
 
-        if beckett_reference or (beckett and other.rand() < 0.25):
+        if beckett: # beckett_reference or (beckett and other.rand() < 0.25):
             m_type = 'For_Prince' if msg.auid == C.users['Natali'] and prob < 0.4 else 'beckett'
             ans_phr = com.get_t(m_type)
             return m_type, ans_phr
@@ -234,6 +265,8 @@ def _beckett_m_type(msg)->str:
             return 'bot_dog'
     elif msg.words.intersection({'как'}) and msg.words.intersection({'дела', 'делишки', 'ты', 'чё', 'че'}):
         return 'whatsup'
+    elif 'shchupalko' in msg.text:
+        return 'shchupalko'
     # other questions must be before this
     elif msg.text.rstrip(')(.! ').endswith('?'):
         if msg.admin:
@@ -245,8 +278,28 @@ def _beckett_m_type(msg)->str:
             return 'question'
     elif msg.words.intersection({'скучал', 'скучала', 'скучаль'}):
         return 'boring'
-    elif ('мимими' in msg.text) or len(msg.args) < 4:
+    elif ('мимими' in msg.text) or len(msg.original.split()) < 4:
         return 'no-response'
+    return ''
+
+
+def _not_beckett_m_type(msg)->str:
+    to_all = ('вам', 'всем', 'всех', 'чат', 'чату', 'чатик', 'чатику', 'народ', 'люди', 'сородичи', 'каиниты',)
+    if not msg.words.intersection(to_all):
+        return ''
+
+    # yes = 'да' in msg.words
+    no = 'не' in msg.words or 'нет' in msg.words
+
+    if msg.words.intersection(data.sm_resp['hi_plus']):
+        return 'hi_plus'
+    elif msg.words.intersection(data.sm_resp['bye']):
+        return 'bye'
+    elif msg.words.intersection(data.sm_resp['check_like']) and not no:
+        return 'love'
+    elif msg.words.intersection({'скучал', 'скучала', 'скучаль'}):
+        return 'boring'
+    return ''
 
 
 def _beckett_ans(m_type, author_id):
@@ -255,7 +308,7 @@ def _beckett_ans(m_type, author_id):
     keys = {'sm_resp'}
     punct = True
     name_phr = False
-    if m_type is None:
+    if not m_type:
         ans = ''
     elif 'no-response' in m_type:
         ans = 'no-response'
@@ -274,6 +327,8 @@ def _beckett_ans(m_type, author_id):
         ans = data.tremer_joke
     elif m_type == 'bot_dog':
         ans = com.get_t('threats', name=author_id)
+    elif m_type == 'shchupalko':
+        ans = f"<@{author_id}> {emj.e(other.choice('s_shchupalko0', 's_shchupalko1', 's_shchupalko3'))}"
     elif m_type in {'whatsup', 'question'}:
         keys = {m_type}
     elif m_type == 'boring':
@@ -322,7 +377,7 @@ def _emj_on_message(msg:Msg, beckett):
     if author in ram.ignore_users:
         return
 
-    pause_and_add, e, e_str = emj.pause_and_add, emj.e, emj.e_str
+    pause_and_add, pause_and_rem, e, e_str = emj.pause_and_add, emj.pause_and_rem, emj.e, emj.e_str
     prob = other.rand()
 
     sm_for_beckett = {
@@ -380,6 +435,15 @@ def _emj_on_message(msg:Msg, beckett):
     # if birthday user is mentioned in msg -> copy emoji from msg under this msg
     if data.day_events.intersection(message.raw_mentions):
         em_in_text = emj.get_em_names(msg.original)
+        em_in_text = [emj.e_or_s(em) for em in em_in_text]
+        del_em = set()
+        for react in msg.message.reactions: # type: C.Types.Reaction
+            if react.me and react.count < 2:
+                del_em.add(react.emoji)
+        common_em = del_em.intersection(em_in_text)
+        del_em.difference_update(common_em)
+        em_in_text = [em for em in em_in_text if em not in common_em]
+        pause_and_rem(message, del_em, t=0, all_=True)
         pause_and_add(message, em_in_text, 1, all_=True)
     # birthday emojis to birthday user
     if author in data.day_events:
