@@ -420,7 +420,8 @@ def load_mem():
     not_load = {'t_start', 't_finish', 't_work'}
     module = sys.modules[ram.__name__]
     module_attrs = dir(module)
-    variables = set(key for key in module_attrs if key[0] != '_' and not callable(getattr(module, key)))
+    variables = set(key for key in module_attrs if key[0] != '_' and
+                    not callable(getattr(module, key)) and not hasattr(getattr(module, key),'__dict__'))
     conn = None
     try:
         conn = psycopg2.connect(C.DATABASE_URL, sslmode='require')
