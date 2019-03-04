@@ -450,21 +450,23 @@ def _emj_on_message(msg:Msg, beckett):
         pause_and_add(message, ('🎂', '🍰', '🎈', '🎁', '🎊', '🎉', '💰', '💸', '💵', '💴', '💶', '💷',
                                 '🖼', '🌠', '🎇', '🎆', '📯', '🆙', '🎯', '🎰', '🥇', '🏅', '🎖', '🏆', '💛',))
 
+    prob = other.rand()
     if C.events['Valentine\'s Day'] in data.day_events:
-        prob = other.rand()
         if author in {C.users['Natali'], C.users['Tilia']}:
             pause_and_add(message, {'❤', '💛', '💙', '💜', '❣', '💕', '💞', '💓', '💗', '💖', '💝', '♥'})
         elif prob < 0.1:
             pause_and_add(message, {'💌', '💟', })
 
     elif C.events['8 March'] in data.day_events:
-        prob = other.rand()
         if author == C.users['Natali'] and prob < 0.1:
             pause_and_add(message, ('a_Toreador_light', 'a_Toreador_wave'))
         elif C.roles['Tzimisce'] in msg.roles:
             pause_and_add(message, 'wilted_rose')
         elif author in C.female:
-            if C.roles['Toreador'] in msg.roles and prob < 0.1:
+            if ((msg.admin or msg.moder or C.roles['Primogens'] in msg.roles) and prob < 0.5) or prob < 0.1:
+                pause_and_add(message, ('a_open_flower', 'a_rose_grows', 'a_heart_rose', 'a_rose_pulse',
+                                        'a_flower_twink', 'a_color_flower', 'a_water_lily', 'a_flower_chameleon'))
+            elif C.roles['Toreador'] in msg.roles and prob < 0.2: # 10%: 0.1-0.2
                 pause_and_add(message, 'Logo_Toreador')
             else:
                 pause_and_add(message, ('🌺', '🌻', '🌹', '🌷', '🌼', '🌸', '💐'))

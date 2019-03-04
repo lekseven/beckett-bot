@@ -33,10 +33,11 @@ class Msg:
         self.words = set()
         self.channel = message.channel
         self.chid = message.channel.id
-        self.roles = {role.id for role in self.member.roles[1:]} if (self.member and self.is_vtm) else set()
+        self.roles = {role.id for role in self.member.roles[1:]} if self.member else set()
         self.prince = self.auid == C.users['Natali']
         self.super = self.auid in C.superusers
         self.admin = self.super or self.prince or self.roles.intersection({C.roles['Sheriff'], C.roles['Scourge']})
+        self.moder = self.member.server_permissions.administrator if self.member else False
         self.torpor = (not self.prince and self.auid in ram.torpor_users and (
                 self.channel.id in ram.torpor_users[self.auid] or 'All' in ram.torpor_users[self.auid]))
         self.cmd_ch = ram.cmd_channels.get(self.auid, set())
