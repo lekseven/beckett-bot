@@ -544,6 +544,8 @@ def deepcopy(o):
 
 
 def s_in_s(s_child, s_parent, all_=False):
+    if not(s_child or s_parent):
+        return False
     for s in s_child:
         if s in s_parent:
             if not all_:

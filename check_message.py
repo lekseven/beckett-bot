@@ -228,6 +228,7 @@ def _do_reaction(msg:Msg) -> (str, str):
             return '/shrug', r'¯\_(ツ)_/¯'
 
         m_type = m_type or (_beckett_m_type(msg) if beckett else _not_beckett_m_type(msg))
+        _emj_by_mtype(msg, m_type)
         ans = _beckett_ans(m_type, msg.auid)
         if ans:
             return m_type, ans
@@ -251,18 +252,20 @@ def _beckett_m_type(msg)->str:
         return 'fun_smiles'
     elif msg.words.intersection(data.sm_resp['bye']):
         return 'bye'
-    elif msg.words.intersection(data.sm_resp['check_like']) and not no:
-        return 'love'
-    elif 'любимый клан' in msg.text:
-        if other.rand() > 0.09:
-            return 'apoliticality'
-        else:
-            return 'tremer_joke'
     elif msg.words.intersection(data.sm_resp['bot_dog']):
         if msg.admin or other.rand() > 0.2:
             return 'not_funny'
         else:
             return 'bot_dog'
+    elif msg.words.intersection(data.sm_resp['check_love']) and not no:
+        return 'love'
+    elif msg.words.intersection(data.sm_resp['check_like']) and not no:
+        return 'like'
+    elif 'любимый клан' in msg.text:
+        if other.rand() > 0.09:
+            return 'apoliticality'
+        else:
+            return 'tremer_joke'
     elif msg.words.intersection({'как'}) and msg.words.intersection({'дела', 'делишки', 'ты', 'чё', 'че'}):
         return 'whatsup'
     elif 'shchupalko' in msg.text:
@@ -285,20 +288,23 @@ def _beckett_m_type(msg)->str:
 
 def _not_beckett_m_type(msg)->str:
     to_all = ('вам', 'всем', 'всех', 'чат', 'чату', 'чатик', 'чатику', 'народ', 'люди', 'сородичи', 'каиниты',)
-    if not msg.words.intersection(to_all):
-        return ''
-
     # yes = 'да' in msg.words
     no = 'не' in msg.words or 'нет' in msg.words
-
-    if msg.words.intersection(data.sm_resp['hi_plus']):
-        return 'hi_plus'
-    elif msg.words.intersection(data.sm_resp['bye']):
-        return 'bye'
-    elif msg.words.intersection(data.sm_resp['check_like']) and not no:
-        return 'love'
-    elif msg.words.intersection({'скучал', 'скучала', 'скучаль'}):
-        return 'boring'
+    if msg.words.intersection(to_all):
+        if msg.words.intersection(data.sm_resp['hi_plus']):
+            return 'hi_plus'
+        elif msg.words.intersection(data.sm_resp['bye']):
+            return 'bye'
+        elif msg.words.intersection(data.sm_resp['check_love']) and not no:
+            return 'love'
+        elif msg.words.intersection({'скучал', 'скучала', 'скучаль'}):
+            return 'boring'
+    else:
+        word_roots_hurt = ('обижа', 'трогат', 'трогай', 'оскорбля', 'мучить', 'мучай', 'издева')
+        words_stop = ('отставить', 'хватит', 'перестаньте', 'перестань')
+        if ('беккет' in msg.text and
+                (other.s_in_s(word_roots_hurt, msg.text) and (msg.words.intersection(words_stop) or no))):
+            return 'like'
     return ''
 
 
@@ -321,6 +327,8 @@ def _beckett_ans(m_type, author_id):
         else:
             ans = (':heart:', ':hearts:', ':kissing_heart:', ':relaxed:')
         ans = other.name_phr(author_id, ans, punct=False)
+    elif m_type == 'like':
+        ans = 'no-response'
     elif m_type == 'apoliticality':
         keys.add(m_type)
     elif m_type == 'tremer_joke':
@@ -470,3 +478,14 @@ def _emj_on_message(msg:Msg, beckett):
                 pause_and_add(message, 'Logo_Toreador')
             else:
                 pause_and_add(message, ('🌺', '🌻', '🌹', '🌷', '🌼', '🌸', '💐'))
+
+
+def _emj_by_mtype(msg:Msg, m_type):
+    message = msg.message
+    author = msg.auid
+
+    if author in ram.ignore_users:
+        return
+
+    if m_type == 'like':
+        emj.pause_and_add(message, ('😊', '☺', '🐱', '😺', '😇', '😌', '😘', '♥', ))
