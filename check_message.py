@@ -451,6 +451,11 @@ def _emj_on_message(msg:Msg, beckett):
         pause_and_add(message, sm_for_nothing[author])
 
     # Day Events
+    if not data.day_events:
+        return
+
+    prob = other.rand()
+    now = other.get_now()
 
     # if birthday user is mentioned in msg -> copy emoji from msg under this msg
     if data.day_events.intersection(message.raw_mentions):
@@ -470,14 +475,13 @@ def _emj_on_message(msg:Msg, beckett):
         pause_and_add(message, ('🎂', '🍰', '🎈', '🎁', '🎊', '🎉', '💰', '💸', '💵', '💴', '💶', '💷',
                                 '🖼', '🌠', '🎇', '🎆', '📯', '🆙', '🎯', '🎰', '🥇', '🏅', '🎖', '🏆', '💛',))
 
-    prob = other.rand()
-    if C.events['Valentine\'s Day'] in data.day_events:
+    if C.events['Valentine\'s Day'] in data.day_events and now.hour > 3:
         if author in {C.users['Natali'], C.users['Tilia']}:
             pause_and_add(message, {'❤', '💛', '💙', '💜', '❣', '💕', '💞', '💓', '💗', '💖', '💝', '♥'})
         elif prob < 0.1:
             pause_and_add(message, {'💌', '💟', })
 
-    elif C.events['8 March'] in data.day_events:
+    elif C.events['8 March'] in data.day_events and now.hour > 3:
         if author == C.users['Natali'] and prob < 0.1:
             pause_and_add(message, ('a_Toreador_light', 'a_Toreador_wave'))
         elif C.roles['Tzimisce'] in msg.roles:
