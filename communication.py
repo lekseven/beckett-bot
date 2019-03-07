@@ -543,7 +543,7 @@ async def delete_msg(message=None, ch_i=None, msg_id=None):
     await other.delete_msg(message)
 
 
-def text2leet(text, prob=0.5):
+def text2leet(text, prob=0.25):
     new_text = []
     esc = {'*', '_', '~', '`', '|', '\\',}
     for symb in text:

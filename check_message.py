@@ -123,6 +123,12 @@ async def reaction(message, edit=False):
         # elif m_type and not old_type:
 
     if m_type and text:
+        if (':' not in text and msg.roles.intersection((C.roles['Nosferatu'], C.roles['Malkavian'])) and
+                other.rand() < 0.1):
+            if C.roles['Malkavian'] in msg.roles:
+                text = com.text2malk(text, 1)
+            elif C.roles['Nosferatu'] in msg.roles:
+                text = com.text2leet(text, 0.25)
         log.I(('<reaction.edit>' if edit else '<reaction>') + f'[{m_type}]')
         save_obj = _data_msgs_add(msg, m_type)
         if text != 'no-response':
@@ -175,6 +181,12 @@ def _do_reaction(msg:Msg) -> (str, str):
             found_keys = clan
     elif embrace_or_return:
         return '', ''
+
+    if (msg.channel.id == C.channels['gallery'] and msg.auid in (C.users['Hadley'], C.users['Natali']) and
+        (msg.message.attachments or msg.message.embeds) and prob < 0.2):
+        log.jI('gallery event')
+        phr = com.get_t('gallery_picture', user=f'<@{msg.auid}>')
+        com.write_msg(C.main_ch, phr)
 
     gt = msg.check_good_time(beckett)
     if gt:
@@ -272,7 +284,7 @@ def _beckett_m_type(msg)->str:
         return 'shchupalko'
     # other questions must be before this
     elif msg.text.rstrip(')(.! ').endswith('?'):
-        if msg.admin:
+        if msg.admin or (msg.moder and other.rand() < 0.7):
             if (yes == no) or yes:
                 return 'yes'
             else:
@@ -488,4 +500,4 @@ def _emj_by_mtype(msg:Msg, m_type):
         return
 
     if m_type == 'like':
-        emj.pause_and_add(message, ('😊', '☺', '🐱', '😺', '😇', '😌', '😘', '♥', ))
+        emj.pause_and_add(message, ('😊', '☺', '🐱', '😺', '😇', '😌', '😘', '♥', ), t=1)
