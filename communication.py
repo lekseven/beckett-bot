@@ -546,8 +546,9 @@ async def delete_msg(message=None, ch_i=None, msg_id=None):
 def text2leet(text, prob=0.25):
     new_text = []
     esc = {'*', '_', '~', '`', '|', '\\',}
+    dont_touch = {'#', '@', '&', '<', '>', '0', '1', '2', '3', '4', '5', '6', '7', '8', '9'}
     for symb in text:
-        if symb in data_com.dct_leet and other.rand() <= prob:
+        if symb in data_com.dct_leet and symb not in dont_touch and other.rand() <= prob:
             new_s = other.choice(data_com.dct_leet[symb]) # type: str
             esc_s = esc.intersection(new_s)
             if esc_s and symb not in esc:
@@ -564,12 +565,13 @@ def text2malk(text, prob=0.5):
         return text
     f_set = {'`', '**`', '**', '_`', '_`', '_', '_',} # '~~', # italic more often then others
     esc = {'*', '_', '~', '`', '|', '\\', }
+    dont_touch = {'#', '@', '&', '<', '>', '0', '1', '2', '3', '4', '5', '6', '7', '8', '9'}
     was_esc = False
     last_f = '0'
 
     new_text = []
     for i, symb in enumerate(text): # type: int, str
-        if symb in string__whitespace:
+        if symb in string__whitespace or symb in dont_touch:
             new_text.append(symb)
             continue
         elif was_esc and symb in esc:
@@ -589,7 +591,7 @@ def text2malk(text, prob=0.5):
         was_esc = False
         if symb != '.' and other.rand() <= prob:
             prob2 = other.rand()
-            new_s = symb.upper() if prob2 <= 0.4 else symb
+            new_s = symb.upper() if prob2 <= 0.5 else symb
             if prob2 > 0.1:
                 f = other.choice({s for s in f_set if s[0] != last_f[0]})
                 last_f = f

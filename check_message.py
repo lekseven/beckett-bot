@@ -37,8 +37,11 @@ class Msg(manager.Msg):
 async def reaction(message, edit=False):
     msg = Msg(message)
 
+    # in vtm open channels, save date of last message
     if msg.is_vtm:
-        ram.last_vtm_msg = other.get_sec_total()
+        every_prm = msg.channel.overwrites_for(C.vtm_server.default_role)
+        if every_prm.read_messages is not False:    # True or None
+            ram.last_vtm_msg = other.get_sec_total()
 
     if msg.auid == C.users['bot']:
         if msg.original == data.tremer_joke:
@@ -183,7 +186,7 @@ def _do_reaction(msg:Msg) -> (str, str):
         return '', ''
 
     if (msg.channel.id == C.channels['gallery'] and msg.auid in (C.users['Hadley'], C.users['Natali']) and
-        (msg.message.attachments or msg.message.embeds) and prob < 0.2):
+            (msg.message.attachments or msg.message.embeds) and prob < 0.2):
         log.jI('gallery event')
         phr = com.get_t('gallery_picture', user=f'<@{msg.auid}>')
         com.write_msg(C.main_ch, phr)

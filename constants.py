@@ -368,7 +368,7 @@ usernames = {_id:name for name, _id in users.items()}
 female = {
     users['Natali'], users['Doriana'], users['Buffy'], users['Soul'], users['Tilia'], users['Red Queen'],
     users['miss Alex'], users['verasolar'], users['YUNO'], users['Lineyka'], users['AyrinSiverna'], users['Anna Green'],
-    users['Rouge'], users['Frabel'], users['Максвель'], users['валерьянка'], users['Ханако'], users['Vasheska'],
+    users['Rouge'], users['Frabel'], users['Максвель'], users['валерьянка'], users['Vasheska'],
     users['broomstik'], users['Insane'], users['Тенебра'], users['Sea Freya'], users['aleth_lavellan'],
     users['Рeach of earthquakes'], users['Aileen'], users['el dia'], users['Kuma'], users['IrinKa'], users['ayazani'],
     users['Jennifer'], users['OlhaT'], users['Hellgira'], users['Alt'], users['Pomsky'], users['Ложка Сахара'],
