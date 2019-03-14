@@ -13,7 +13,7 @@ mute_light_channels = set()
 ignore_users = set()
 emoji_users = set()
 
-game = False    # type: C.Types.Game
+game = False    # type: str or bool
 silence_ans = {}
 t_start = None # type: C.Types.Datetime
 t_finish = None # type: C.Types.Datetime

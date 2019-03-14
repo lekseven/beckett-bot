@@ -296,7 +296,7 @@ async def test_status(state):
 
 async def set_game(name=''):
     game = C.Types.Game(name=name) if name else None
-    ram.game = game or False
+    ram.game = name or False
     status = C.prm_server.me.status
     await C.client.change_presence(game=game, status=status, afk=False)
 

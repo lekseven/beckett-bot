@@ -20,13 +20,13 @@ class Msg(manager.Msg):
     def get_commands(self):
         #module_attrs = dir(cmd)
         #cmds = set(key for key in module_attrs if key[0] != '_' and callable(getattr(cmd, key)))
-        cmds = cmd.all_cmds.copy()
+        cmds = cmd._all_cmds.copy()
         if self.channel.id == C.channels['primogens']:
-            cmds.intersection_update(cmd.primogenat_cmds)
+            cmds.intersection_update(cmd._primogenat_cmds)
         elif self.admin and (not self.super or (not self.personal and not self.is_tst)):
-            cmds.intersection_update(cmd.admin_cmds)
+            cmds.intersection_update(cmd._admin_cmds)
         elif not self.admin:
-            free = cmd.free_cmds
+            free = cmd._free_cmds
             if {self.auid}.intersection({C.users['Creol'], C.users['Tony']}):
                 free.add('dominate')
             cmds.intersection_update(free)
@@ -261,7 +261,7 @@ def _beckett_m_type(msg)->str:
     no = 'не' in msg.words or 'нет' in msg.words
     if msg.words.intersection({'спасибо', 'благодарю'}):  #'спасибо'
         return 'wlc'
-    elif msg.words.intersection(data.sm_resp['hi_plus']):
+    elif msg.words.intersection(data.sm_resp['hi_plus']) or 'доброго времени суток' in msg.text:
         return 'hi_plus'
     elif msg.words.intersection(data.sm_resp['fun_smiles']):
         return 'fun_smiles'
@@ -305,6 +305,10 @@ def _not_beckett_m_type(msg)->str:
     to_all = ('вам', 'всем', 'всех', 'чат', 'чату', 'чатик', 'чатику', 'народ', 'люди', 'сородичи', 'каиниты',)
     # yes = 'да' in msg.words
     no = 'не' in msg.words or 'нет' in msg.words
+
+    if 'доброго времени суток' in msg.text and not msg.message.raw_mentions:
+        return 'hi_plus'
+
     if msg.words.intersection(to_all):
         if msg.words.intersection(data.sm_resp['hi_plus']):
             return 'hi_plus'

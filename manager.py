@@ -167,7 +167,7 @@ class Msg:
 
     def get_commands(self):
         # it's rewrite in check_message
-        pass
+        return set()
 
 
 async def turn_silence(user, turn=True, server=None, check=None, force=False):

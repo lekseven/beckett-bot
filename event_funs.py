@@ -254,8 +254,9 @@ async def on_member_update_u(before: C.Types.Member, after: C.Types.Member):
         else:
             log.I(f'<on_member_update> {{???}} {a_n} - avatar change, but there are no avatar_urls...')
 
-        # degradation
-        if False and after.avatar_url and after.id not in ram.ignore_users and people.was_writing(after.id, 48):
+        # small degradation
+        if (other.rand() < 0.01 and after.avatar_url and
+                after.id not in ram.ignore_users and people.was_writing(after.id, 48)):
             phr = com.get_t('new_avatar', user=f'<@{after.id}>')
             com.write_msg(C.main_ch, phr)
 
@@ -292,17 +293,28 @@ async def on_member_update_u(before: C.Types.Member, after: C.Types.Member):
 
     if before.status != after.status or not smth_happend:
         people.online_change(after.id, after.status, force=before.status == after.status)
-        # degradation
-        g_key = False # people.online_ev(after.id) if (after.id not in ram.ignore_users) else False
-        if g_key:
-            gt_key = {'g_key': g_key, 'g_type': 0}
-            phr = com.phrase_gt(gt_key, after.id)
-            if phr:
-                com.write_msg(C.main_ch, phr)
-                people.set_gt(after.id, gt_key['g_key'])
+        # small degradation
+        _check_status_change(after)
 
     if (smth_happend or people.is_online(after.id)) and before.roles == after.roles:
         on_user_life_signs(after.id)
+
+
+def _check_status_change(user):
+    prob = other.rand()
+    now = other.get_now()
+    g_key_check = (user.id in {C.users['Blaise']} and prob < 0.11) or prob < 0.01
+    g_key = people.online_ev(user.id) if (g_key_check and user.id not in ram.ignore_users) else False
+    if g_key:
+        gt_key = {'g_key': g_key, 'g_type': 0}
+        phr = com.phrase_gt(gt_key, user.id)
+        if phr:
+            if user.id == C.users['Blaise']:
+                days = (C.Types.Datetime(now.year, 7, 23).date() - now.date()).days
+                days = days if days >= 0 else (C.Types.Datetime(now.year + 1, 7, 23).date() - now.date()).days
+                phr += '..' + str(days)
+            com.write_msg(C.main_ch, phr)
+            people.set_gt(user.id, gt_key['g_key'])
 
 
 # noinspection PyUnusedLocal
@@ -598,17 +610,23 @@ def _timer_check_silence_in_chat():
 
 async def _timer_check_stuff():
     log.jD('timer_check_stuff!')
-    msg2del = set()
+    msg2del = []#set()
     now = other.get_sec_total()
     for ch_id in (C.channels['stuff'], C.channels['music']):
         async for msg in C.client.logs_from(other.get_channel(ch_id), limit=1000000): #type: C.Types.Message
             msg_time = other.get_sec_total(msg.timestamp)
-            if now - msg_time > C.h48:
+            if False and now - msg_time > C.h48:
                 log.jI(f'break:\n{msg.content}')
                 break
             elif now - msg_time > C.h24:
-                # log.jI(msg.content)
-                msg2del.add(msg)
+                if not(msg.attachments or msg.embeds or msg.pinned or
+                        other.s_in_s(('http://', 'https://',  'www.', '```'), msg.content)):
+                    # msg2del.add(msg)
+                    msg2del.append(msg)
+    msg2del.reverse()
+    for msg in msg2del:
+        txt = await log.format_mess(msg)
+        log.p(txt)
 
 
 def stop_half_min_timer():
