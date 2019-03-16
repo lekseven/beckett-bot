@@ -19,26 +19,38 @@ import local_memory as ram
 
 def comfortable_help(docs):
     help = {}
+    text = []
     lens = set()
     for doc in docs:
-        if doc:
-            key = re.search('![a-zA-Z_]*?[: ]', doc).group(0)[1:-1]
+        if not doc:
+            continue
+
+        key = re.search('!?[a-zA-Z_]+?[: ]', doc)
+        if key:
+            key = key.group(0)[0:-1]
+            if key.startswith('!'):
+                key = '¡' + key
             help[key] = {}
             for cmd in doc.split('\n'):  # type: str
                 s = cmd.find('!')
-                if s > -1:
-                    i = cmd.find(':')
+                s = s if s > -1 else 0
+                i = cmd.find(':')
+                if i > 0:
                     help[key][cmd[s:i]] = cmd[i + 1:]
                     lens.add(len(cmd[s:i]))
+        else:
+            text.append(doc)
+
     if not lens:
         return False
+
     key_len = max(lens) + 1
     keys = sorted(help.keys())
-    text = []
     for k in keys:
         cmds = sorted(help[k].keys(), key=len)
         for cmd in cmds:
-            text.append((cmd + ':').ljust(key_len, ' ') + help[k][cmd])
+            t_cmd = cmd
+            text.append((t_cmd + ':').ljust(key_len, ' ') + help[k][cmd])
             # text.append('**`' + cmd + '`**:' + help[k][cmd])
 
     text_len = len(text)

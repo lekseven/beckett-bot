@@ -16,17 +16,106 @@ import emj
 import communication as com
 
 _Msg = manager.Msg
-roll_cmds = {'roll', 'rollw', 'rollv', 'r', 'rw', 'rv', }
-free_cmds = {'help', 'ignore', }
-free_cmds.update(roll_cmds)
-admin_cmds = {
+_roll_cmds = {'roll', 'rollw', 'rollv', 'r', 'rw', 'rv', }
+_free_cmds = {'help', 'ignore', }
+_free_cmds.update(_roll_cmds)
+_admin_cmds = {
     'unsilence_all',
     'channel', 'unchannel', 'report', 'unreport', 'say', 'sayf', 'emoji', 'dominate',
     'purge', 'purge_aft', 'purge_ere', 'purge_bet', 'embrace', 'get_offtime', 'get_offlines', 'get_active',
     'deny', 'undeny', 'mute', 'unmute', 'mute_list', 'mute_l', 'unmute_l', 'mute_l_list',
 }
-admin_cmds.update(free_cmds)
-primogenat_cmds = {'help', 'silence', 'unsilence', 'kick'}
+_admin_cmds.update(_free_cmds)
+_primogenat_cmds = {'help', 'silence', 'unsilence', 'kick'}
+
+_cmd_groups = {
+    'auxiliary': {'channel', 'unchannel', 'report', 'unreport',},
+    'interaction': {'say', 'sayf', 'emoji', 'dominate',},
+    'mute': {'mute', 'unmute', 'mute_list', 'mute_l', 'unmute_l', 'mute_l_list',},
+    'info': {'get_offtime', 'get_offlines', 'get_active',},
+    'moderate': {'embrace', 'deny', 'undeny', 'unsilence_all',},
+    'purge': {'purge', 'purge_aft', 'purge_ere', 'purge_bet',},
+    'roll': _roll_cmds,
+    'extra': {},
+    # === === ===
+}
+_cmd_in_group = {cmd_name:gr_name for gr_name, gr_set in _cmd_groups.items() if gr_set for cmd_name in gr_set}
+_groups_help = {
+    'auxiliary': 'вспомогательные команды для других команд',
+    'interaction': 'взаимодействие с пользователями',
+    'mute': 'управление комментированием Беккета в каналах',
+    'info': 'получить информацию о пользователях',
+    'moderate': 'волшебная палочка модератора',
+    'purge': 'массовое удаление сообщений в каналах',
+    'roll': 'броски дайсов',
+    'extra_admin': 'дополнительная справка админу',
+    'extra_roll': 'дополнительная справка по кубам',
+    # === === ===
+}
+extra_admin_help = (
+'''```css
+Условные обозначения аргументов:
+    ch - id, обращение (#channel) или имя канала без пробелов;
+    usr - id, обращение (@name), или любой из ников без пробела 
+        (например Soul, Soulcapturer или Soulcapturer#2253);
+    username - аналогично usr, но можно и ники с пробелами;
+    role - id, обращение (@role) или имя роли без пробелов ;
+    msg - id сообщения;
+    cmd - имя команды, известной боту;
+    text - просто любой текст;
+    * - бесконечно повторение последнего аргумента разделённого пробелом
+    (например ch* = ch1 ch2 ch3...; usr* = usr1 usr2 usr3...);
+```''',
+)
+
+extra_roll_help = (
+r'''```css
+Хелп по броскам дайсов (!roll, !rollw, !rollv, !r, !rw, !rv):
+    !roll, !rollw, !rollv - выводят результат бросков в столбец;
+    !r, !rw, !rv - имеют тот же синтаксис, что и команды выше, 
+        но выводят кубы в строку, что позволяет бросать больше кубов за раз;
+    !команда хdу - прости кинет x кубов y, без подсчёта результатов
+        (если ну указан dу - берётся d10)
+    • если указана сложность, тип сравнения или некоторые доп параметры,
+    то будут подсчитываться успехи (по умолчанию сложность y/2+1,
+    сравнение - '>=')
+    !roll +N xdy - к каждому кубу добавится N
+    !roll -N xdy - к каждому кубу вычтется N
+    !roll xdy+ - подсчитать сумму броска
+    !roll xdy+N - подсчитать сумму броска и добавить N
+        если при подсчёте суммы указана проверка по сложности,
+        то будут суммироваться только проходящие по ней броски;
+    !roll x1dy1 x2dy2 x3dy3... - бросить несколько разных кубов за раз
+        если хоть у одного будет считаться сумма, то будет считаться у всех;
+        если где-то указана сложность и не считается сумма, будет сумма успехов;
+    !roll x1dy1 - x2dy2
+        вычесть из результатов первого броска результаты второго;
+        применимы правила касательно подсчёта суммы и успехов;
+```''',
+r'''```css
+    Доп параметры указываются сразу после команды (для всех бросков) 
+        или последними (для данного броска).
+    Между собой смешиваются в любом порядке, без пробелов,
+        например: 'sh', 'fsph', 'hf3', 'f1vh' и тому подобное;
+    sp/p/v/s - 'бонусы' при макс грани куба (10 для d10) если это успех:
+        sp - +1 доп успех
+        p - +1 доп успех за каждую пару (для d10 - всего 3 успеха за две 10)
+        v - +2 доп успеха за каждую пару (аля механика V5)
+        s - доп броски (рекурсивно), специализация в МТ
+        • любой из них вкл подсчёт успехов, даже если указано лишь кол-во кубов
+        • из всех них за раз работает лишь один доп параметр
+    fx  - отнимает успехи за броски меньше или равно x; вкл подсчёт успехов;
+    f   - аналогично 'f1'; 
+        • !rollw (!rw) идёт с вкл 'f' по умолчанию
+    h   - вывод кубов с тэгом @here 
+        (что включит жёлтую подсветку для всех - удобно для строчных команд);
+    !rollw (!rw) полностью идентична !roll (!r), но уже со включенным 'f'
+        (и потому всегда будет считать успехи)
+    !rollv (!rv) бросает кубы по правилам V5 (пиктограммы вместо цифр),
+        потому все доп параметры кроме 'h' не имеют для неё смысла
+    !команда (без других параметров) - выведет хелп только по этой команде
+```''',
+)
 
 
 # region Free
@@ -36,95 +125,54 @@ async def help(msg: _Msg):
     !help cmd*: поиск хелпа по категориям и командам \
     """
     module = sys.modules[__name__]
-    # module_attrs = dir(module)
-    # cmds = set(key for key in module_attrs if key[0] != '_' and callable(getattr(module, key)))
-    # if not msg.admin:
-    #     cmds.intersection_update(free_cmds)
     cmds = msg.get_commands()
-    flt = {'free': free_cmds, 'admin': admin_cmds, 'super': only_super,
-           'primogenat': primogenat_cmds, 'primogen': primogenat_cmds,
+    fltr = {'free': _free_cmds, 'admin': _admin_cmds, 'super': _only_super,
+           'primogenat': _primogenat_cmds, 'primogen': _primogenat_cmds,
            'r': {'r', 'rw', 'rv'}, }
-    if len(msg.args) > 1:
-        ln = 1
-        if msg.args[1] in flt:
-            cmds.intersection_update(flt[msg.args[1]])
-            ln = 2
-        if msg.args[ln:]:
-            cmds = {cmd for cmd in cmds if any(arg in cmd for arg in msg.args[ln:])}
-        # cmds.intersection_update(set(msg.text.split()[1:]))
-
     texts = []
-    comf_help = ''
     docs = []
+    args = set(msg.args[1:])
+    if args:
+        request_args = set()
+
+        fltr_names = args.intersection(fltr)
+        [request_args.update(fltr[gr]) for gr in fltr_names]
+        args.difference_update(fltr_names)
+
+        group_names = args.intersection(_cmd_groups)
+        [request_args.update(_cmd_groups[gr]) for gr in group_names]
+        args.difference_update(group_names)
+
+        args.update(request_args)
+        cmds_full = cmds.intersection(args)
+        args_chank = args.difference(cmds_full)
+        cmds_chunk = cmds.difference(cmds_full)
+        cmds_chunk = {cmd for cmd in cmds_chunk if other.s_in_s(args_chank, cmd)}
+        cmds = cmds_full.union(cmds_chunk)
+
+        if msg.admin and 'extra_admin' in args:
+            texts += extra_admin_help
+        if 'extra_roll' in args:
+            texts += extra_roll_help
+    else:
+        group_cmds = cmds.intersection(_cmd_in_group)
+        groups = {_cmd_in_group[cmd] for cmd in group_cmds}
+        cmds.difference_update(_cmd_in_group)
+        if msg.admin:
+            groups.add('extra_admin')
+        groups.add('extra_roll')
+        docs.append('Категории справки (без "!"):')
+        docs += [gr + ': ' + _groups_help[gr] for gr in groups if gr in _groups_help]
+
+    comf_help = ''
     if cmds:
-        if msg.admin and any((cmds == all_cmds, cmds == only_super, cmds == admin_cmds)):
-            texts.append(('''```css
-            Условные обозначения аргументов:
-                ch - id, обращение (#channel) или имя канала без пробелов;
-                usr - id, обращение (@name), или любой из ников без пробела 
-                    (например Soul, Soulcapturer или Soulcapturer#2253);
-                username - аналогично usr, но можно и ники с пробелами;
-                role - id, обращение (@role) или имя роли без пробелов ;
-                msg - id сообщения;
-                cmd - имя команды, известной боту;
-                text - просто любой текст;
-                * - бесконечно повторение последнего аргумента разделённого пробелом
-                (например ch* = ch1 ch2 ch3...; usr* = usr1 usr2 usr3...);
-            ```''').replace('            ', ''))
-        if cmds.intersection(roll_cmds):
-            texts.append((r'''```css
-            Хелп по броскам дайсов (!roll, !rollw, !rollv, !r, !rw, !rv):
-                !roll, !rollw, !rollv - выводят результат бросков в столбец;
-                !r, !rw, !rv - имеют тот же синтаксис, что и команды выше, 
-                    но выводят кубы в строку, что позволяет бросать больше кубов за раз;
-                !команда хdу - прости кинет x кубов y, без подсчёта результатов
-                    (если ну указан dу - берётся d10)
-                • если указана сложность, тип сравнения или некоторые доп параметры,
-                то будут подсчитываться успехи (по умолчанию сложность y/2+1,
-                сравнение - '>=')
-                !roll +N xdy - к каждому кубу добавится N
-                !roll -N xdy - к каждому кубу вычтется N
-                !roll xdy+ - подсчитать сумму броска
-                !roll xdy+N - подсчитать сумму броска и добавить N
-                    если при подсчёте суммы указана проверка по сложности,
-                    то будут суммироваться только проходящие по ней броски;
-                !roll x1dy1 x2dy2 x3dy3... - бросить несколько разных кубов за раз
-                    если хоть у одного будет считаться сумма, то будет считаться у всех;
-                    если где-то указана сложность и не считается сумма, будет сумма успехов;
-                !roll x1dy1 - x2dy2
-                    вычесть из результатов первого броска результаты второго;
-                    применимы правила касательно подсчёта суммы и успехов;
-            ```''').replace('            ', ''))
-            texts.append((r'''```css
-                Доп параметры указываются сразу после команды (для всех бросков) 
-                    или последними (для данного броска).
-                Между собой смешиваются в любом порядке, без пробелов,
-                    например: 'sh', 'fsph', 'hf3', 'f1vh' и тому подобное;
-                sp/p/v/s - 'бонусы' при макс грани куба (10 для d10) если это успех:
-                    sp - +1 доп успех
-                    p - +1 доп успех за каждую пару (для d10 - всего 3 успеха за две 10)
-                    v - +2 доп успеха за каждую пару (аля механика V5)
-                    s - доп броски (рекурсивно), специализация в МТ
-                    • любой из них вкл подсчёт успехов, даже если указано лишь кол-во кубов
-                    • из всех них за раз работает лишь один доп параметр
-                fx  - отнимает успехи за броски меньше или равно x; вкл подсчёт успехов;
-                f   - аналогично 'f1'; 
-                    • !rollw (!rw) идёт с вкл 'f' по умолчанию
-                h   - вывод кубов с тэгом @here 
-                    (что включит жёлтую подсветку для всех - удобно для строчных команд);
-                !rollw (!rw) полностью идентична !roll (!r), но уже со включенным 'f'
-                    (и потому всегда будет считать успехи)
-                !rollv (!rv) бросает кубы по правилам V5 (пиктограммы вместо цифр),
-                    потому все доп параметры кроме 'h' не имеют для неё смысла
-                !команда (без других параметров) - выведет хелп только по этой команде
-            ```''').replace('            ', ''))
-        docs = [getattr(module, cmd).__doc__ for cmd in cmds]
+        docs += [getattr(module, cmd).__doc__ for cmd in cmds]
         comf_help = other.comfortable_help(docs)
 
-    if not cmds or not comf_help:
-        texts = 'Увы, с этим ничем не могу помочь :sweat:'
+    if not comf_help:
+        texts = texts or 'Увы, с этим ничем не могу помочь :sweat:'
     else:
-        texts += other.comfortable_help(docs)
+        texts += comf_help
 
     await msg.qanswer(texts)
 
@@ -1740,6 +1788,6 @@ async def song(msg: _msg):
 # endregion
 # endregion
 
-all_cmds = set(key for key in dir(sys.modules[__name__])
-               if key[0] != '_' and callable(getattr(sys.modules[__name__], key)))
-only_super = all_cmds.difference(admin_cmds.union(primogenat_cmds).union(free_cmds))
+_all_cmds = set(key for key in dir(sys.modules[__name__])
+                if key[0] != '_' and callable(getattr(sys.modules[__name__], key)))
+_only_super = _all_cmds.difference(_admin_cmds.union(_primogenat_cmds).union(_free_cmds))
