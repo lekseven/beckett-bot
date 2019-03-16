@@ -303,7 +303,7 @@ async def on_member_update_u(before: C.Types.Member, after: C.Types.Member):
 def _check_status_change(user):
     prob = other.rand()
     now = other.get_now()
-    g_key_check = (user.id in {C.users['Blaise']} and prob < 0.11) or prob < 0.01
+    g_key_check = (user.id in {C.users['Blaise']} and prob < 0.25) or prob < 0.01
     g_key = people.online_ev(user.id) if (g_key_check and user.id not in ram.ignore_users) else False
     if g_key:
         gt_key = {'g_key': g_key, 'g_type': 0}

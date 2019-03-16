@@ -68,7 +68,7 @@ async def reaction(message, edit=False):
             return
 
     # delete double messages for last 30 sec
-    if not C.is_test and (not edit or (msg.message.attachments or msg.message.embeds)):
+    if not msg.super and (not edit or (msg.message.attachments or msg.message.embeds)):
         txt_now = (msg.original +
                    ''.join([str(att.get('url', other.rand())) for att in msg.message.attachments]) +
                    ''.join([str(emb.get('url', other.rand())) for emb in msg.message.embeds]))
@@ -213,6 +213,10 @@ def _do_reaction(msg:Msg) -> (str, str):
                     t = com.text2leet(ans_phr['text'], 0.25)
                 elif ans_phr['last_key'] == 'Malkavian' and other.rand() < 0.4:
                     t = com.text2malk(ans_phr['text'], 1)
+
+                if ans_phr['last_key'] == 'Tarkin' and prob > 0.05 and not beckett:
+                    return '', ''
+
                 return ans_phr['last_key'], t
     else:
         if '╯' in msg.original or 'shchupalko' in msg.original:
