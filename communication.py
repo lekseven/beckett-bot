@@ -209,7 +209,7 @@ def get_text_obj(any_keys=None, all_keys=None):
     error_ans = {'text': '', 'last_key': ''}
 
     if not any_k:
-        log.E('<com.get_text_obj[1]> There are no keys!')
+        # log.E('<com.get_text_obj[1]> There are no keys!')
         return error_ans
 
     texts = set()
@@ -217,7 +217,7 @@ def get_text_obj(any_keys=None, all_keys=None):
         texts.update({h for h in d2u.resp_values.get(k, set()) if d2u.resp_data[h]['keys'].issuperset(all_keys)})
 
     if not texts:
-        log.E('<com.get_text_obj[2]> There are no keys!')
+        # log.E('<com.get_text_obj[2]> There are no keys!')
         return error_ans
 
     not_used_texts = texts.difference(d2u.data_used)
@@ -334,7 +334,7 @@ def phrase_gt(gt=None, uid=None):
     str_weather = ''
     if gt['g_key'] == 'g_morn' and uid in emj.morn_add:
         phr += ' ' + other.choice(emj.morn_add[uid])
-    if uid == C.users['Natali']:
+    if uid == C.users['Natali'] and gt['g_key'] in ('g_morn', 'g_day'):
         try:
             log.I('try get_weather for Natali')
             str_weather = '\n:newspaper: ' + get_weather()

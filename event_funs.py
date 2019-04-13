@@ -595,7 +595,7 @@ def _timer_check_games():
     for usr in user_games:
         user_games[usr]['h'] += 1
         g_name = user_games[usr]['name'].lower()
-        if (usr not in ram.ignore_users and user_games[usr]['h'] % TMR_IN_H == 0
+        if (usr not in ram.ignore_users and user_games[usr]['h'] % (2*TMR_IN_H) == 0
                 and all(word in g_name for word in VTMB)):
             phr = com.get_t('vtmb', user=f'<@{usr}>')
             com.write_msg(C.main_ch, phr)

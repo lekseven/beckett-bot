@@ -20,13 +20,13 @@ class Msg(manager.Msg):
     def get_commands(self):
         #module_attrs = dir(cmd)
         #cmds = set(key for key in module_attrs if key[0] != '_' and callable(getattr(cmd, key)))
-        cmds = cmd._all_cmds.copy()
+        cmds = cmd.all_cmds.copy()
         if self.channel.id == C.channels['primogens']:
-            cmds.intersection_update(cmd._primogenat_cmds)
+            cmds.intersection_update(cmd.primogenat_cmds)
         elif self.admin and (not self.super or (not self.personal and not self.is_tst)):
-            cmds.intersection_update(cmd._admin_cmds)
+            cmds.intersection_update(cmd.admin_cmds)
         elif not self.admin:
-            free = cmd._free_cmds
+            free = cmd.free_cmds
             if {self.auid}.intersection({C.users['Creol'], C.users['Tony']}):
                 free.add('dominate')
             cmds.intersection_update(free)
@@ -56,7 +56,7 @@ async def reaction(message, edit=False):
         await msg.delete()
         ram.silence_ans[msg.auid] = ram.silence_ans.setdefault(msg.auid, 0) + 1
         if ram.silence_ans[msg.auid] < 4:
-            await msg.answer(f'Неугодный <@{msg.auid}> пытается нам нечто сказать, но заноза в сердце мешает...')
+            msg.answer(f'Неугодный <@{msg.auid}> пытается нам нечто сказать, но заноза в сердце мешает...')
         return
 
     # delete messages containing forbidden links
@@ -64,7 +64,7 @@ async def reaction(message, edit=False):
         if any(link in msg.text for link in data.forbiddenLinks):
             log.I(f'<reaction> forbidden Links')
             await msg.delete()
-            await msg.answer(com.get_t('threats', name=msg.auid))
+            msg.answer(com.get_t('threats', name=msg.auid))
             return
 
     # delete double messages for last 30 sec
@@ -126,8 +126,8 @@ async def reaction(message, edit=False):
         # elif m_type and not old_type:
 
     if m_type and text:
-        if (':' not in text and msg.roles.intersection((C.roles['Nosferatu'], C.roles['Malkavian'])) and
-                other.rand() < 0.1):
+        if (m_type not in ('no-response', 'rand_tableflip', 'unflip', 'shrug') and ':' not in text and
+                msg.roles.intersection((C.roles['Nosferatu'], C.roles['Malkavian'])) and other.rand() < 0.1):
             if C.roles['Malkavian'] in msg.roles:
                 text = com.text2malk(text, 1)
             elif C.roles['Nosferatu'] in msg.roles:
@@ -291,7 +291,9 @@ def _beckett_m_type(msg)->str:
         return 'shchupalko'
     # other questions must be before this
     elif msg.text.rstrip(')(.! ').endswith('?'):
-        if msg.admin or (msg.moder and other.rand() < 0.7):
+        if (msg.admin or (msg.moder and other.rand() < 0.7) or
+                (C.roles['Primogens'] in msg.roles and other.rand() < 0.3) or
+                (msg.auid == C.users['aleth_lavellan'] and other.rand() < 0.5)):
             if (yes == no) or yes:
                 return 'yes'
             else:
@@ -347,6 +349,10 @@ def _beckett_ans(m_type, author_id):
     elif m_type == 'love':
         if author_id == C.users['Natali']:
             ans = (emj.e_str('a_Toreador_light'), emj.e_str('a_Toreador_wave')) if prob < 0.1 else ':purple_heart:'
+        elif author_id == C.users['aleth_lavellan']:
+            ans = ('💜', '❤', '💗', '😘', '💙', '♥', '💓', '💚', '💞', '💕', '💛', '💖', '🤗')
+        elif author_id == C.users['AyrinSiverna']:
+            ans = ('🌹', '🌷', '❤', '♥', '😘', '☺',)
         else:
             ans = (':heart:', ':hearts:', ':kissing_heart:', ':relaxed:')
         ans = other.name_phr(author_id, ans, punct=False)
@@ -419,6 +425,7 @@ def _emj_on_message(msg:Msg, beckett):
         C.users['AyrinSiverna']: ('Ankh_Sabbat', 't_torik21', 'Logo_Toreador', 'hearts',),
         C.users['Rainfall']: ('green_heart',),
         C.users['Tony']: ('Logo_Ventrue',),
+        C.users['aleth_lavellan']: ('hugging', 'relieved', 'kissing_cat', 'wink', 'flushed'),
     }
     prob_for_beckett = {
         C.users['Natali']: 0.4,
@@ -429,6 +436,7 @@ def _emj_on_message(msg:Msg, beckett):
         C.users['Hadley']: ('Logo_Toreador',),
         C.users['AyrinSiverna']: ('Logo_Toreador',),
         C.users['Rainfall']: ('racehorse',),
+        C.users['aleth_lavellan']: ('purple_heart', 'relieved', 'smiley_cat', 'aleth_wink'),
     }
     prob_for_nothing = {
         C.users['Natali']: 0.01,
@@ -460,6 +468,8 @@ def _emj_on_message(msg:Msg, beckett):
     elif author in sm_for_nothing and prob < prob_for_nothing.get(author, 0.005):
         log.jD(f'Like {C.usernames[author]} with chance {prob_for_nothing.get(author, 0.005)}.')
         pause_and_add(message, sm_for_nothing[author])
+    elif author == C.users['aleth_lavellan'] and other.s_in_s(('папка', 'папа', 'батя'), msg.text):
+        pause_and_add(message, ('blush', 'slight_smile', 'cowboy', 'p_beckett1'))
 
     # Day Events
     if not data.day_events:

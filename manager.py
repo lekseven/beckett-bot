@@ -83,11 +83,9 @@ class Msg:
             #await C.client.send_message(self.channel, text)
             await self.type2sent(self.channel, text)
 
-    async def answer(self, text=None, emb=None):
-        t = 0
-        for txt in other.split_text(text):
-            t += await self.type2sent(self.channel, text=txt, emb=emb, extra=t)
-        return t
+    def answer(self, text=None, emb=None):
+        com.write_msg(self.channel, text, emb)
+        #return 0
 
     async def qanswer(self, text):
         for t in other.split_text(text):

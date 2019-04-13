@@ -519,7 +519,7 @@ clan_channels = {
     # roles['Gargoyle']: channels['test_mode_only'],
 }
 #sabbat_roles = set(roles[i] for i in sabbat_clans)
-not_sir = {users['Rythm'], users['Beckett']}  # Радио "Harpy" 66.6FM
+not_sir = {users['Rythm'], users['Beckett'], '399187791927574528'}  # Радио "Harpy" 66.6FM, Beckett2
 voice_alert = {users['Dummy'], users['Natali'],}
 i10__42 = 10**42
 

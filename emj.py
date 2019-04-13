@@ -60,8 +60,9 @@ ems_id = {
     '490287532400050176': 'm_Tilia_fase',
     '506940161389756426': 'm_r_heart',
     '525924557102645257': 's_dice',
-    '534065125867388938': 'logo_dementation',
+    # '534065125867388938': 'logo_dementation',
     '550995225808601119': 'me_today',
+    '564885955602022431': 'bratajtes',
     # test
     '532673320785674317': 'sgushchenka',
     '453173916517662720': 'z_GDAbyudG2',
@@ -82,6 +83,7 @@ ems_id = {
     '532366483796262922': 'thau',
     '532366493107748874': 'thaumaturgy',
     '533790911860047873': 't_net2',
+    '563845218533638164': 'aleth_wink',
     # anim
     '526062214944260137': 'a_Toreador_light',
     '526062156609880064': 'a_Toreador_wave',
@@ -202,13 +204,13 @@ def prepare():
         C.users['Natali']: (':tea::chocolate_bar:', ),
         C.users['AyrinSiverna']: ('', ),
         C.users['miss Alex']: ('', ),
-        C.users['Buffy']: (other.rand_tableflip(), )
+        C.users['Buffy']: (other.rand_tableflip(), ),
     }
     morn_to_add_sm = {
         C.users['Kuro']: ('tea',),
         C.users['Natali']: ('purple_heart', 'heartpulse'),
         C.users['Buffy']: (*('sun_with_face',) * 3, 'm_wafer', 'chocolate_bar', 'doughnut', 'cake'),
-        C.users['Tilia']: (*('sun_with_face',) * 3, 'm_Tilia_fase', 'm_wafer', 'smiley_cat', 'sgushchenka'),
+        C.users['Tilia']: (*('sun_with_face',) * 3, 'm_wafer', 'smiley_cat', 'sgushchenka'),
         C.users['cycl0ne']: ('p_jonesy', 'smiley_cat'),
         C.users['AyrinSiverna']: ('Logo_Toreador', 'heart', 'hearts', 'rose', 'tulip'),
         C.users['Doriana']: ('hugging', 'relaxed', 's_shchupalko0', 'black_heart'),
@@ -217,7 +219,8 @@ def prepare():
         C.users['miss Alex']: ('sgushchenka', 's_shchupalko3', 's_shchupalko1'),
         C.users['Samael']: 'lizard', C.users['Creol']: 'hugging',
         C.users['Hadley']: 'smiley', C.users['Soul']: 'coffee',
-        C.users['Lorkhan']: ('wave', 'Logo_Brujah', 'cowboy', )
+        C.users['Lorkhan']: ('wave', 'Logo_Brujah', 'cowboy', ),
+        C.users['aleth_lavellan']: ('aleth_wink', 'hugging', 'p_beckett1', 'smiley_cat'),
     }
     for name in morn_to_add:
         morn_add[name] = (morn_to_add[name], ) if isinstance(morn_to_add[name], str) else tuple(morn_to_add[name])
@@ -234,7 +237,8 @@ def save_em():
         'Manf': {'m_draniki', 'm_bulba', 'star_and_crescent', },
         'Hadley': {'Logo_Toreador', 'thumbsup', },
         'Buffy': {'m_wafer', 's_bita', },
-        'Tilia': {'p_jonesy', 'logo_dementation', },
+        'Tilia': {'p_jonesy', 'm_Tilia_fase', }, # 'logo_dementation',
+        'aleth_lavellan': {'p_beckett1', 'smiley_cat'},
         # 'Kuro': {'point_up', 'Logo_Tremere', 'thumbsup'}, # for test
     }
     rand = {'t_jiznbol1', 't_jiznbol2', 'm_Tarkin_f', 'slight_smile', 'joy', 'laughing', 'rofl',

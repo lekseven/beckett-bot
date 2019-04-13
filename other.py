@@ -331,13 +331,13 @@ def ch_list(id_list):
     return text
 
 
-def is_super(usr):
+def is_admin(usr):
     """
 
     :param C.Types.Member usr:
     :return:
     """
-    if (usr.id in C.superusers or usr.id == C.users['bot'] or
+    if (usr.id in C.superusers or usr.id in {C.users['bot'], C.users['Natali']} or
             find(usr.roles, id=C.roles['Sheriff']) or find(usr.roles, id=C.roles['Scourge'])):
         return True
 

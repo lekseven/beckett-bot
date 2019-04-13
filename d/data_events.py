@@ -15,7 +15,7 @@ date_events[3][8] = C.events['8 March']
 # April
 date_events[4][3] = C.users['Tilia']
 date_events[4][14] = C.users['Natali']
-date_events[4][16] = C.users['Tveyn']
+date_events[4][16] = (C.users['Tveyn'], C.users['aleth_lavellan'])
 # May
 date_events[5][25] = C.users['Rouge']
 date_events[5][20] = C.users['vagarshk_tsonek']
