@@ -67,7 +67,7 @@ async def reaction(message, edit=False):
             msg.answer(com.get_t('threats', name=msg.auid))
             return
 
-    # delete double messages for last 30 sec
+    # delete double messages for last 60 sec
     if not msg.super and (not edit or (msg.message.attachments or msg.message.embeds)):
         txt_now = (msg.original +
                    ''.join([str(att.get('url', other.rand())) for att in msg.message.attachments]) +
@@ -76,7 +76,7 @@ async def reaction(message, edit=False):
         new_last_msgs = []
         user_last_msgs = last_msgs.get(msg.auid, [])
         for txt, date in user_last_msgs:
-            if (get_sec_now - date) < 31:
+            if (get_sec_now - date) < 60:
                 new_last_msgs.append((txt, date))
                 if txt == txt_now:
                     await msg.delete()
@@ -102,7 +102,7 @@ async def reaction(message, edit=False):
             await getattr(cmd, fun)(msg)
             return
 
-    m_type, text = _do_reaction(msg)
+    m_type, text = _do_reaction(msg, edit)
 
     if edit:
         old_type = resp['type'] if resp else ''
@@ -153,7 +153,7 @@ async def delete_reaction(message):
         data_msgs[message.channel.id].pop(message.id)
 
 
-def _do_reaction(msg:Msg) -> (str, str):
+def _do_reaction(msg:Msg, edit=False) -> (str, str):
     m_type = None
     embrace_or_return = False
 
@@ -161,7 +161,7 @@ def _do_reaction(msg:Msg) -> (str, str):
     beckett_reference = bool(C.beckett_refs.intersection(msg.words))
     beckett_mention = bool(C.beckett_names.intersection(msg.words))
     beckett = beckett_reference or beckett_mention or msg.personal
-    _emj_on_message(msg, beckett)
+    _emj_on_message(msg, beckett, edit)
 
     if (ram.mute_channels.intersection({msg.channel.id, 'all'})
             or msg.auid in ram.ignore_users or msg.channel.id in C.ignore_channels):
@@ -185,11 +185,11 @@ def _do_reaction(msg:Msg) -> (str, str):
     elif embrace_or_return:
         return '', ''
 
-    if (msg.channel.id == C.channels['gallery'] and msg.auid in (C.users['Hadley'], C.users['Natali']) and
-            (msg.message.attachments or msg.message.embeds) and prob < 0.2):
-        log.jI('gallery event')
-        phr = com.get_t('gallery_picture', user=f'<@{msg.auid}>')
-        com.write_msg(C.main_ch, phr)
+    # if (msg.channel.id == C.channels['gallery'] and msg.auid in (C.users['Hadley'], C.users['Natali']) and
+    #         (msg.message.attachments or msg.message.embeds) and prob < 0.2):
+    #     log.jI('gallery event')
+    #     phr = com.get_t('gallery_picture', user=f'<@{msg.auid}>')
+    #     com.write_msg(C.main_ch, phr)
 
     gt = msg.check_good_time(beckett)
     if gt:
@@ -407,7 +407,7 @@ def data_tp_del(ch_id, id_):
     return fun
 
 
-def _emj_on_message(msg:Msg, beckett):
+def _emj_on_message(msg:Msg, beckett, edit=False):
     message = msg.message
     author = msg.auid
 
@@ -455,6 +455,9 @@ def _emj_on_message(msg:Msg, beckett):
         elif author in {C.users['Hadley'], C.users['cycl0ne'], C.users['Magdavius']} and prob < 0.2:
             log.jD('Like Hadley or cycl0ne or Magdavius in staff')
             pause_and_add(message, ('thumbsup', 'ok_hand', 'heart_eyes_cat'))
+
+    if edit:
+        return
 
     if prob > 0.99:
         if other.s_in_s(sm_by_jiznbol, msg.original):

@@ -16,9 +16,12 @@ date_events[3][8] = C.events['8 March']
 date_events[4][3] = C.users['Tilia']
 date_events[4][14] = C.users['Natali']
 date_events[4][16] = (C.users['Tveyn'], C.users['aleth_lavellan'])
+date_events[4][27] = C.users['Vladislav Shrike']
 # May
-date_events[5][25] = C.users['Rouge']
+date_events[5][11] = C.users['Ace']
 date_events[5][20] = C.users['vagarshk_tsonek']
+date_events[5][25] = C.users['Rouge']
+date_events[5][27] = C.users['Anna Green']
 # June
 date_events[6][1] = C.users['Demian']
 date_events[6][3] = C.users['Hadley']

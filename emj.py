@@ -304,7 +304,8 @@ async def on_reaction_add(reaction, user):
     :return:
     """
     server = reaction.message.server
-    if server and user == server.me:
+    me = (server and server.me) or reaction.message.channel.me
+    if server and user == me:
         return
 
     message = reaction.message # type: C.Types.Message
@@ -315,7 +316,7 @@ async def on_reaction_add(reaction, user):
         try:
             if other.find(message.reactions, emoji=emoji, me=True):
                 await C.client.remove_reaction(message, emoji, user)
-                await C.client.remove_reaction(message, emoji, server.me)
+                await C.client.remove_reaction(message, emoji, me)
             else:
                 await C.client.remove_reaction(message, emoji, user)
                 await C.client.add_reaction(message, emoji)
@@ -332,7 +333,7 @@ async def on_reaction_add(reaction, user):
             log.jW("Bot haven't permissions here.")
 
     # usual part
-    if message.author in (server.me, user) or ram.ignore_users.intersection((message.author.id, user.id)):
+    if message.author in (me, user) or ram.ignore_users.intersection((message.author.id, user.id)):
         return
 
     # Further just copy emoji, so if one of possibility is triggered -> return
@@ -350,7 +351,7 @@ async def on_reaction_add(reaction, user):
             pause_and_add(message, emoji)
             return
 
-    if server.id == C.vtm_server.id:
+    if server and server.id == C.vtm_server.id:
         if emoji == e('Logo_Gangrel') and other.find(C.vtm_server.get_member(user.id).roles, id=C.roles['Gangrel']):
             log.jD('Copy Gangrel reaction')
             pause_and_add(message, emoji)
@@ -378,20 +379,21 @@ async def on_reaction_remove(reaction, user):
         :return:
         """
     server = reaction.message.server
-    if user == server.me:
+    me = (server and server.me) or reaction.message.channel.me
+    if user == me:
         return
 
     message = reaction.message  # type: C.Types.Message
     emoji = reaction.emoji  # type: C.Types.Emoji
 
-    if message.author == server.me or message.author == user:
+    if message.author == me or message.author == user:
         return
 
     if user.id in name_em:
         # emoji[0] because it can be different colors
         if (isinstance(emoji, str) and emoji[0] in name_em[user.id]) or emoji in name_em[user.id]:
             log.jD('Remove special reaction')
-            await C.client.remove_reaction(message, emoji, server.me)
+            await C.client.remove_reaction(message, emoji, me)
 
     # if str(user) == 'Kuro#3777':
     #     await C.client.remove_reaction(message, emoji, C.server.me)
