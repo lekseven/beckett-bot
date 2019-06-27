@@ -269,7 +269,8 @@ async def on_member_update_u(before: C.Types.Member, after: C.Types.Member):
         if new_roles:
             log.I(f'<on_member_update> {a_n} get role(s): {", ".join(new_roles)}.')
             new_clan_roles = C.clan_ids.intersection({r.id for r in after.roles if r not in before.roles})
-            if after.id not in not_embrace and len(before.roles) == 1 and new_clan_roles:
+            if (after.id not in not_embrace and
+                    len(set(r.id for r in before.roles).difference(C.other_roles)) == 1 and new_clan_roles):
                 clan_id = other.choice(new_clan_roles)
                 clan_name = C.role_by_id[clan_id]
                 log.jI(f'<on_member_update> {a_n} get new clan role "{clan_name}" => call do_embrace.')

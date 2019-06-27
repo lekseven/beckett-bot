@@ -26,7 +26,7 @@ admin_cmds = {
     'deny', 'undeny', 'mute', 'unmute', 'mute_list', 'mute_l', 'unmute_l', 'mute_l_list',
 }
 admin_cmds.update(free_cmds)
-primogenat_cmds = {'help', 'silence', 'unsilence', 'kick'}
+primogenat_cmds = {'help', 'silence', 'unsilence', 'kick', 'stars', 'speak'}
 
 cmd_groups = {
     'auxiliary': {'channel', 'unchannel', 'report', 'unreport',
@@ -557,6 +557,72 @@ async def kick(msg: _Msg):
         text1 = 'Голосование окончено, решение о кике <@{0}> **не принято**.'.format(user.id)
         await msg.qanswer(text1)
 
+
+async def stars(msg: _Msg):
+    """\
+    !stars usr count: дать пользователю звезды (0-6)
+    """
+    if len(msg.args) < 3:
+        await msg.qanswer(other.comfortable_help([str(stars.__doc__)]))
+        return
+
+    usr = msg.find_member(msg.args[1])
+    if not usr:
+        usr = other.find_member(C.vtm_server, msg.args[1])
+        if not usr:
+            await msg.qanswer("Can't find user " + msg.args[1])
+            return
+
+    try:
+        star_count = int(msg.args[2])
+    except:
+        await msg.qanswer("Count should be number!")
+        return
+
+    if star_count < 0 or star_count > 6:
+        await msg.qanswer("Count should be from 0 to 6!")
+        return
+
+    stars_roles = set(C.roles[n] for n in ('star1', 'star2', 'star3'))
+    user_has_stars = set(r.id for r in usr.roles if r.id in stars_roles)
+
+    if star_count == 0:
+        user_get_stars = set()
+    elif 0 < star_count < 4:
+        user_get_stars = {C.roles['star' + str(star_count)]}
+    elif star_count == 4:
+        user_get_stars = {C.roles['star1'], C.roles['star3']}
+    elif star_count == 5:
+        user_get_stars = {C.roles['star2'], C.roles['star3']}
+    else:
+        user_get_stars = stars_roles.copy()
+
+    new_roles = other.get_roles(user_get_stars.difference(user_has_stars), C.vtm_server.roles)
+    old_roles = other.get_roles(user_has_stars.difference(user_get_stars), C.vtm_server.roles)
+
+    if new_roles:
+        await C.client.add_roles(usr, *new_roles)
+
+    if old_roles:
+        await C.client.remove_roles(usr, *old_roles)
+
+    await C.client.add_reaction(msg.message, emj.e('ok_hand'))
+
+
+async def speak(msg: _Msg):
+    """\
+    !speak txt: сказать Беккетом txt во #flood от имени примогената
+    !speak ch txt: сказать Беккетом txt в чат #ch от имени примогената \
+    """
+    ch = other.get_channel(msg.args[1])
+    if ch:
+        txt = msg.original[len('!speak ' + msg.args[1] + ' '):]
+    else:
+        ch = C.main_ch
+        txt = msg.original[len('!speak '):]
+
+    await msg.say(ch, txt + '\n' + com.get_t('primogenat_sign'))
+    await C.client.add_reaction(msg.message, emj.e('ok_hand'))
 
 # endregion
 

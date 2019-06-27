@@ -281,7 +281,8 @@ async def voting(channel, text='', timeout=60, votes=None, count=3):
 
 async def do_check_and_embrace(name, clan_name=None):
     user = other.find_member(C.vtm_server, name)
-    if len(user.roles) == 1:
+    roles = set(role.id for role in user.roles).difference(C.other_roles)
+    if len(roles) == 1:
         await just_embrace(user, clan_name=clan_name)
         # just_embrace_say(user, clan_name)
         # text = await do_embrace(user, clan_name=clan_name)

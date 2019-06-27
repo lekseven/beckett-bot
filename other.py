@@ -577,3 +577,15 @@ async def delete_msg(message):
         log.jW("Can't find the message to delete.")
     except Exception as e:
         pr_error(e, 'delete_msg', 'Unexpected error')
+
+
+def get_roles(role_names_or_ids, server_roles = None):
+    server_roles = server_roles or C.prm_server.roles
+    new_roles = []
+    for i in role_names_or_ids:
+        role = find(server_roles, id=i)
+        if not role:
+            role = find(server_roles, name=i)
+        if role:
+            new_roles.append(role)
+    return new_roles

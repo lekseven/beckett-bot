@@ -24,7 +24,7 @@ date_events[5][25] = C.users['Rouge']
 date_events[5][27] = C.users['Anna Green']
 # June
 date_events[6][1] = C.users['Demian']
-date_events[6][3] = C.users['Hadley']
+date_events[6][3] = (C.users['Hadley'], C.users['devNull'])
 date_events[6][15] = C.users['Vasheska']
 date_events[6][19] = C.users['Darude']
 date_events[6][22] = C.users['Samael']

@@ -487,6 +487,9 @@ roles = {
     'не шабашит': '518874073099665419',
     'DJ': '524567160207573002',
     'Крыска': '557273085384851457',
+    'star1': '587605268372652054',
+	'star2': '587605472383729665',
+	'star3': '587605550926397440',
     # test Server
     # 'Gargoyle': '453169623576084480',
 }
@@ -501,6 +504,7 @@ clan_names = {'Malkavian', 'Toreador', 'Brujah', 'Ventrue', 'Nosferatu', 'Gangre
               # 'Gargoyle',  # test Server
               }
 clan_ids = {roles[name] for name in clan_names}
+other_roles = set(roles[i] for i in ('DJ', 'star1', 'star2', 'star3', 'Silence', 'не шабашит'))
 #clan_roles = set(roles[i] for i in clan_names)
 sabbat_clans = {'Tzimisce', 'Lasombra', 'Pander'}
 clan_channels = {

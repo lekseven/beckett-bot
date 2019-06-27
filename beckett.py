@@ -42,7 +42,8 @@ async def on_ready():
 def prepare_const():
     log.I('- prepare_const')
 
-    C.is_test = bool(os__environ.get('Server_Test'))
+    st = os__environ.get('Server_Test')
+    C.is_test = bool(st) and st not in ('0', 'False', 'false', '')
 
     C.DISCORD_TOKEN = os__environ.get('DISCORD_TOKEN')
 

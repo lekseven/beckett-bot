@@ -1817,6 +1817,10 @@ voice_notions = {
     )
 }
 # endregion
+primogenat_sign = ['© Ваш самый гуманный примогенат на свете.']
+primogenat_adj = ('любимый', 'горячо любимый', 'офигенный', 'любимый Я и', 'единственный и неповторимый', 'добрейший',
+                  '~~ кол в сердце ~~', 'раздающий звезды')
+primogenat_sign += ['© Ваш {} примогенат.'.format(i) for i in primogenat_adj]
 
 data_text = {
     'response': resp,
@@ -1859,6 +1863,7 @@ data_text = {
         'Вы только посмотрите, {user} входит - и выходит. Входит в {pander} и выходит из {old_clans}. '
             'Замечательно выходит!',
     ),
+    'primogenat_sign': primogenat_sign,
     'clan_welcome': {
         C.channels['bar']:(
             f'Короче, {{user}}, я тебя в <#{C.channels["bar"]}> привёл и в благородство играть не буду: '
