@@ -253,6 +253,11 @@ def _do_reaction(msg:Msg, edit=False) -> (str, str):
             return m_type, ans
 
         if beckett: # beckett_reference or (beckett and other.rand() < 0.25):
+            if prob < 0.01:
+                ans_phr = com.get_t(all_keys=('author_phrases', msg.auid))
+                if ans_phr:
+                    return msg.auid, ans_phr
+
             m_type = 'For_Prince' if msg.auid == C.users['Natali'] and prob < 0.4 else 'beckett'
             ans_phr = com.get_t(m_type)
             return m_type, ans_phr

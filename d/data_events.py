@@ -25,12 +25,13 @@ date_events[5][27] = C.users['Anna Green']
 # June
 date_events[6][1] = C.users['Demian']
 date_events[6][3] = (C.users['Hadley'], C.users['devNull'])
+date_events[6][6] = C.users['M0n0chr0me']
 date_events[6][15] = C.users['Vasheska']
 date_events[6][19] = C.users['Darude']
 date_events[6][22] = C.users['Samael']
 date_events[6][24] = (C.users['Tony'], C.users['Svartalfr'])
 # July
-date_events[7][23] = C.users['Blaise']
+date_events[7][23] = (C.users['Blaise'], C.users['SuslikNotDead'])
 date_events[7][26] = C.users['broomstik']
 # August
 # September
