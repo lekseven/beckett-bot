@@ -446,15 +446,18 @@ async def silence(msg: _Msg):
 
     await C.client.add_reaction(msg.message, emj.e('ok_hand'))
     user = await manager.silence_on(name, t)
-    if user:
+    if user == 'top_role':
+        await msg.qanswer(name + " имеет слишком высокую роль.")
+        return
+    elif user == 'protege':
+        await msg.qanswer('Неть, я не посмею поднять руку на протеже князя :scream:')
+        return
+    elif user:
         text = 'По решению Примогената, <@{0}> отправлен в торпор на {1} ч.'.format(user.id, t)
         await msg.qanswer(text)
         await msg.say(C.main_ch, text)
         ev.timer_quarter_h()
-    elif user is False:
-        await msg.qanswer(name + " имеет слишком высокую роль.")
-        return
-    elif user is None:
+    else:
         await msg.qanswer("Не могу найти пользователя " + name + ".")
         return
 
@@ -534,27 +537,31 @@ async def kick(msg: _Msg):
         return
 
     name = msg.original[len('!kick '):]
-    user = other.find_member(C.prm_server, name)
-    if not user:
+    member = other.find_member(C.prm_server, name)
+    if not member:
         await msg.qanswer("Не могу найти пользователя " + name + ".")
         return
 
-    if user.top_role >= C.prm_server.me.top_role:
-        await msg.qanswer('<@{0}> имеет слишком высокую роль.'.format(user.id))
+    if member.top_role >= C.prm_server.me.top_role:
+        await msg.qanswer('<@{0}> имеет слишком высокую роль.'.format(member.id))
+        return
+
+    if other.has_roles(member, C.roles['protege']):
+        await msg.qanswer('Неть, я не посмею поднять руку на протеже князя :scream:')
         return
 
     text = ('<@{0}> вынес на рассмотрение изгнание <@{1}>. Для принятия решения необходимо __ещё 3 голоса__ "за".'
-            '\nНа голосование у вас 10 минут.').format(msg.auid, user.id)
+            '\nНа голосование у вас 10 минут.').format(msg.auid, member.id)
 
     votes = await manager.voting(msg.channel, text=text, timeout=600, votes={msg.auid}, count=4)
     if votes:
-        text1 = 'Голосами от <@{0}> решение о кике <@{1}> **принято**.'.format('>, <@'.join(votes), user.id)
+        text1 = 'Голосами от <@{0}> решение о кике <@{1}> **принято**.'.format('>, <@'.join(votes), member.id)
         await msg.qanswer(text1)
-        text2 = 'По решению Примогената, <@{0}> изгоняется из домена.'.format(user.id)
+        text2 = 'По решению Примогената, <@{0}> изгоняется из домена.'.format(member.id)
         await msg.say(C.main_ch, text2)
-        other.later_coro(15, C.client.kick(user))
+        other.later_coro(15, C.client.kick(member))
     else:
-        text1 = 'Голосование окончено, решение о кике <@{0}> **не принято**.'.format(user.id)
+        text1 = 'Голосование окончено, решение о кике <@{0}> **не принято**.'.format(member.id)
         await msg.qanswer(text1)
 
 
@@ -600,11 +607,8 @@ async def stars(msg: _Msg):
     new_roles = other.get_roles(user_get_stars.difference(user_has_stars), C.vtm_server.roles)
     old_roles = other.get_roles(user_has_stars.difference(user_get_stars), C.vtm_server.roles)
 
-    if new_roles:
-        await C.client.add_roles(usr, *new_roles)
-
-    if old_roles:
-        await C.client.remove_roles(usr, *old_roles)
+    other.add_roles(usr, new_roles, 'stars')
+    other.rem_roles(usr, old_roles, 'stars')
 
     await C.client.add_reaction(msg.message, emj.e('ok_hand'))
 
@@ -684,7 +688,7 @@ async def get_offlines(msg: _Msg):
     check_t = int(ds * 24 * 3600)
     count = 0
     for uid, usr in people.usrs.items():
-        t_off = people.offtime(usr.id)
+        t_off = usr.offtime()
         if t_off >= check_t:
             count += 1
             u = other.find_member(C.vtm_server, uid)
@@ -1432,7 +1436,7 @@ async def add_role(msg: _Msg):
         await msg.qanswer("Can't find any roles!")
         return
 
-    await C.client.add_roles(usr, *new_roles)
+    other.add_roles(usr, new_roles)
     await msg.qanswer(":ok_hand:")
 
 
@@ -1466,7 +1470,7 @@ async def rem_role(msg: _Msg):
         await msg.qanswer("Can't find any roles!")
         return
 
-    await C.client.remove_roles(usr, *old_roles)
+    other.rem_roles(usr, old_roles, 'cmd.rem_role')
     await msg.qanswer(":ok_hand:")
 
 
@@ -1480,14 +1484,8 @@ async def clear_clans(msg: _Msg):
 
     user = other.find_member(C.vtm_server, msg.original[len('!clear_clans '):])
     if user:
-        #C.clan_names
-        rls = []
-        roll_ids = {C.roles[clan] for clan in C.clan_names}.union({C.roles['Sabbat']})
-        for r_id in roll_ids:
-            rl = other.find(C.vtm_server.roles, id=r_id)
-            if rl:
-                rls.append(rl)
-        await C.client.remove_roles(user, *rls)
+        other.rem_roles(user, C.clan_and_sect_ids, 'clear_clans', by_id=True, server_roles=C.vtm_server.roles)
+        await msg.qanswer(":ok_hand:")
 
     else:
         await msg.qanswer("Не могу найти такого пользователя.")
@@ -1691,6 +1689,15 @@ async def info_channels(msg: _Msg):
         other.pr_error(e, 'info_channels', 'error')
         print(res)
         await msg.qanswer('Check log.')
+
+
+async def go_midnight_update(msg: _Msg):
+    """\
+    !go_midnight_update: запустить timer_midnight_update сейчас
+    """
+    log.I('Start timer_midnight_update by forse.')
+    ev.timer_midnight_update()
+    await msg.qanswer(":ok_hand:")
 
 
 async def go_timer(msg: _Msg):

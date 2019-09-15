@@ -207,7 +207,10 @@ async def silence_on(name, t=1.0, force=False):
         return None
 
     if user.top_role >= s.me.top_role and not force:
-        return False
+        return 'top_role'
+
+    if other.has_roles(user, C.roles['protege']):
+        return 'protege'
 
     t = max(t, 0.02)
     if user.id in ram.silence_users:
@@ -217,7 +220,7 @@ async def silence_on(name, t=1.0, force=False):
     ram.silence_users[user.id] = {'time': other.get_sec_total() + t * 3600 - 1, 'check': tuple(check)}
     if not C.is_test:
         add_roles = [other.find(s.roles, id=C.roles['Silence'])]
-        await C.client.add_roles(user, *add_roles)
+        other.add_roles(user, add_roles, 'silence_on')
     log.I('Silence on for ', user, ' at ', other.t2s(), ' on ', t, 'h.')
     return user
 
@@ -238,7 +241,7 @@ async def silence_off(name):
         await turn_silence(user, turn=False, check=s_user['check'])
         if not C.is_test:
             rem_roles = [other.find(s.roles, id=C.roles['Silence'])]
-            await C.client.remove_roles(user, *rem_roles)
+            other.rem_roles(user, rem_roles, 'silence_off')
         log.I('Silence off for ', user, ' at ', other.t2s())
         return user
     else:
@@ -304,13 +307,8 @@ async def just_embrace(user, clan_name=None):
     roles = [r for r in {other.find(C.vtm_server.roles, id=C.roles[clan_name])} if r]
     if clan_name in C.sabbat_clans:
         roles.append(other.find(C.vtm_server.roles, id=C.roles['Sabbat']))
-    if roles:
-        try:
-            await C.client.add_roles(user, *roles)
-        except C.Exceptions.Forbidden:
-            log.jW("Bot can't change roles.")
-        except Exception as e:
-            other.pr_error(e, 'do_embrace', 'Error in changing roles')
+
+    other.add_roles(user, roles, 'do_embrace')
 
     return clan_name
 

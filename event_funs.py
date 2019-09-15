@@ -268,7 +268,8 @@ async def on_member_update_u(before: C.Types.Member, after: C.Types.Member):
             log.I(f'<on_member_update> {a_n} lost role(s): {", ".join(old_roles)}.')
         if new_roles:
             log.I(f'<on_member_update> {a_n} get role(s): {", ".join(new_roles)}.')
-            new_clan_roles = C.clan_ids.intersection({r.id for r in after.roles if r not in before.roles})
+            new_role_ids = {r.id for r in after.roles if r not in before.roles}
+            new_clan_roles = C.clan_ids.intersection(new_role_ids)
             if (after.id not in not_embrace and
                     len(set(r.id for r in before.roles).difference(C.other_roles)) == 1 and new_clan_roles):
                 clan_id = other.choice(new_clan_roles)
@@ -286,11 +287,14 @@ async def on_member_update_u(before: C.Types.Member, after: C.Types.Member):
                 del_clans_id = C.clan_ids.difference({C.roles['Pander']})
                 rem_roles = {r for r in after.roles if r.id in del_clans_id}
                 if rem_roles:
-                    await C.client.remove_roles(after, *rem_roles)
+                    other.rem_roles(after, rem_roles, 'on_member_update_u[1]')
                     str_rem_r = f"<@&{'>, <@&'.join(r.id for r in rem_roles)}>"
                     phr = com.get_t('to_Pander', user=f'<@{after.id}>',
                                     old_clans=str_rem_r, pander=f"<@&{C.roles['Pander']}>")
                     com.write_msg(C.main_ch, phr)
+            elif C.roles['food'] in new_role_ids:
+                rem_roles = {r for r in after.roles if r.id in C.clan_and_sect_ids}
+                other.rem_roles(after, rem_roles, 'on_member_update_u[2]')
 
     if before.status != after.status or not smth_happend:
         people.online_change(after.id, after.status, force=before.status == after.status)
@@ -645,8 +649,8 @@ def timer_half_min():
         now = other.get_now()
         sec_total = int(now.timestamp())
         if now.hour == 0 and now.minute == 0 and day_ev_check != now.day:
-            log.I('[=== New day! ===]')
-            _check_day_ev(now, on_midnight=True)
+            timer_midnight_update(now)
+
         for uid, user in ram.silence_users.items():
             if sec_total > user['time']:
                 other.later_coro(1, manager.silence_end(uid))
@@ -699,7 +703,42 @@ async def cmd_people_time_sync():
     save_mem()
 
 
+def timer_midnight_update(now=None):
+    if not now:
+        now = other.get_now()
+
+    log.I('[=== New day! ===]')
+
+    try:
+        _check_day_ev(now, on_midnight=True)
+    except Exception as e:
+        other.pr_error(e, '_check_day_ev', 'Unexpected error')
+
+    try:
+        _check_once_in_day()
+    except Exception as e:
+        other.pr_error(e, '_check_once_in_day', 'Unexpected error')
+
+
+
+def _check_once_in_day():
+    if not C.is_test:
+        check_t = 7776000 # 90 * 24 * 3600
+        for uid, usr in people.usrs.items():
+            t_off = usr.offtime()
+            if t_off > check_t:
+                m = other.find_member(C.vtm_server, uid)
+                if not other.has_roles(m, C.roles['protege']) and \
+                        not other.has_roles(m, C.roles['food']) and not m.bot:
+                    other.add_roles(m, C.roles['food'], '_check_once_in_day',
+                                    by_id=True, server_roles=C.vtm_server.roles)
+                    log.I("{} go to food!".format(m))
+    else:
+        log.I("It's test mode, pass _check_once_in_day")
+
+
 def _check_day_ev(now=None, on_midnight=False):
+
     global day_ev_check
     if not now:
         now = other.get_now()
@@ -722,6 +761,10 @@ def _check_day_ev(now=None, on_midnight=False):
             log.jI(f'<Day event> Today is {C.events_name[ev]}!')
         elif ev in C.usernames:
             log.jI(f'<Day event> Today is {C.usernames[ev]} birthday!')
-            com.write_msg(C.users['Kuro'], f'<Day event> Today is <@{ev}> birthday!')
+            if on_midnight:
+                com.write_msg(C.users['Kuro'], f'<Day event> Today is <@{ev}> birthday!')
+
+    if not data.day_events:
+        log.jI(f'<Day event> There are no events today.')
 
     day_ev_check = now.day

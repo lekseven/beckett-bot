@@ -32,7 +32,7 @@ async def on_ready():
         else:
             log.jI('opus lib not load!')
     ev.start_timers()
-    log.I('Beckett ready for work now, after starting at ', ram.t_start.strftime('[%D %T]'))
+    log.I('Beckett ready for work now, after starting at ', ram.t_start.strftime('[%d/%m/%y %T]'))
     log.p('======= ' * 10)
     await test_fun() # for debugging an testing
     C.Ready = True

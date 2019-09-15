@@ -241,7 +241,7 @@ class Gn:
             if self.role != '0':
                 role = other.find(C.vtm_server.roles, id=self.role)
                 if role:
-                    other.later_coro(5, C.client.add_roles(m, *[role]))
+                    other.add_roles(m, role, 'comeback', 5)
         self.status = 'del'
         usr = Usr(self.id, name=nm, karma=self.karma, status='add', last_m=other.get_sec_total())
         if res:
@@ -309,6 +309,45 @@ def test3():
     usrs = new_usrs
     gone = new_gone
     log.p('===========================================')
+
+
+async def tree_test():
+    import re
+    embr_txt = (
+        '<@(?P<sir>\d+)> получает право на становление, и <@(?P<child>\d+)> теперь познает всю боль нежизни.',
+        '<@(?P<sir>\d+)> дарует становление, но было ли получено разрешение, и что теперь ждёт новоявленое дитя <@('
+        '?P<child>\d+)>?',
+        '<@(?P<child>\d+)> теперь находится под защитой клана и теперь за ним присмотрит его сир, <@(?P<sir>\d+)>',
+        'Не может быть, <@(?P<sir>\d+)> дарует становление неонату <@(?P<child>\d+)> - но является ли это наградой - '
+        'или наказанием?',
+        'Витэ капнуло тут раз - <@(?P<sir>\d+)> теперь... сир у нас. Что ты об этом думаешь, <@(?P<child>\d+)>?',
+    )
+    r_txt = []
+    for txt in embr_txt:
+        r_txt.append(re.compile(txt))
+    ch = other.get_channel('flood')
+    log.D('- <read> for {0}({1}) start'.format(ch, ch.id))
+    messages = []
+    count = 0
+    async for message in C.client.logs_from(ch, limit=1000000000): #type: C.Types.Message
+        if message.author.id == C.users['bot'] and len(message.mentions) == 2:
+            messages.append(message)
+            count += 1
+            if count % 100 == 0:
+                log.D('- - <read> save messages: ', count)
+    log.D('- <read> end save with {0} messages'.format(count))
+    messages.reverse()
+    log.D('- <read> start format messages')
+    tree = {}
+    for msg in messages:
+        for r in r_txt:
+            m = r.match(msg.content)
+            if m:
+                d = m.groupdict()
+                tree[d['child']] = d['sir']
+                log.D(msg.clean_content)
+    log.I(tree)
+    log.I(len(tree))
 
 
 def load(res=False):

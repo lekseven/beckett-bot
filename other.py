@@ -579,7 +579,7 @@ async def delete_msg(message):
         pr_error(e, 'delete_msg', 'Unexpected error')
 
 
-def get_roles(role_names_or_ids, server_roles = None):
+def get_roles(role_names_or_ids, server_roles=None):
     server_roles = server_roles or C.prm_server.roles
     new_roles = []
     for i in role_names_or_ids:
@@ -589,3 +589,68 @@ def get_roles(role_names_or_ids, server_roles = None):
         if role:
             new_roles.append(role)
     return new_roles
+
+
+def has_roles(member, role_ids, has_all=False):
+    """
+    :type member: C.Types.Member
+    :param role_ids: str|list
+    :param has_all: boolean
+    """
+
+    if not role_ids:
+        return True
+
+    if not isinstance(role_ids, list):
+        role_ids = [role_ids]
+
+    count = 0
+    for r in member.roles: # type: C.Types.Role
+        if r.id in role_ids:
+            if not has_all:
+                return True
+            count += 1
+
+    return count == len(role_ids)
+
+
+def change_roles(callback, member, roles, error_msg='add_roles', delay=0, by_id=False, server_roles=None):
+
+    if not roles:
+        return
+
+    if isinstance(roles, set):
+        roles = list(roles)
+    elif not isinstance(roles, list):
+        roles = [roles]
+
+    if by_id:
+        roles = get_roles(roles, server_roles)
+
+    later_coro(delay, callback(member, roles, error_msg))
+
+
+def add_roles(member, roles, error_msg='rem_roles', delay=0, by_id=False, server_roles=None):
+    change_roles(_add_roles_coro, member, roles, error_msg, delay, by_id, server_roles)
+
+
+def rem_roles(member, roles, error_msg='rem_roles', delay=0, by_id=False, server_roles=None):
+    change_roles(_rem_roles_coro, member, roles, error_msg, delay, by_id, server_roles)
+
+
+async def _add_roles_coro(member, roles, error_msg='add_roles'):
+        try:
+            await C.client.add_roles(member, *roles)
+        except C.Exceptions.Forbidden:
+            log.jW("[{}] Bot can't change roles.".format(error_msg))
+        except Exception as e:
+            pr_error(e, error_msg, 'Error in changing roles')
+
+
+async def _rem_roles_coro(member, roles, error_msg='rem_roles'):
+        try:
+            await C.client.remove_roles(member, *roles)
+        except C.Exceptions.Forbidden:
+            log.jW("[{}] Bot can't change roles.".format(error_msg))
+        except Exception as e:
+            pr_error(e, error_msg, 'Error in changing roles')

@@ -490,6 +490,8 @@ roles = {
     'star1': '587605268372652054',
     'star2': '587605472383729665',
     'star3': '587605550926397440',
+    'food': '606177312349880350',
+    'protege': '607242591464849418',
     # test Server
     # 'Gargoyle': '453169623576084480',
 }
@@ -504,6 +506,8 @@ clan_names = {'Malkavian', 'Toreador', 'Brujah', 'Ventrue', 'Nosferatu', 'Gangre
               # 'Gargoyle',  # test Server
               }
 clan_ids = {roles[name] for name in clan_names}
+sect_ids = {roles['Sabbat'], roles['Anarch']}
+clan_and_sect_ids = clan_ids.union(sect_ids)
 other_roles = set(roles[i] for i in ('DJ', 'star1', 'star2', 'star3', 'Silence', 'не шабашит'))
 #clan_roles = set(roles[i] for i in clan_names)
 sabbat_clans = {'Tzimisce', 'Lasombra', 'Pander'}
