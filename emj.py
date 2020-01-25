@@ -109,6 +109,20 @@ ems_id = {
     '552066796904120341': 'a_color_flower',
     '552068750883422218': 'a_water_lily',
     '552101578879008779': 'a_flower_chameleon',
+    #---
+    '629378504856961044': 't_sarcrasm',
+    '629392187074805773': 't_v5',
+    '629392214799286272': 't_v5_not',
+    '629394881915125790': 'a_AAAAAAAAAAAA',
+    '631165828372627476': 'ship_it',
+    '633620856135876628': 'zhmyak',
+    '633622485224652820': 'zhmak',
+    '648269457277583429': 'heartttt',
+    '665240275475496960': 'raja',
+    '665560315898888222': 'm_amaranth',
+    '665560341920612402': 'm_mouserat',
+    '667127289284132880': 'sasha_grey',
+    '667301831680196618': 'cat_ombra',
 }
 
 extra_em = {}
@@ -116,6 +130,7 @@ anim_em = {}
 
 # to color smile: smile[ok_hand]+skins[1]
 skins = ['', '🏻', '🏼', '🏽', '🏾', '🏿']
+tones = {'tone0': '', 'tone1': '🏻', 'tone2': '🏼', 'tone3': '🏽', 'tone4': '🏾', 'tone5': '🏿'}
 skins_set = set(skins)
 rand_em = set()
 name_em = {}
@@ -142,8 +157,15 @@ def e_or_s(name):
         return name
     if name in emojis:
         return emojis[name]
-    else:
-        return name
+    if name.endswith('_tone', -6, -1):
+        tone = name[-5:]
+        name = name[0:-6]
+        if name in emojis:
+            if len(emojis[name]) > 1:
+                return emojis[name][0] + tones.get(tone, '') + emojis[name][1:]
+            else:
+                return emojis[name] + tones.get(tone, '')
+    return name
 
 
 def e_str(name):
@@ -154,8 +176,13 @@ def e_str(name):
     elif name in emojis:
         return emojis[name]
     # elif not C.is_test:
-    else:
-        log.jW('{e} there no emoji ' + name)
+    elif name.endswith('_tone', -6, -1):
+        tone = name[-5:]
+        name = name[0:-6]
+        if name in emojis:
+            return emojis[name] + tones.get(tone, '')
+
+    log.jW('{e} there no emoji ' + name)
     return None
 
 
@@ -217,10 +244,13 @@ def prepare():
         C.users['CrimsonKing']: ('carrot', 'cucumber', 's_shchupalko0'),
         C.users['Vladislav Shrike']: ('punch', 'metal', 'Logo_Brujah', ),
         C.users['miss Alex']: ('sgushchenka', 's_shchupalko3', 's_shchupalko1'),
-        C.users['Samael']: 'lizard', C.users['Creol']: 'hugging',
-        C.users['Hadley']: 'smiley', C.users['Soul']: 'coffee',
+        C.users['Samael']: 'lizard',
+        C.users['Creol']: 'hugging',
+        C.users['Hadley']: 'smiley',
+        C.users['Soul']: 'coffee',
         C.users['Lorkhan']: ('wave', 'Logo_Brujah', 'cowboy', ),
         C.users['aleth_lavellan']: ('aleth_wink', 'hugging', 'p_beckett1', 'smiley_cat'),
+        C.users['Blaise']: ('m_r_heart', ),
     }
     for name in morn_to_add:
         morn_add[name] = (morn_to_add[name], ) if isinstance(morn_to_add[name], str) else tuple(morn_to_add[name])
@@ -314,14 +344,17 @@ async def on_reaction_add(reaction, user):
     # cmd part (ignore "ignore" and etc)
     if user.id in ram.emoji_users and not message.channel.is_private:
         try:
+            await C.client.remove_reaction(message, emoji, user)
+        except Exception as er:
+            other.pr_error(er, 'on_reaction_add[remove_reaction]', 'Unexpected error')
+
+        try:
             if other.find(message.reactions, emoji=emoji, me=True):
-                await C.client.remove_reaction(message, emoji, user)
                 await C.client.remove_reaction(message, emoji, me)
             else:
-                await C.client.remove_reaction(message, emoji, user)
                 await C.client.add_reaction(message, emoji)
         except Exception as er:
-            other.pr_error(er, 'on_reaction_add', 'Unexpected error')
+            other.pr_error(er, 'on_reaction_add[remove_or_add]', 'Unexpected error')
         finally:
             return
 
@@ -417,7 +450,7 @@ def pause_and_add(message, emoji:str or C.Types.Emoji, t=-1, all_=False):
 
 
 def pause_and_rem(message, emoji:str or C.Types.Emoji, member=None, t=-1, all_=False):
-    member = member or C.prm_server.me
+    member = member or message.server.me
 
     if not(isinstance(emoji, str) or isinstance(emoji, C.Types.Emoji)):
         emoji = list(emoji) if all_ else [other.choice(emoji)]

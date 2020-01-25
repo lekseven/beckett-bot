@@ -505,7 +505,8 @@ def _emj_on_message(msg:Msg, beckett, edit=False):
                                 '🖼', '🌠', '🎇', '🎆', '📯', '🆙', '🎯', '🎰', '🥇', '🏅', '🎖', '🏆', '💛',))
 
     if C.events['Valentine\'s Day'] in data.day_events and now.hour > 3:
-        if author in {C.users['Natali'], C.users['Tilia']}:
+        if (author in {C.users['Natali'], C.users['Hadley']} or
+                ((msg.admin or msg.moder or C.roles['Primogens'] in msg.roles) and prob < 0.25)):
             pause_and_add(message, {'❤', '💛', '💙', '💜', '❣', '💕', '💞', '💓', '💗', '💖', '💝', '♥'})
         elif prob < 0.1:
             pause_and_add(message, {'💌', '💟', })

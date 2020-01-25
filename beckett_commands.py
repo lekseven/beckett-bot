@@ -1864,6 +1864,7 @@ async def haha(msg: _Msg):
     if C.voice and C.voice.is_connected():
         C.player = C.voice.create_ffmpeg_player(file_path)
         C.player.start()
+        log.jI("Bot say haha " + file_path)
 # endregion
 
 
