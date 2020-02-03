@@ -639,7 +639,7 @@ async def sir_turn(msg: _Msg):
     """\
         !sir_turn: показать очередь сиров на становление
     """
-    await msg.qanswer(other.user_list(ram.embrace_first) if ram.embrace_first else 'None')
+    await msg.qanswer('Очередь на становление: ' + other.user_list(ram.embrace_first) if ram.embrace_first else '-.')
 
 
 async def sir_turn_add(msg: _Msg):
@@ -669,7 +669,7 @@ async def sir_turn_add(msg: _Msg):
                     else:
                         ram.embrace_first.append(usr.id)
                 else:
-                    await msg.qanswer(f'<@{usr.id}> имеет слишком высокую роль, и может добавить себя только сам.')
+                    await msg.qanswer(f'<@{usr.id}> имеет слишком высокую роль, и может добавиться только самостоятельно.')
 
         await sir_turn(msg)
     else:
@@ -689,7 +689,7 @@ async def sir_turn_rem(msg: _Msg):
                 if usr.top_role.position <= beckett_position or usr.id == msg.auid or msg.super:
                     ram.embrace_first.remove(usr.id)
                 else:
-                    await msg.qanswer(f'<@{usr.id}> имеет слишком высокую роль, и может убрать себя только сам.')
+                    await msg.qanswer(f'<@{usr.id}> имеет слишком высокую роль, и выйти из списка может лишь самостоятельно.')
 
         await sir_turn(msg)
     else:
@@ -700,7 +700,7 @@ async def sir_not(msg: _Msg):
     """\
         !sir_not: показать сиров не способных к становлению
     """
-    await msg.qanswer(other.user_list(ram.embrace_not) if ram.embrace_not else 'None')
+    await msg.qanswer('Стерилизованные: ' + (other.user_list(ram.embrace_not) if ram.embrace_not else '-.'))
 
 
 async def sir_not_add(msg: _Msg):
@@ -716,7 +716,7 @@ async def sir_not_add(msg: _Msg):
                 if usr.top_role.position <= beckett_position or usr.id == msg.auid or msg.super:
                     ram.embrace_not.add(usr.id)
                 else:
-                    await msg.qanswer(f'<@{usr.id}> имеет слишком высокую роль, и стерилизовать себя только сам.')
+                    await msg.qanswer(f'<@{usr.id}> имеет слишком высокую роль, и стерилизоваться может только самостоятельно.')
 
         await sir_not(msg)
     else:
@@ -736,7 +736,7 @@ async def sir_not_rem(msg: _Msg):
                 if usr.top_role.position <= beckett_position or usr.id == msg.auid or msg.super:
                     ram.embrace_not.remove(usr.id)
                 else:
-                    await msg.qanswer(f'<@{usr.id}> имеет слишком высокую роль, и может убрать себя только сам.')
+                    await msg.qanswer(f'<@{usr.id}> имеет слишком высокую роль, и решить становить может лишь самостоятельно.')
 
         await sir_not(msg)
     else:
