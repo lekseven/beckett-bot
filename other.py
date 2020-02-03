@@ -382,6 +382,14 @@ def is_float(num):
     return True
 
 
+def is_int(num):
+    try:
+        int(num)
+    except ValueError:
+        return False
+    return True
+
+
 def floor(num):
     i_num = int(num)
     return i_num if i_num == num else i_num + 1
@@ -412,19 +420,25 @@ def find_def_ch(server):
 
 
 def rand_flip(len_wave=0):
-    eye = choice('°', '•', '◕', '~', '・', '￣', 'ᵔ', '^', '-', '❛', 'ಠ', '≖', '👁', )
-    mouth = choice('□', '◡', 'o', '‿', r'\_', '︿', '∀', '▽', '。', 'ᴥ', ':nose::skin-tone-1:', )
+    eye = choice('°', '•', '◕', '⊙', '◉', '❍', '◔', '~', '・', '￣', 'ᵔ', '^', '-', '❛', 'ಠ', '≖', '👁', )
+    mouth = choice('□', '◡', 'o', '‿', r'\_', '︿', '∀', '▽', '。', 'ᴥ', ':nose::skin-tone-1:', 'ヮ', 'ᗩ', )
+    hand = choice('╯', '/', 'ﾉ', '/¯', '༼ ', 'つ', 'ง', 'ᕤ ', '┘')
     if len_wave > 1:
         wave = '︵' * len_wave
     else:
         wave = choice('彡', *('︵' * rand(1, 10),) * 4)
-    return '(╯{0}{1}{0}）╯{2}'.format(eye, mouth, wave)
+    return '({2}{0}{1}{0}){2}{3}'.format(eye, mouth, hand, wave)
 
 
 def rand_tableflip(len_wave=0, len_table=0):
     # (╯°□°）╯︵ ┻━┻
     table = f'┻{"━" * (len_table if len_table > 1 else rand(1,10))}┻'
     return '{0} {1}'.format(rand_flip(len_wave), table)
+
+
+def check_fliproll(txt):
+    hands = {hand for hand in ('shchupalko', '╯', '/', 'ﾉ', '/¯', '༼ ', 'つ', 'ง', 'ᕤ ', '┘',) if hand in txt}
+    return bool(hands)
 
 
 def rand_diceflip(count=1):
@@ -654,3 +668,12 @@ async def _rem_roles_coro(member, roles, error_msg='rem_roles'):
             log.jW("[{}] Bot can't change roles.".format(error_msg))
         except Exception as e:
             pr_error(e, error_msg, 'Error in changing roles')
+
+
+def user_list(users_id):
+    return '<@' + '>, <@'.join(users_id) + '>'
+
+
+def channel_list(channels_id):
+    return '<#' + '>, <#'.join(channels_id) + '>'
+

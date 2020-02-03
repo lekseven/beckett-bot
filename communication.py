@@ -563,7 +563,8 @@ def text2leet(text, prob=0.25):
 def text2malk(text, prob=0.5):
     if '```' in text:
         return text
-    f_set = {'`', '**`', '**', '_`', '_`', '_', '_',} # '~~', # italic more often then others
+    # code style look bad on mobile devices # '`', '**`', '_`', '_`',
+    f_set = {'**', '***', '_', '_',} # '~~', # italic more often then others
     esc = {'*', '_', '~', '`', '|', '\\', }
     dont_touch = {'#', '@', '&', '<', '>', '0', '1', '2', '3', '4', '5', '6', '7', '8', '9'}
     was_esc = False

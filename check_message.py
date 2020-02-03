@@ -219,15 +219,15 @@ def _do_reaction(msg:Msg, edit=False) -> (str, str):
 
                 return ans_phr['last_key'], t
     else:
-        if '╯' in msg.original or 'shchupalko' in msg.original:
+        if other.check_fliproll(msg.original):
             if '┻' in msg.original:
                 len_table = msg.original.count('━')
                 len_wave = msg.original.count('︵')
                 if msg.admin:
                     return 'rand_tableflip', other.rand_tableflip(len_wave, len_table)
                 elif msg.channel.id == C.channels['bar']:
-                    if C.roles['Primogens'] in msg.roles or prob < 0.01:
-                        if other.rand() < 0.2:
+                    if C.roles['Primogens'] in msg.roles or prob < 0.2:
+                        if other.rand() < 0.05:
                             return 'tableflip_phrase', com.get_t('tableflip_phrase')
                         else:
                             return 'rand_tableflip', other.rand_tableflip(len_wave, len_table)
