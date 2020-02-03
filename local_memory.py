@@ -10,11 +10,14 @@ cmd_server = {}
 # set(id0, id1, ...)
 mute_channels = set()
 mute_light_channels = set()
+test_channels = set()
 ignore_users = set()
 emoji_users = set()
 
 game = False    # type: str or bool
 silence_ans = {}
+embrace_first = []
+embrace_not = set()
 t_start = None # type: C.Types.Datetime
 t_finish = None # type: C.Types.Datetime
 t_work = None   # type: C.Types.Datetime

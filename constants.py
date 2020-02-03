@@ -159,6 +159,7 @@ users = {
     'Плащик': '493803351138631681',
     'Eireenn': '404699364301209601',
     'M0n0chr0me': '424856536746295297',
+    'Filstri': '270139573676408833',
 
     #Malkavian:
     'moonlight': '453631238851526657',
@@ -429,6 +430,7 @@ channels = {
     'other_news': '497142772415856641',
     'other_links': '497142885700075540',
     'test_mode_only': '497143071604211743',
+    'test_primogenat': '673633521528471554',
     'beckett_ignore': '512952018739134504',
     'not_log': '527230130448498698',
     'not_log_test_only': '527230235146453004',
@@ -494,17 +496,19 @@ roles = {
     'protege': '607242591464849418',
     # test Server
     # 'Gargoyle': '453169623576084480',
+    # 'Ghoul': '453130638631895072',
 }
 
 role_by_id = {value: key for (key, value) in roles.items()}
 
-clan_names = {'Malkavian', 'Toreador', 'Brujah', 'Ventrue', 'Nosferatu', 'Gangrel', 'Tremere',
-              'Ravnos', 'Followers of Set', 'Assamite', 'Giovanni',
-              'Tzimisce', 'Lasombra', 'Pander',
-              'Cappadocian', 'Lasombra Antitribu',
-              # 'Котичек', 'Namaru',
-              # 'Gargoyle',  # test Server
-              }
+clan_names = {
+    'Malkavian', 'Toreador', 'Brujah', 'Ventrue', 'Nosferatu', 'Gangrel', 'Tremere',
+    'Ravnos', 'Followers of Set', 'Assamite', 'Giovanni',
+    'Tzimisce', 'Lasombra', 'Pander',
+    'Cappadocian', 'Lasombra Antitribu',
+    # 'Котичек', 'Namaru',
+    # 'Gargoyle', 'Ghoul'  # test Server
+}
 clan_ids = {roles[name] for name in clan_names}
 sect_ids = {roles['Sabbat'], roles['Anarch']}
 clan_and_sect_ids = clan_ids.union(sect_ids)

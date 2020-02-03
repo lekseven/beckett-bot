@@ -29,7 +29,7 @@ class Msg:
         self.message = message
         self.original = message.content or (('≤System≥ ' + message.system_content) if message.system_content else '')
         self.text = message.content.lower().replace('ё', 'е')
-        self.args = []
+        self.args = [] # type: list[str]
         self.words = set()
         self.channel = message.channel
         self.chid = message.channel.id
@@ -317,16 +317,21 @@ def just_embrace_say(user, clan_name, get_text=False):
     if not (user or clan_name):
         return False
 
-    clan_users = set()
     pander = (clan_name == 'Pander')
     sir = None
     if not pander:
+        clan_users = set()
+        not_sire_ids = {user.id}.union(C.not_sir).union(ram.embrace_not)
         for mem in C.client.get_all_members():
-            if other.find(mem.roles, id=C.roles[clan_name]) and mem.id != user.id:
+            if other.find(mem.roles, id=C.roles[clan_name]) and mem.id not in not_sire_ids:
                 clan_users.add(mem.id)
-        clan_users.difference_update(C.not_sir)
         if clan_users:
-            sir = other.choice(list(clan_users))
+            embr_first = [userid for userid in ram.embrace_first if userid in clan_users]
+            if embr_first:
+                sir = embr_first[0]
+                ram.embrace_first.remove(sir)
+            else:
+                sir = other.choice(list(clan_users))
             text = com.get_t('embrace_msg', sir=f'<@{sir}>', child=f'<@{user.id}>')
         else:
             text = com.get_t('embrace_unic', clan=f'<@&{C.roles[clan_name]}>', child=f'<@{user.id}>')

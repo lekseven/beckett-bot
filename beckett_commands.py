@@ -26,7 +26,10 @@ admin_cmds = {
     'deny', 'undeny', 'mute', 'unmute', 'mute_list', 'mute_l', 'unmute_l', 'mute_l_list',
 }
 admin_cmds.update(free_cmds)
-primogenat_cmds = {'help', 'silence', 'unsilence', 'kick', 'stars', 'speak'}
+primogenat_cmds = {
+    'help', 'silence', 'unsilence', 'kick', 'stars', 'speak',
+    'sir_turn', 'sir_turn_add', 'sir_turn_rem', 'sir_not', 'sir_not_add', 'sir_not_rem',
+}
 
 cmd_groups = {
     'auxiliary': {'channel', 'unchannel', 'report', 'unreport',
@@ -39,7 +42,8 @@ cmd_groups = {
     'purge': {'purge', 'purge_aft', 'purge_ere', 'purge_bet', 'delete'},
     'roll': roll_cmds,
     'extra': {},
-    'primogenat': {'kick', 'silence', 'unsilence'},
+    'primogenat': {'kick', 'silence', 'unsilence', 'stars', 'speak'},
+    'sir': {'sir_turn', 'sir_turn_add', 'sir_turn_rem', 'sir_not', 'sir_not_add', 'sir_not_rem',},
     # === === ===
     'admin': {'add_role', 'ban', 'clear_clans', 'kick_f', 'pin', 'rem_role', 'unban', 'unpin',},
     'bot': {'nickname', 'play', 'test'},
@@ -60,6 +64,7 @@ _groups_help = {
     'extra_admin': 'дополнительная справка админу',
     'extra_roll': 'дополнительная справка по кубам',
     'primogenat': 'функции примогената',
+    'sir': 'функции по сирам для становления',
     # === === ===
     'admin': 'функционал админа',
     'bot': 'характеристики бота',
@@ -176,7 +181,7 @@ async def help(msg: _Msg):
         group_cmds = cmds.intersection(_cmd_in_group)
         groups = {_cmd_in_group[cmd] for cmd in group_cmds}
         cmds.difference_update(_cmd_in_group)
-        if msg.chid == C.channels['primogens']:
+        if msg.chid == C.channels['primogens'] or msg.chid == C.channels['test_primogenat']:
             groups.difference_update({'primogenat'})
             cmds.update(cmd_groups['primogenat'])
         if msg.admin:
@@ -582,7 +587,8 @@ async def stars(msg: _Msg):
 
     try:
         star_count = int(msg.args[2])
-    except:
+    except Exception as er:
+        other.pr_error(er, '[cmd] stars', 'Wrong parameter')
         await msg.qanswer("Count should be number!")
         return
 
@@ -591,7 +597,7 @@ async def stars(msg: _Msg):
         return
 
     stars_roles = set(C.roles[n] for n in ('star1', 'star2', 'star3'))
-    user_has_stars = set(r.id for r in usr.roles if r.id in stars_roles)
+    user_has_stars = set(role.id for role in usr.roles if role.id in stars_roles)
 
     if star_count == 0:
         user_get_stars = set()
@@ -627,6 +633,115 @@ async def speak(msg: _Msg):
 
     await msg.say(ch, txt + '\n' + com.get_t('primogenat_sign'))
     await C.client.add_reaction(msg.message, emj.e('ok_hand'))
+
+
+async def sir_turn(msg: _Msg):
+    """\
+        !sir_turn: показать очередь сиров на становление
+    """
+    await msg.qanswer(other.user_list(ram.embrace_first) if ram.embrace_first else 'None')
+
+
+async def sir_turn_add(msg: _Msg):
+    """\
+        !sir_turn_add *usr: добавить usr в очередь становления
+        !sir_turn_add pos *usr: добавить usr в очередь становления номер pos
+    """
+
+    if len(msg.args) > 1:
+        pos = 0
+        start = 1
+        beckett_position = msg.cmd_server.me.top_role.position
+        if other.is_int(msg.args[1]):
+            pos = int(msg.args[1])
+            if pos > 1000 or pos < 1 or pos >= len(ram.embrace_first):
+                pos = 0
+            else:
+                start = 2
+
+        for i in range(start, len(msg.args)):
+            usr = msg.find_member(msg.args[i]) if msg.args[i].lower() != 'me' else msg.member
+            if usr:
+                if usr.top_role.position <= beckett_position or usr.id == msg.auid or msg.super:
+                    if pos:
+                        ram.embrace_first.insert(pos-1, usr.id)
+                        pos += 1
+                    else:
+                        ram.embrace_first.append(usr.id)
+                else:
+                    await msg.qanswer(f'<@{usr.id}> имеет слишком высокую роль, и может добавить себя только сам.')
+
+        await sir_turn(msg)
+    else:
+        await msg.qanswer(other.comfortable_help([str(sir_turn_add.__doc__)]))
+
+
+async def sir_turn_rem(msg: _Msg):
+    """\
+        !sir_turn_rem *usr: убрать usr из очереди становления
+    """
+
+    if len(msg.args) > 1:
+        beckett_position = msg.cmd_server.me.top_role.position
+        for i in range(1, len(msg.args)):
+            usr = msg.find_member(msg.args[i]) if msg.args[i].lower() != 'me' else msg.member
+            if usr and usr.id in ram.embrace_first:
+                if usr.top_role.position <= beckett_position or usr.id == msg.auid or msg.super:
+                    ram.embrace_first.remove(usr.id)
+                else:
+                    await msg.qanswer(f'<@{usr.id}> имеет слишком высокую роль, и может убрать себя только сам.')
+
+        await sir_turn(msg)
+    else:
+        await msg.qanswer(other.comfortable_help([str(sir_turn_rem.__doc__)]))
+
+
+async def sir_not(msg: _Msg):
+    """\
+        !sir_not: показать сиров не способных к становлению
+    """
+    await msg.qanswer(other.user_list(ram.embrace_not) if ram.embrace_not else 'None')
+
+
+async def sir_not_add(msg: _Msg):
+    """\
+        !sir_not_add *usr: стерилизовать usr
+    """
+
+    if len(msg.args) > 1:
+        beckett_position = msg.cmd_server.me.top_role.position
+        for i in range(1, len(msg.args)):
+            usr = msg.find_member(msg.args[i]) if msg.args[i].lower() != 'me' else msg.member
+            if usr:
+                if usr.top_role.position <= beckett_position or usr.id == msg.auid or msg.super:
+                    ram.embrace_not.add(usr.id)
+                else:
+                    await msg.qanswer(f'<@{usr.id}> имеет слишком высокую роль, и стерилизовать себя только сам.')
+
+        await sir_not(msg)
+    else:
+        await msg.qanswer(other.comfortable_help([str(sir_not_add.__doc__)]))
+
+
+async def sir_not_rem(msg: _Msg):
+    """\
+        !sir_not_rem *usr: вернуть usr способность становить
+    """
+
+    if len(msg.args) > 1:
+        beckett_position = msg.cmd_server.me.top_role.position
+        for i in range(1, len(msg.args)):
+            usr = msg.find_member(msg.args[i]) if msg.args[i].lower() != 'me' else msg.member
+            if usr and usr.id in ram.embrace_not:
+                if usr.top_role.position <= beckett_position or usr.id == msg.auid or msg.super:
+                    ram.embrace_not.remove(usr.id)
+                else:
+                    await msg.qanswer(f'<@{usr.id}> имеет слишком высокую роль, и может убрать себя только сам.')
+
+        await sir_not(msg)
+    else:
+        await msg.qanswer(other.comfortable_help([str(sir_not_rem.__doc__)]))
+
 
 # endregion
 
@@ -1158,7 +1273,7 @@ async def mute_list(msg: _Msg):
     """\
     !mute_list: список каналов "выключенного" Беккета-комментатора \
     """
-    await msg.qanswer(('<#' + '>, <#'.join(ram.mute_channels) + '>') if ram.mute_channels else 'None')
+    await msg.qanswer(other.channel_list(ram.mute_channels) if ram.mute_channels else 'None')
 
 
 async def mute_l(msg: _Msg):
@@ -1195,7 +1310,7 @@ async def mute_l_list(msg: _Msg):
     """\
     !mute_light_list: список каналов "выключенного" Беккета-комментатора без упоминания \
     """
-    await msg.qanswer(('<#' + '>, <#'.join(ram.mute_light_channels) + '>') if ram.mute_light_channels else 'None')
+    await msg.qanswer(other.channel_list(ram.mute_light_channels) if ram.mute_light_channels else 'None')
 # endregion
 # endregion
 
@@ -1339,6 +1454,31 @@ async def nickname(msg: _Msg):
     else:
         name = 'Beckett'
     await C.client.change_nickname(msg.cmd_server.me, name)  # Beckett
+
+
+async def test_here(msg: _Msg):
+    """\
+    !test_here: добавить этот канал в 'только для теста'
+    """
+    if msg.personal:
+        await msg.qanswer(other.channel_list(ram.test_channels) if ram.mute_light_channels else 'None')
+    else:
+        if msg.chid in ram.test_channels:
+            ram.test_channels.remove(msg.chid)
+            sm = 'negative_squared_cross_mark'
+        else:
+            ram.test_channels.add(msg.chid)
+            sm = 'white_check_mark'
+        await C.client.add_reaction(msg.message, emj.e(sm))
+
+
+async def test_off(msg: _Msg):
+    """\
+    !test_off: добавить этот канал в 'только для теста'
+    """
+    if msg.personal:
+        ram.test_channels = set()
+        await C.client.add_reaction(msg.message, emj.e('ok_hand'))
 
 
 # noinspection PyUnusedLocal

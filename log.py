@@ -301,7 +301,7 @@ async def on_mess(msg, kind):
     :param kind: str
     """
     desc = {'on_message': 'on_msg', 'on_message_edit': 'on_edt', 'on_message_delete': 'on_del'}
-    if not C.Ready or msg.channel.id in C.ignore_channels:
+    if not C.Ready or msg.channel.id in C.ignore_channels or (msg.channel.id in ram.test_channels and not C.is_test):
         return False
 
     if msg.channel.id in C.not_log_channels:
@@ -330,7 +330,7 @@ async def on_mess(msg, kind):
 async def on_reaction(reaction, kind, user):
     msg = reaction.message
     emoji = reaction.emoji
-    if not C.Ready or msg.channel.id in C.ignore_channels:
+    if not C.Ready or msg.channel.id in C.ignore_channels or (msg.channel.id in ram.test_channels and not C.is_test):
         return False
 
     if msg.channel.id in C.not_log_channels:

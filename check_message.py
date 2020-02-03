@@ -21,7 +21,7 @@ class Msg(manager.Msg):
         #module_attrs = dir(cmd)
         #cmds = set(key for key in module_attrs if key[0] != '_' and callable(getattr(cmd, key)))
         cmds = cmd.all_cmds.copy()
-        if self.channel.id == C.channels['primogens']:
+        if self.channel.id == C.channels['primogens'] or self.channel.id == C.channels['test_primogenat']:
             cmds.intersection_update(cmd.primogenat_cmds)
         elif self.admin and (not self.super or (not self.personal and not self.is_tst)):
             cmds.intersection_update(cmd.admin_cmds)
@@ -163,8 +163,8 @@ def _do_reaction(msg:Msg, edit=False) -> (str, str):
     beckett = beckett_reference or beckett_mention or msg.personal
     _emj_on_message(msg, beckett, edit)
 
-    if (ram.mute_channels.intersection({msg.channel.id, 'all'})
-            or msg.auid in ram.ignore_users or msg.channel.id in C.ignore_channels):
+    if (ram.mute_channels.intersection({msg.channel.id, 'all'}) or msg.auid in ram.ignore_users or
+            msg.channel.id in C.ignore_channels or (msg.channel.id in ram.test_channels and not C.is_test)):
         if msg.channel.id == C.channels['ask']:
             embrace_or_return = True
         else:
