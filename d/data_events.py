@@ -4,6 +4,7 @@ import constants as C
 date_events = {key:{} for key in range(1, 13)}
 # January
 date_events[1][1] = C.events['New Year']
+date_events[1][7] = C.users['cycl0ne']
 date_events[1][13] = C.users['Soul']
 date_events[1][18] = C.users['Rainfall']
 date_events[1][20] = C.users['Zodiark']
@@ -16,6 +17,8 @@ date_events[3][8] = C.events['8 March']
 date_events[4][3] = C.users['Tilia']
 date_events[4][14] = C.users['Natali']
 date_events[4][16] = (C.users['Tveyn'], C.users['aleth_lavellan'])
+date_events[4][17] = C.users['Beckett']
+date_events[4][18] = C.users['GoblinKing']
 date_events[4][27] = C.users['Vladislav Shrike']
 # May
 date_events[5][11] = C.users['Ace']

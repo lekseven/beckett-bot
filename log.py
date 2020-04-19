@@ -309,7 +309,7 @@ async def on_mess(msg, kind):
 
     s_server = ''
     if msg.server:
-        if C.is_test and msg.server.id == C.vtm_server.id:
+        if C.is_test and msg.server.id != C.tst_server.id:
             return False
         if msg.server.id != C.prm_server.id:
             if msg.server.id not in C.usual_servers:

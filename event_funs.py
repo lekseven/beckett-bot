@@ -73,6 +73,10 @@ def upd_server():
 
 # region on_Events
 async def on_voice_state_update_u(before, after):
+    """
+    :type before: C.types.Member
+    :type after: C.types.Member
+    """
     global voice_alert_msg
     v_old = before.voice_channel
     v_new = after.voice_channel
@@ -97,7 +101,7 @@ async def on_voice_state_update_u(before, after):
     await _del_voice_alert(after.id)
     user = None
     ch = None
-    if C.is_test or (after.id in C.voice_alert and v_new):
+    if (after.id in C.voice_alert and v_new) or (after.top_role > after.server.me.top_role):
         user = after
         ch = v_new # type: C.Types.Channel
     elif v_old and v_old.voice_members and v_old.voice_members[0].id in C.voice_alert:
@@ -109,23 +113,16 @@ async def on_voice_state_update_u(before, after):
         log.D('<voice> Event to @here')
         every_prm = ch.overwrites_for(ch.server.default_role)
         if every_prm.connect or (every_prm.connect is None and ch.server.default_role.permissions.connect):
-            call = ['@here']
-        else:
-            call = []
-            for obj, perm in ch.overwrites:
-                if perm.connect:
-                    call.append(obj.mention)
-        if call:
-            s_call = ', '.join(call)
             va_ids = voice_alert_ids.setdefault(user.id, [])
             va_msg = voice_alert_msg.setdefault(user.id, [])
-            va_ids.append(com.write_msg(C.main_ch, text=com.voice_event(user, ch, s_call), save_obj=va_msg))
-            # mess = await C.client.send_message(C.main_ch, com.voice_event(user, ch, s_call))
-            # voice_alert_msg[user.id] = mess
-            # await other.type2sent(C.main_ch, com.voice_event(user, ch, s_call))
+            va_ids.append(com.write_msg(C.main_ch, text=com.voice_event(user, ch), save_obj=va_msg))
 
 
 async def _del_voice_alert(uid):
+    """
+    :param uid:
+    """
+    '''
     if uid not in C.voice_alert:
         return
     com.rem_from_queue(C.main_ch.id, voice_alert_ids.setdefault(uid, []))
@@ -133,6 +130,7 @@ async def _del_voice_alert(uid):
     if uid in voice_alert_msg:
         while voice_alert_msg[uid]:
             await other.delete_msg(voice_alert_msg[uid].pop())
+    '''
 
 
 async def on_voice_state_update_o(server, before, after):
@@ -546,6 +544,7 @@ async def load():
     load_mem()
     await people.get() # check=(not C.is_test)
     _check_day_ev()
+    await _load_messages()
 
 
 def save():
@@ -720,7 +719,6 @@ def timer_midnight_update(now=None):
         other.pr_error(e, '_check_once_in_day', 'Unexpected error')
 
 
-
 def _check_once_in_day():
     if not C.is_test:
         check_t = 7776000 # 90 * 24 * 3600
@@ -768,3 +766,16 @@ def _check_day_ev(now=None, on_midnight=False):
         log.jI(f'<Day event> There are no events today.')
 
     day_ev_check = now.day
+
+
+async def _load_messages():
+    # Load messages in the cache
+    log.I('Start load messages from channels')
+    load_channels = other.get_channels((C.channels['sabbat-charsheets'],), True)
+    for ch in load_channels:  #type: C.Types.Channel
+        if not ch:
+            continue
+        log.I('- load messages from {0.name}'.format(ch))
+        async for message in C.client.logs_from(ch, limit=10000):  #type: C.Types.Message
+            C.client.messages.append(message)
+    log.I('End load messages from channels')

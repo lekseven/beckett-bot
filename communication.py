@@ -427,8 +427,9 @@ def unban_msg(uid):
     return '{msg}\n{comment}'.format(msg=get_t('unban_msg', name=uid), comment=get_t('unban_comment'))
 
 
-def voice_event(user, channel, here='@here'):
-    return get_t('voice_alone_messages', user=f'<@{user.id}>', voice=f'<#{channel.id}>', here=here)
+def voice_event(user, channel):
+    return get_t('voice_alone_messages', user=f'<@{user.id}>', voice=f'<#{channel.id}>',
+                 here=get_t('voice_alone_here'))
 
 
 def voice_note(user):

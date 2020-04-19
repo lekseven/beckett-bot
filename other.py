@@ -222,30 +222,38 @@ def get_channel(i):
             find(C.client.get_all_channels(), name=i) or find(C.client.get_all_channels(), name=i.replace('#', '')))
 
 
-def get_channels(names):
+def get_channels(names, return_channels=False):
     """
     :param iterator names:
+    :param bool return_channels:
     :rtype: set
     """
     res = set()
     for name in names:
         ch = get_channel(name)
         if ch:
-            res.add(ch.id)
+            if return_channels:
+                res.add(ch)
+            else:
+                res.add(ch.id)
 
     return res
 
 
-def find_channels_or_users(names):
+def find_channels_or_users(names, return_objects=False):
     """
        :param iterator names:
+       :param bool return_objects:
        :rtype: set
        """
     res = set()
     for name in names:
         s = get_channel(name) or find_user(name)
         if s:
-            res.add(s.id)
+            if return_objects:
+                res.add(s)
+            else:
+                res.add(s.id)
 
     return res
 
@@ -640,7 +648,8 @@ def change_roles(callback, member, roles, error_msg='add_roles', delay=0, by_id=
 
     if by_id:
         roles = get_roles(roles, server_roles)
-
+    log.D('Try {t} to @{m.display_name} roles ({r}).'.format(
+        m=member, t=callback.__name__, r=', '.join([r.name for r in roles])))
     later_coro(delay, callback(member, roles, error_msg))
 
 
