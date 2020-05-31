@@ -283,7 +283,7 @@ def is_text_exist(any_keys=None, all_keys=None):
     return False
 
 
-ignore = {'вам', 'всем', 'чат', 'чату', 'чатик', 'чатику', 'в', 'с', 'народ', 'люди', 'сородичи', 'каиниты', }
+ignore = {'вам', 'всем', 'чат', 'чату', 'чатик', 'чатику', 'в', 'с', 'народ', 'люди', 'сородичи', 'каиниты', 'стая'}
 ign_patt = re.compile(rf'((?<!\w)({"|".join(ignore)})(?!\w)([ ]+)?)|((?<=[ ])[ ]+)')
 
 
@@ -325,15 +325,20 @@ def f_gt_key(orig_phrase, tr_phrase, words, bot_mention):
     return False
 
 
-def phrase_gt(gt=None, uid=None):
+def phrase_gt(gt=None, uid=None, add_id=None):
     if not gt:
         return False
 
     uid = uid or 'here'
     phr = other.choice(d2u.good_time[gt['g_key']][gt['g_type']]['response'])
     str_weather = ''
-    if gt['g_key'] == 'g_morn' and uid in emj.morn_add:
-        phr += ' ' + other.choice(emj.morn_add[uid])
+    if gt['g_key'] == 'g_morn':# and uid in emj.morn_add:
+        smile_ids = other.it2list(uid) + other.it2list(add_id)
+        smiles = []
+        for sm_id in smile_ids:
+            smiles += emj.morn_add.get(sm_id, [])
+        if smiles:
+            phr += ' ' + other.choice(smiles)
     if uid == C.users['Natali'] and gt['g_key'] in ('g_morn', 'g_day'):
         try:
             log.I('try get_weather for Natali')
@@ -534,14 +539,14 @@ async def _send_msg(ident, ti, tn, ch, text=None, emb=None, save_obj=None, fun:c
             _check_queue(ch.id)
 
 
-async def delete_msg(message=None, ch_i=None, msg_id=None):
+async def delete_msg(message=None, ch_i=None, msg_id=None, reason='-'):
     if not message:
         try:
             message = await C.client.get_message(other.get_channel(ch_i), msg_id)
         except Exception as e:
             other.pr_error(e, 'com.delete_msg.get_message', 'Unexpected error')
             return
-    await other.delete_msg(message)
+    await other.delete_msg(message, reason)
 
 
 def text2leet(text, prob=0.25):

@@ -214,6 +214,7 @@ users = {
     'Olkadan': '361257890557984769',
     'ConradBulba': '377053853096345601',
     'Soviet_bear': '370294130829557760',
+    'Zebub': '541006626383986689',
 
     #Gangrel:
     'sad_sebastian': '394566593159495692',
@@ -535,6 +536,7 @@ clan_channels = {
     roles['Lasombra']: channels['sabbat'],
     roles['Pander']: channels['sabbat'],
     roles['Lasombra Antitribu']: channels['gallery'],
+    roles['Sabbat']: channels['sabbat'],
     # roles['Gargoyle']: channels['test_mode_only'],
 }
 #sabbat_roles = set(roles[i] for i in sabbat_clans)

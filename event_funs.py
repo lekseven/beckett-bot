@@ -290,6 +290,10 @@ async def on_member_update_u(before: C.Types.Member, after: C.Types.Member):
                     phr = com.get_t('to_Pander', user=f'<@{after.id}>',
                                     old_clans=str_rem_r, pander=f"<@&{C.roles['Pander']}>")
                     com.write_msg(C.main_ch, phr)
+            elif C.roles['Sabbat'] in new_clan_roles:
+                clan_ch = C.clan_channels[C.roles['Sabbat']]
+                phr = com.get_t(all_keys=('clan_welcome', clan_ch), user=f'<@{after.id}>')
+                com.write_msg(clan_ch, phr)
             elif C.roles['food'] in new_role_ids:
                 rem_roles = {r for r in after.roles if r.id in C.clan_and_sect_ids}
                 other.rem_roles(after, rem_roles, 'on_member_update_u[2]')

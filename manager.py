@@ -63,8 +63,8 @@ class Msg:
         self.args = ([fun] or []) + text.translate(C.punct2space).split()
         self.words = set(self.args).difference({'', ' '})
 
-    async def delete(self):
-        await other.delete_msg(self.message)
+    async def delete(self, reason='-'):
+        await other.delete_msg(self.message, reason)
 
     async def edit(self, new_msg):  #not permissions
         await C.client.edit_message(self.message, new_msg)
@@ -156,7 +156,7 @@ class Msg:
         gt_key = com.f_gt_key(self.original, self.text, self.words.copy(), beckett)
         if gt_key:
             if people.gt_passed_for(self.auid, gt_key['g_key'], h=18):
-                phr = com.phrase_gt(gt_key, self.auid)
+                phr = com.phrase_gt(gt_key, self.auid, self.channel.id)
                 if phr:
                     people.set_gt(self.auid, gt_key['g_key'])
                     return phr

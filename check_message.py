@@ -45,17 +45,17 @@ async def reaction(message, edit=False):
 
     if msg.auid == C.users['bot']:
         if msg.original == data.tremer_joke:
-            other.later_coro(20, msg.delete())
+            other.later_coro(20, msg.delete('tremer_joke'))
         if msg.auid in data.day_events:
             _emj_on_message(msg, False, edit)
         return
 
     if msg.torpor:
-        await msg.delete()
+        await msg.delete('torpor')
         return
 
     if C.roles['Silence'] in msg.roles:
-        await msg.delete()
+        await msg.delete('Silence')
         ram.silence_ans[msg.auid] = ram.silence_ans.setdefault(msg.auid, 0) + 1
         if ram.silence_ans[msg.auid] < 4:
             msg.answer(f'Неугодный <@{msg.auid}> пытается нам нечто сказать, но заноза в сердце мешает...')
@@ -64,14 +64,18 @@ async def reaction(message, edit=False):
     # delete messages containing forbidden links
     if not msg.admin:
         if any(link in msg.text for link in data.forbiddenLinks):
-            log.I(f'<reaction> forbidden Links')
-            await msg.delete()
+            log.I(f'<reaction> forbidden links')
+            await msg.delete('forbidden links')
             msg.answer(com.get_t('threats', name=msg.auid))
             return
 
     # delete double messages for last 60 sec
-    if (not msg.super and not msg.text.startswith('!r') and
-            (not edit or (msg.message.attachments or msg.message.embeds)) ):
+    if (
+        not msg.super and
+        not (msg.text.startswith('!r') or msg.text.startswith('!shuffle'))  and
+        not edit and
+        not (msg.message.attachments or msg.message.embeds)
+    ):
         txt_now = (msg.original +
                    ''.join([str(att.get('url', other.rand())) for att in msg.message.attachments]) +
                    ''.join([str(emb.get('url', other.rand())) for emb in msg.message.embeds]))
@@ -82,7 +86,7 @@ async def reaction(message, edit=False):
             if (get_sec_now - date) < 60:
                 new_last_msgs.append((txt, date))
                 if txt == txt_now:
-                    await msg.delete()
+                    await msg.delete('double messages')
                     return
 
         new_last_msgs.append((txt_now, get_sec_now))
@@ -160,7 +164,7 @@ async def delete_reaction(message):
         log.I(f'<delete_reaction> [{type_}]')
         com.rem_from_queue(message.channel.id, typing)
         for mess in resp['ans']:
-            await com.delete_msg(mess)
+            await com.delete_msg(mess, 'delete_reaction')
         data_msgs[message.channel.id].pop(message.id)
 
 
@@ -216,6 +220,10 @@ def _do_reaction(msg:Msg, edit=False) -> (str, str):
         if prob < 0.2 or beckett: #beckett_reference or (beckett_mention and (prob < 0.9 or msg.admin)):
             response = True
 
+        if msg.channel.id == C.channels['sabbat'] and 'Sabbat' in found_keys:
+            found_keys.remove('Sabbat')
+            found_keys.add('Sabbat2')
+
         if response:
             ans_phr = com.get_text_obj(found_keys)
             if ans_phr['text']:
@@ -264,7 +272,7 @@ def _do_reaction(msg:Msg, edit=False) -> (str, str):
             return m_type, ans
 
         if beckett: # beckett_reference or (beckett and other.rand() < 0.25):
-            if prob < 0.01:
+            if prob < 0.1:
                 ans_phr = com.get_t(all_keys=('author_phrases', msg.auid))
                 if ans_phr:
                     return msg.auid, ans_phr
@@ -568,8 +576,10 @@ async def _check_jihad(message, delete=False):
         roles = other.find(message.server.roles, id=role_id)
         other.add_roles(message.author, roles, 'do_jihad')
         sabbat = other.get_channel(C.channels['sabbat'])
-        phr = com.get_t('join_jihad', user=f'<@{message.author.id}>')
-        com.write_msg(sabbat, phr)
+        prm = sabbat.overwrites_for(message.author)  # type: C.Types.PermissionOverwrite
+        if prm.read_messages and prm.send_messages:
+            phr = com.get_t('join_jihad', user=f'<@{message.author.id}>')
+            com.write_msg(sabbat, phr)
     else:
         if not other.has_roles(message.author, role_id):
             return

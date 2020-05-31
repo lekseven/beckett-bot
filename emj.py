@@ -61,27 +61,41 @@ ems_id = {
     '506940161389756426': 'm_r_heart',
     '525924557102645257': 's_dice',
     # '534065125867388938': 'logo_dementation',
-    '550995225808601119': 'me_today',
-    '564885955602022431': 'bratajtes',
+    '550995225808601119': 's_me_today',
+    '564885955602022431': 's_bratajtes',
     #---
     '629378504856961044': 't_sarcrasm',
     '629392187074805773': 't_v5',
     '629392214799286272': 't_v5_not',
     '629394881915125790': 'a_AAAAAAAAAAAA',
-    '631165828372627476': 'ship_it',
-    '633620856135876628': 'zhmyak',
-    '633622485224652820': 'zhmak',
-    '648269457277583429': 'heartttt',
-    '665240275475496960': 'raja',
+    '631165828372627476': 't_ship_it',
+    '633620856135876628': 't_zhmyak',
+    '633622485224652820': 't_zhmak',
+    '648269457277583429': 's_heartttt',
+    '665240275475496960': 'l_raja',
     '665560315898888222': 'm_amaranth',
     '665560341920612402': 'm_mouserat',
-    '667127289284132880': 'sasha_grey',
-    '667301831680196618': 'cat_ombra',
+    '667127289284132880': 's_sasha_grey',
+    '667301831680196618': 's_cat_ombra',
     #---
     '671121976877907979': 's_fangs_0',
     '671122005625667594': 's_fangs_1',
     '671122034419302410': 't_bite_0',
-    '671122058826088468': 't_bite_1',
+    #---
+    '674326286117765161': 'Logo_V20',
+    '678398036434616350': 's_me_shovelhead',
+    '678398547053248513': 's_shovelhead',
+    '703935153231364126': 's_hyena',
+    '705726665581396018': 'Logo_M20',
+    '708281244332458014': 'sm_love_sabbat',
+    '708304130376204358': 'Logo_Tremere_Antitribu',
+    '708304575295127643': 'Logo_Tremere_Telyavelic',
+    '708307690715349042': 'Logo_Lasombra2',
+    '708307899985821736': 'Logo_Tzimisce2',
+    '708318400287342622': 'Logo_Tzimisce_Old',
+    '708825629973544971': 'Logo_Ventru_Antitribu',
+    '708825660126265415': 'Logo_Ductus',
+    '710513227754373211': 'sm_love_tremere',
     # test
     '532673320785674317': 'sgushchenka',
     '453173916517662720': 'z_GDAbyudG2',
@@ -175,7 +189,7 @@ def e_or_s(name):
     return name
 
 
-def e_str(name):
+def e_str(name, not_divide=False):
     if name in extra_em:
         return extra_em[name]
     elif name in em_name:
@@ -185,9 +199,12 @@ def e_str(name):
     # elif not C.is_test:
     elif name.endswith('_tone', -6, -1):
         tone = name[-5:]
-        name = name[0:-6]
-        if name in emojis:
-            return emojis[name] + tones.get(tone, '')
+        sname = name[0:-6]
+        if sname in emojis:
+            if not_divide:
+                return f':{name}:'
+            else:
+                return emojis[sname] + tones.get(tone, '')
 
     log.jW('{e} there no emoji ' + name)
     return None
@@ -242,14 +259,15 @@ def prepare():
     }
     morn_to_add_sm = {
         C.users['Kuro']: ('tea', ),
-        C.users['Natali']: ('purple_heart', 'white_heart', 'heartpulse', 'cat_ombra', 'zhmyak', ),
+        C.users['Natali']: ('purple_heart', 'white_heart', 'heartpulse', 's_cat_ombra', 't_zhmyak', ),
         C.users['Buffy']: (*('sun_with_face',) * 3, 'm_wafer', 'chocolate_bar', 'doughnut', 'cake',
                            'mouse', 'mouse2', 'rat', 'm_mouserat', ),
         C.users['Tilia']: (*('sun_with_face',) * 3, 'm_wafer', 'smiley_cat', 'sgushchenka', ),
         C.users['cycl0ne']: ('p_jonesy', 'smiley_cat', ),
         C.users['AyrinSiverna']: ('Logo_Toreador', 'heart', 'hearts', 'rose', 'tulip', ),
         C.users['Doriana']: ('hugging', 'relaxed', 's_shchupalko0', 'black_heart', 'unicorn', ),
-        C.users['CrimsonKing']: ('carrot', 'cucumber', 's_shchupalko0', 'space_invader', 'eggplant', ),
+        C.users['CrimsonKing']: ('carrot', 'cucumber', 's_shchupalko0', 'space_invader', 'eggplant',
+                                 'Logo_Tzimisce_Old', ),
         C.users['Vladislav Shrike']: ('punch', 'metal', 'Logo_Brujah', ),
         C.users['miss Alex']: ('sgushchenka', 's_shchupalko3', 's_shchupalko1', ),
         C.users['Samael']: ('lizard', 'sloth', ),
@@ -262,12 +280,16 @@ def prepare():
                                     'cat', 'koala', 'owl', 'wolf', 'cat2', 'new_moon_with_face', ),
         C.users['Blaise']: ('m_r_heart', 'map', 'man_bouncing_ball_tone1', ),
         C.users['Filstri']: ('man_mage_tone1', 'crystal_ball', 'sparkles', 'books', ),
+        C.users['verasolar']: ('Logo_Ductus', 'Logo_Ventru_Antitribu', ),
+        C.users['Zebub']: ('bathtub', 'p_nosferatu', ),
+        # channels
+        C.channels['sabbat']: ('sm_love_sabbat', 's_shchupalko3', 's_heartttt', 's_bratajtes'),
     }
     for name in morn_to_add:
         morn_add[name] = (morn_to_add[name], ) if isinstance(morn_to_add[name], str) else tuple(morn_to_add[name])
     for name in morn_to_add_sm:
         val = (morn_to_add_sm[name], ) if isinstance(morn_to_add_sm[name], str) else tuple(morn_to_add_sm[name])
-        morn_add[name] = morn_add.get(name, tuple()) + tuple((e_str(em) or '') for em in val)
+        morn_add[name] = morn_add.get(name, tuple()) + tuple((e_str(em, True) or '') for em in val)
 
 
 def save_em():
@@ -372,7 +394,7 @@ async def on_reaction_add(reaction, user):
     if user.id == C.users['Kuro'] and e('middle_finger') in emoji:
         log.D('Get *that* smile, try delete message')
         try:
-            await other.delete_msg(message)
+            await other.delete_msg(message, 'middle_finger')
         except C.Exceptions.Forbidden:
             log.jW("Bot haven't permissions here.")
 

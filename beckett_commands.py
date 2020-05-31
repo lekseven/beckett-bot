@@ -16,7 +16,7 @@ import emj
 import communication as com
 
 _Msg = manager.Msg
-roll_cmds = {'roll', 'rollw', 'rollv', 'r', 'rw', 'rv', }
+roll_cmds = {'roll', 'rollw', 'rollv', 'r', 'rw', 'rv', 'shuffle', 'shufflen'}
 free_cmds = {'help', 'ignore', }
 free_cmds.update(roll_cmds)
 admin_cmds = {
@@ -216,6 +216,60 @@ async def ignore(msg: _Msg):
         ram.ignore_users.add(msg.auid)
         phr = com.get_t(all_keys=('ignore_cmd', msg.auid)) or com.get_t(all_keys=('ignore_cmd', 'all'))
     msg.answer(phr)
+
+
+async def shuffle(msg: _Msg):
+    """\
+    !shuffle text: перемешать аргументы, разделённые построчно, ';', ',', пробелу или посимвольно
+    """
+    text = msg.original[len('!shuffle '):].strip()
+    if not text:
+        await msg.qanswer(other.comfortable_help([str(shuffle.__doc__)]))
+        return
+    seps = ['\n', ';', ',', ' ']
+    sep = ''
+    for s in seps:
+        if s in text:
+            sep = s
+            break
+    if sep:
+        texts = text.split(sep)
+        texts = [t.strip() for t in texts]
+    else:
+        texts = list(text)
+    texts2 = other.shuffle(texts)
+    if sep and sep != ' ':
+        sep += ' '
+    await msg.qanswer(sep.join(texts2))
+
+
+async def shufflen(msg: _Msg):
+    """\
+    !shufflen text: как !shufflen, но результат будет пронумерован
+    """
+    text = msg.original[len('!shufflen '):].strip()
+    if not text:
+        await msg.qanswer(other.comfortable_help([str(shufflen.__doc__)]))
+        return
+    seps = ['\n', ';', ',', ' ']
+    sep = ''
+    for s in seps:
+        if s in text:
+            sep = s
+            break
+    if sep:
+        texts = text.split(sep)
+        texts = [t.strip() for t in texts]
+    else:
+        texts = list(text)
+
+    if len(texts) > 21:
+        await msg.qanswer('Ох, слишком много: используй лучше `!riffle` :wink:')
+        return
+
+    texts2 = other.shuffle(texts)
+    texts2 = [f'{i}) {t}' for i, t in enumerate(texts2)]
+    await msg.qanswer('\n'.join(texts2))
 
 
 async def roll(msg: _Msg):
@@ -1435,7 +1489,7 @@ async def delete(msg: _Msg):
     for mess_id in msg.args[2:]:
         try:
             mess = await C.client.get_message(ch, mess_id)
-            await other.delete_msg(mess)
+            await other.delete_msg(mess, 'cmd delete')
             done = True
         except C.Exceptions.Forbidden:
             log.jW("Bot haven't permissions here.")

@@ -551,14 +551,25 @@ def try_sum(s:str):
         return res
 
 
-def choice(*args):
-    """Alias for random.choice"""
+def _prepare_list_args(args):
     if len(args) == 1 and hasattr(args[0], '__len__') and not isinstance(args[0], str):
         ls = tuple(args[0])
     else:
         ls = tuple(args)
+    return ls
 
+
+def choice(*args):
+    """Alias for random.choice"""
+    ls = _prepare_list_args(args)
     return random.choice(ls)
+
+
+def shuffle(*args):
+    """Alias for random.shuffle"""
+    ls = list(_prepare_list_args(args))
+    random.shuffle(ls)
+    return  ls
 
 
 def rand(a:int=None, b:int=None):
@@ -590,7 +601,13 @@ def s_in_s(s_child, s_parent, all_=False):
     return all_
 
 
-async def delete_msg(message):
+async def delete_msg(message, reason='-'):
+    """
+
+    :param C.Types.Message message:
+    :param reason: string
+    """
+    log.I(f"Bot will try delete message in #{message.channel.name}. Reason: {reason}.")
     try:
         await C.client.delete_message(message)
     except C.Exceptions.Forbidden:
@@ -686,3 +703,14 @@ def user_list(users_id):
 def channel_list(channels_id):
     return '<#' + '>, <#'.join(channels_id) + '>'
 
+
+def it2list(item):
+    if item:
+        if hasattr(item, '__len__') and not isinstance(item, str):
+            item = list(item)
+        else:
+            item = [item]
+    else:
+        item = []
+
+    return item
