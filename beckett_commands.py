@@ -16,7 +16,7 @@ import emj
 import communication as com
 
 _Msg = manager.Msg
-roll_cmds = {'roll', 'rollw', 'rollv', 'r', 'rw', 'rv', 'shuffle', 'shufflen'}
+roll_cmds = {'roll', 'rollw', 'rollv', 'r', 'rw', 'rv', 'shuffle', 'shufflen', 'choise'}
 free_cmds = {'help', 'ignore', }
 free_cmds.update(roll_cmds)
 admin_cmds = {
@@ -60,7 +60,7 @@ _groups_help = {
     'info': 'получить информацию о пользователях',
     'moderate': 'волшебная палочка модератора',
     'purge': 'массовое удаление сообщений в каналах',
-    'roll': 'броски дайсов',
+    'roll': 'броски дайсов и прочий рандом',
     'extra_admin': 'дополнительная справка админу',
     'extra_roll': 'дополнительная справка по кубам',
     'primogenat': 'функции примогената',
@@ -220,23 +220,14 @@ async def ignore(msg: _Msg):
 
 async def shuffle(msg: _Msg):
     """\
-    !shuffle text: перемешать аргументы, разделённые построчно, ';', ',', пробелу или посимвольно
+    !shuffle text: перемешать варианты, разделённые построчно, ';', ',', пробелу или посимвольно
     """
     text = msg.original[len('!shuffle '):].strip()
     if not text:
         await msg.qanswer(other.comfortable_help([str(shuffle.__doc__)]))
         return
-    seps = ['\n', ';', ',', ' ']
-    sep = ''
-    for s in seps:
-        if s in text:
-            sep = s
-            break
-    if sep:
-        texts = text.split(sep)
-        texts = [t.strip() for t in texts]
-    else:
-        texts = list(text)
+
+    texts, sep = other.split_text_args(text)
     texts2 = other.shuffle(texts)
     if sep and sep != ' ':
         sep += ' '
@@ -251,25 +242,30 @@ async def shufflen(msg: _Msg):
     if not text:
         await msg.qanswer(other.comfortable_help([str(shufflen.__doc__)]))
         return
-    seps = ['\n', ';', ',', ' ']
-    sep = ''
-    for s in seps:
-        if s in text:
-            sep = s
-            break
-    if sep:
-        texts = text.split(sep)
-        texts = [t.strip() for t in texts]
-    else:
-        texts = list(text)
+
+    texts, sep = other.split_text_args(text)
 
     if len(texts) > 21:
         await msg.qanswer('Ох, слишком много: используй лучше `!riffle` :wink:')
         return
 
     texts2 = other.shuffle(texts)
-    texts2 = [f'{i}) {t}' for i, t in enumerate(texts2)]
+    texts2 = [f'{i+1}) {t}' for i, t in enumerate(texts2)]
     await msg.qanswer('\n'.join(texts2))
+
+
+async def choise(msg: _Msg):
+    """\
+    !choise text: выбрать случайный вариант, из разделённых построчно, ';', ',', пробелу или посимвольно
+    """
+    text = msg.original[len('!choise '):].strip()
+    if not text:
+        await msg.qanswer(other.comfortable_help([str(choise.__doc__)]))
+        return
+
+    texts, sep = other.split_text_args(text)
+    texts2 = other.choice(texts)
+    await msg.qanswer(texts2)
 
 
 async def roll(msg: _Msg):

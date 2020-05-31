@@ -714,3 +714,18 @@ def it2list(item):
         item = []
 
     return item
+
+
+def split_text_args(text):
+    seps = ['\n', ';', ',', ' ']
+    sep = ''
+    for s in seps:
+        if s in text:
+            sep = s
+            break
+    if sep:
+        texts = text.split(sep)
+        texts = [t.strip() for t in texts]
+    else:
+        texts = list(text)
+    return texts, sep
