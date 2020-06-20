@@ -31,6 +31,7 @@ date_events[6][3] = (C.users['Hadley'], C.users['devNull'])
 date_events[6][6] = C.users['M0n0chr0me']
 date_events[6][15] = C.users['Vasheska']
 date_events[6][19] = C.users['Darude']
+date_events[6][20] = C.users['CrimsonKing']
 date_events[6][22] = C.users['Samael']
 date_events[6][24] = (C.users['Tony'], C.users['Svartalfr'])
 # July
