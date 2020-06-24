@@ -173,8 +173,7 @@ async def help(msg: _Msg):
         cmds_chunk = {cmd for cmd in cmds_chunk if other.s_in_s(args_chank, cmd)}
         cmds = cmds_full.union(cmds_chunk)
 
-        if 'extra_admin' in args and \
-                (msg.admin or (msg.chid == C.channels['primogens'] or msg.chid == C.channels['test_primogenat'])):
+        if 'extra_admin' in args and (msg.admin or other.is_primogen_channel(msg.chid)):
             texts += extra_admin_help
         if 'extra_roll' in args:
             texts += extra_roll_help
@@ -182,7 +181,7 @@ async def help(msg: _Msg):
         group_cmds = cmds.intersection(_cmd_in_group)
         groups = {_cmd_in_group[cmd] for cmd in group_cmds}
         cmds.difference_update(_cmd_in_group)
-        if msg.chid == C.channels['primogens'] or msg.chid == C.channels['test_primogenat']:
+        if other.is_primogen_channel(msg.chid):
             groups.difference_update({'primogenat'})
             cmds.update(cmd_groups['primogenat'])
             groups.add('extra_admin')

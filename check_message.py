@@ -21,7 +21,7 @@ class Msg(manager.Msg):
         #module_attrs = dir(cmd)
         #cmds = set(key for key in module_attrs if key[0] != '_' and callable(getattr(cmd, key)))
         cmds = cmd.all_cmds.copy()
-        if self.channel.id == C.channels['primogens'] or self.channel.id == C.channels['test_primogenat']:
+        if other.is_primogen_channel(self.channel.id):
             cmds.intersection_update(cmd.primogenat_cmds)
         elif self.admin and (not self.super or (not self.personal and not self.is_tst)):
             cmds.intersection_update(cmd.admin_cmds)
@@ -217,12 +217,15 @@ def _do_reaction(msg:Msg, edit=False) -> (str, str):
             return '', ''
         response = False
 
-        if prob < 0.2 or beckett: #beckett_reference or (beckett_mention and (prob < 0.9 or msg.admin)):
-            response = True
-
-        if msg.channel.id == C.channels['sabbat'] and 'Sabbat' in found_keys:
-            found_keys.remove('Sabbat')
-            found_keys.add('Sabbat2')
+        if msg.channel.id == C.channels['sabbat']:
+            if 'Sabbat' in found_keys:
+                found_keys.remove('Sabbat')
+                found_keys.add('Sabbat2')
+            if prob < 0.02 or beckett:
+                response = True
+        else:
+            if prob < 0.2 or beckett:  #beckett_reference or (beckett_mention and (prob < 0.9 or msg.admin)):
+                response = True
 
         if response:
             ans_phr = com.get_text_obj(found_keys)

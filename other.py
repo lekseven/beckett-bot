@@ -729,3 +729,8 @@ def split_text_args(text):
     else:
         texts = list(text)
     return texts, sep
+
+
+def is_primogen_channel(channel_id):
+    channels = (C.channels['primogens'], C.channels['test_primogenat'], C.channels['inconnu'])
+    return channel_id in channels
