@@ -14,6 +14,12 @@ import local_memory as ram
 import log
 import event_funs as ev
 
+# hack to fix discord update
+# TODO: update discord and rewrite the whole code (=_=)
+from collections import namedtuple
+from discord import channel as discord_channel
+discord_channel.Overwrites = namedtuple('Overwrites', 'id allow deny type deny_new allow_new')
+
 
 @C.client.event
 async def on_ready():
