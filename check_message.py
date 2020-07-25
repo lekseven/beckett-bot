@@ -39,8 +39,11 @@ async def reaction(message, edit=False):
 
     # in vtm open channels, save date of last message
     if msg.is_vtm:
-        every_prm = msg.channel.overwrites_for(C.vtm_server.default_role)
-        if every_prm.read_messages is not False:    # True or None
+        save = msg.chid == C.channels['flood']
+        if not save:
+            every_prm = msg.channel.overwrites_for(C.vtm_server.default_role)
+            save = every_prm.read_messages is not False
+        if save:
             ram.last_vtm_msg = other.get_sec_total()
 
     if msg.auid == C.users['bot']:
