@@ -75,7 +75,7 @@ async def reaction(message, edit=False):
     # delete double messages for last 60 sec
     if (
         not msg.super and
-        not (msg.text.startswith('!r') or msg.text.startswith('!shuffle'))  and
+        not (msg.text.startswith('!r') or msg.text.startswith('!shuffle')) and
         not edit and
         not (msg.message.attachments or msg.message.embeds)
     ):
@@ -112,7 +112,6 @@ async def reaction(message, edit=False):
             await getattr(cmd, fun)(msg)
             return
 
-    await _check_jihad(msg.message)
     m_type, text = _do_reaction(msg, edit)
 
     if edit:
@@ -156,8 +155,6 @@ async def delete_reaction(message):
 
     :type message: C.Types.Message
     """
-    # check jihad
-    await _check_jihad(message, True)
     # delete reaction
     typing = data_typings.setdefault(message.channel.id,{}).get(message.id, '')
     resp = data_msgs.get(message.channel.id, {}).get(message.id, {})
@@ -560,45 +557,3 @@ def _emj_by_mtype(msg:Msg, m_type):
 
     if m_type == 'like':
         emj.pause_and_add(message, ('😊', '☺', '🐱', '😺', '😇', '😌', '😘', '♥', ), t=1)
-
-
-async def _check_jihad(message, delete=False):
-    """
-
-    :type message: C.Types.Message
-    """
-    check_channel_id = C.channels['sabbat-charsheets']
-    role_id = C.roles['jihad']
-
-    def check(mess): # :type mess: C.Types.Message
-        return mess.content and 'клише' in mess.content.lower()
-
-    if not message.channel or message.channel.id != check_channel_id or not check(message):
-        return
-
-    if not delete:
-        if other.has_roles(message.author, role_id):
-            return
-        roles = other.find(message.server.roles, id=role_id)
-        other.add_roles(message.author, roles, 'do_jihad')
-        sabbat = other.get_channel(C.channels['sabbat'])
-        prm = sabbat.overwrites_for(message.author)  # type: C.Types.PermissionOverwrite
-        if prm.read_messages and prm.send_messages:
-            phr = com.get_t('join_jihad', user=f'<@{message.author.id}>')
-            com.write_msg(sabbat, phr)
-    else:
-        if not other.has_roles(message.author, role_id):
-            return
-
-        find = False
-        author_id = message.author.id
-        async for message in C.client.logs_from(message.channel, limit=10000):  #type: C.Types.Message
-            if message.author.id == author_id and check(message):
-                find = True
-                break
-
-        if not find:
-            roles = other.find(message.server.roles, id=role_id)
-            other.rem_roles(message.author, roles, 'remove_jihad')
-
-    return

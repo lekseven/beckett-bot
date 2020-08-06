@@ -38,6 +38,7 @@ date_events[6][24] = (C.users['Tony'], C.users['Svartalfr'])
 date_events[7][23] = (C.users['Blaise'], C.users['SuslikNotDead'])
 date_events[7][26] = C.users['broomstik']
 # August
+date_events[8][7] = C.users['Filstri']
 # September
 date_events[9][6] = C.users['miss Alex']
 date_events[9][25] = C.users['AyrinSiverna']
