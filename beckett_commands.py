@@ -623,21 +623,23 @@ async def kick(msg: _Msg):
 
 async def stars(msg: _Msg):
     """\
-    !stars usr count: дать пользователю звезды (0-6)
+    !stars count usr: дать пользователю звезды (0-6)
     """
     if len(msg.args) < 3:
         await msg.qanswer(other.comfortable_help([str(stars.__doc__)]))
         return
 
-    usr = msg.find_member(msg.args[1])
+    name = msg.args[2]
+    usr = other.find_member(C.vtm_server, name)
     if not usr:
-        usr = other.find_member(C.vtm_server, msg.args[1])
+        name = msg.original[len('!stars ' + msg.args[1]):]
+        usr = other.find_member(C.vtm_server, name)
         if not usr:
-            await msg.qanswer("Can't find user " + msg.args[1])
+            await msg.qanswer("Can't find user " + name)
             return
 
     try:
-        star_count = int(msg.args[2])
+        star_count = int(msg.args[1])
     except Exception as er:
         other.pr_error(er, '[cmd] stars', 'Wrong parameter')
         await msg.qanswer("Count should be number!")
@@ -664,10 +666,23 @@ async def stars(msg: _Msg):
     new_roles = other.get_roles(user_get_stars.difference(user_has_stars), C.vtm_server.roles)
     old_roles = other.get_roles(user_has_stars.difference(user_get_stars), C.vtm_server.roles)
 
-    other.add_roles(usr, new_roles, 'stars')
-    other.rem_roles(usr, old_roles, 'stars')
+    other.add_roles(usr, new_roles, 'add-stars')
+    other.rem_roles(usr, old_roles, 'rem-stars', 2) # discord bug, need delay
 
-    await C.client.add_reaction(msg.message, emj.e('ok_hand'))
+    # await C.client.add_reaction(msg.message, emj.e('ok_hand'))
+    msg.answer_reaction('ok_hand')
+    if other.is_int(name):
+        post = ''
+        if new_roles and old_roles:
+            post = 'меняет {old} на {new}'.format(old=', '.join([role.name for role in old_roles]),
+                                                  new=', '.join([role.name for role in new_roles]))
+        elif new_roles:
+            post = 'получает {new}'.format(new=', '.join([role.name for role in new_roles]))
+        elif old_roles:
+            post = 'теряет {old}'.format(old=', '.join([role.name for role in old_roles]))
+
+        if post:
+            msg.answer('{m.mention} {post}.'.format(m=usr, post=post))
 
 
 async def speak(msg: _Msg):

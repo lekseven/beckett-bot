@@ -362,7 +362,7 @@ def name_phr(uid, phr, name='', punct=True):
 def later_coro(t, coro):
     """
     :return: asyncio.TimerHandle
-    :param t: int
+    :param t: int - delay in seconds
     :param coro: coroutine object
     """
     return C.loop.call_later(t, lambda: C.loop.create_task(coro))
@@ -654,7 +654,17 @@ def has_roles(member, role_ids, has_all=False):
 
 
 def change_roles(callback, member, roles, error_msg='add_roles', delay=0, by_id=False, server_roles=None):
+    """
 
+    :param callback:
+    :param member:
+    :param roles:
+    :param error_msg:
+    :param delay: float|int in seconds
+    :param by_id:
+    :param server_roles:
+    :return:
+    """
     if not roles:
         return
 
@@ -679,21 +689,23 @@ def rem_roles(member, roles, error_msg='rem_roles', delay=0, by_id=False, server
 
 
 async def _add_roles_coro(member, roles, error_msg='add_roles'):
-        try:
-            await C.client.add_roles(member, *roles)
-        except C.Exceptions.Forbidden:
-            log.jW("[{}] Bot can't change roles.".format(error_msg))
-        except Exception as e:
-            pr_error(e, error_msg, 'Error in changing roles')
+    log.D('Try add roles ({r}) to @{m.display_name}.'.format(m=member, r=', '.join([r.name for r in roles])))
+    try:
+        await C.client.add_roles(member, *roles)
+    except C.Exceptions.Forbidden:
+        log.jW("[{}] Bot can't change roles.".format(error_msg))
+    except Exception as e:
+        pr_error(e, error_msg, 'Error in changing roles')
 
 
 async def _rem_roles_coro(member, roles, error_msg='rem_roles'):
-        try:
-            await C.client.remove_roles(member, *roles)
-        except C.Exceptions.Forbidden:
-            log.jW("[{}] Bot can't change roles.".format(error_msg))
-        except Exception as e:
-            pr_error(e, error_msg, 'Error in changing roles')
+    log.D('Try rem roles ({r}) to @{m.display_name}.'.format(m=member, r=', '.join([r.name for r in roles])))
+    try:
+        await C.client.remove_roles(member, *roles)
+    except C.Exceptions.Forbidden:
+        log.jW("[{}] Bot can't change roles.".format(error_msg))
+    except Exception as e:
+        pr_error(e, error_msg, 'Error in changing roles')
 
 
 def user_list(users_id):
