@@ -97,57 +97,48 @@ async def reaction(message, edit=False):
         # log.D(f'last_msgs["{msg.author.name}"]: {len(last_msgs[msg.auid])}.')
         # log.D(f'txt_now: {txt_now}.')
 
-    # if edit msg with "good_time" or command - do nothing
-    resp = _data_msgs_check(msg)
-    if edit and resp and (resp['type'].startswith('cmd_') or resp['type'] == 'gt'):
-        return
-
-    # if we have !cmd -> doing something
-    if msg.text.startswith('!'):
-        fun = re.match(r'!\w*', msg.text).group(0)[1:]
-        if fun in msg.get_commands():
-            msg.prepare(fun)
-            log.I(f'<reaction> [cmd] {fun}')
-            _data_msgs_add(msg, 'cmd_' + fun)
-            await getattr(cmd, fun)(msg)
+    if not msg.is_bot:
+        # if edit msg with "good_time" or command - do nothing
+        resp = _data_msgs_check(msg)
+        if edit and resp and (resp['type'].startswith('cmd_') or resp['type'] == 'gt'):
             return
 
-    m_type, text = _do_reaction(msg, edit)
-
-    if edit:
-        old_type = resp['type'] if resp else ''
-        if old_type == m_type:
-            return
-
-        if old_type and not m_type:
-            return
-
-        if m_type and old_type and text:
-            log.I(f'<reaction> edit [{old_type}] to [{m_type}]')
-            typing = _data_tp_check(msg)
-            if typing in com.msg_queue.get(msg.channel.id, ()) or old_type == 'no-response':
-                com.rem_from_queue(msg.channel.id, typing)
-                # and type new mess
-            else:
-                for mess in resp['ans']:
-                    await C.client.edit_message(mess, new_content=text) # if mess>1, all will be with the same text
-                resp['type'] = m_type
+        # if we have !cmd -> doing something
+        if msg.text.startswith('!'):
+            fun = re.match(r'!\w*', msg.text).group(0)[1:]
+            if fun in msg.get_commands():
+                msg.prepare(fun)
+                log.I(f'<reaction> [cmd] {fun}')
+                _data_msgs_add(msg, 'cmd_' + fun)
+                await getattr(cmd, fun)(msg)
                 return
-        # elif m_type and not old_type:
 
-    if m_type and text:
-        if (m_type not in ('no-response', 'rand_tableflip', 'unflip', 'shrug') and ':' not in text and
-                msg.roles.intersection((C.roles['Nosferatu'], C.roles['Malkavian'])) and other.rand() < 0.1):
-            if C.roles['Malkavian'] in msg.roles:
-                text = com.text2malk(text, 1)
-            elif C.roles['Nosferatu'] in msg.roles:
-                text = com.text2leet(text, 0.25)
-        log.I(('<reaction.edit>' if edit else '<reaction>') + f'[{m_type}]')
-        save_obj = _data_msgs_add(msg, m_type)
-        if text != 'no-response':
-            _data_tp_add(msg, com.write_msg(msg.channel, text=text, save_obj=save_obj,
-                                            fun=data_tp_del(msg.channel.id, msg.message.id)))
-        # await msg.qanswer(text)
+        m_type, text = _do_reaction(msg, edit)
+
+        if edit:
+            old_type = resp['type'] if resp else ''
+            if old_type == m_type:
+                return
+
+            if old_type and not m_type:
+                return
+
+            if m_type and old_type and text:
+                log.I(f'<reaction> edit [{old_type}] to [{m_type}]')
+                typing = _data_tp_check(msg)
+                if typing in com.msg_queue.get(msg.channel.id, ()) or old_type == 'no-response':
+                    com.rem_from_queue(msg.channel.id, typing)
+                    # and type new mess
+                else:
+                    for mess in resp['ans']:
+                        await C.client.edit_message(mess, new_content=text) # if mess>1, all will be with the same text
+                    resp['type'] = m_type
+                    return
+            # elif m_type and not old_type:
+    else:
+        m_type, text = _do_reaction(msg, edit)
+
+    _send_reaction(msg, m_type, text, edit)
 
 
 async def delete_reaction(message):
@@ -170,7 +161,7 @@ async def delete_reaction(message):
 
 def _do_reaction(msg:Msg, edit=False) -> (str, str):
     m_type = None
-    embrace_or_return = False
+    # embrace_or_return = False
 
     msg.prepare2()
     beckett_reference = bool(C.beckett_refs.intersection(msg.words))
@@ -180,25 +171,36 @@ def _do_reaction(msg:Msg, edit=False) -> (str, str):
 
     if (ram.mute_channels.intersection({msg.channel.id, 'all'}) or msg.auid in ram.ignore_users or
             msg.channel.id in C.ignore_channels or (msg.channel.id in ram.test_channels and not C.is_test)):
-        if msg.channel.id == C.channels['ask']:
-            embrace_or_return = True
-        else:
-            return '', ''
+        # # turn off embrace by message
+        # if msg.channel.id == C.channels['ask']:
+        #     embrace_or_return = True
+        # else:
+        #     return '', ''
+        return '', ''
+
+    if msg.is_bot:
+        m_type = 'bot'
+        if (beckett_reference or beckett_mention) and other.rand() < 0.05:
+            ans_phr = com.get_t(m_type)
+            return m_type, ans_phr
+
+        log.jD('Ignore bot')
+        return 'no-response', ''
 
     found_keys = com.check_phrase(msg.text, msg.words)
     prob = other.rand()
 
-    # embrace
-    if msg.channel.id == C.channels['ask'] and not msg.roles.intersection(C.clan_ids):
-        clan_keys = list(C.clan_names.intersection(found_keys))
-        if clan_keys:
-            clan = other.choice(clan_keys)
-            other.later_coro(other.rand(20, 50), manager.do_check_and_embrace(msg.auid, clan_name=clan))
-            # get 100% to comment of chosen clan
-            beckett = True
-            found_keys = clan
-    elif embrace_or_return:
-        return '', ''
+    # # embrace # turn off embrace by message
+    # if msg.channel.id == C.channels['ask'] and not msg.roles.intersection(C.clan_ids) and not msg.author.bot:
+    #     clan_keys = list(C.clan_names.intersection(found_keys))
+    #     if clan_keys:
+    #         clan = other.choice(clan_keys)
+    #         other.later_coro(other.rand(20, 50), manager.do_check_and_embrace(msg.auid, clan_name=clan))
+    #         # get 100% to comment of chosen clan
+    #         beckett = True
+    #         found_keys = clan
+    # elif embrace_or_return:
+    #     return '', ''
 
     # if (msg.channel.id == C.channels['gallery'] and msg.auid in (C.users['Hadley'], C.users['Natali']) and
     #         (msg.message.attachments or msg.message.embeds) and prob < 0.2):
@@ -438,7 +440,7 @@ def _emj_on_message(msg:Msg, beckett, edit=False):
     message = msg.message
     author = msg.auid
 
-    if author in ram.ignore_users:
+    if author in ram.ignore_users or msg.is_bot:
         return
 
     pause_and_add, pause_and_rem, e, e_str = emj.pause_and_add, emj.pause_and_rem, emj.e, emj.e_str
@@ -557,3 +559,25 @@ def _emj_by_mtype(msg:Msg, m_type):
 
     if m_type == 'like':
         emj.pause_and_add(message, ('😊', '☺', '🐱', '😺', '😇', '😌', '😘', '♥', ), t=1)
+
+
+def _send_reaction(msg:Msg, m_type, text, edit=False):
+    if not m_type or not text:
+        return
+
+    log.I(('<reaction.edit>' if edit else '<reaction>') + f'[{m_type}]')
+
+    if text == 'no-response' or m_type == 'no-response':
+        return
+
+    if (m_type not in ('rand_tableflip', 'unflip', 'shrug') and ':' not in text
+            and msg.roles.intersection((C.roles['Nosferatu'], C.roles['Malkavian'])) and other.rand() < 0.1):
+        if C.roles['Malkavian'] in msg.roles:
+            text = com.text2malk(text, 1)
+        elif C.roles['Nosferatu'] in msg.roles:
+            text = com.text2leet(text, 0.25)
+
+    save_obj = _data_msgs_add(msg, m_type)
+    if text != 'no-response' and m_type != 'no-response':
+        _data_tp_add(msg, com.write_msg(msg.channel, text=text, save_obj=save_obj,
+            fun=data_tp_del(msg.channel.id, msg.message.id)))

@@ -26,6 +26,7 @@ class Msg:
         self.server_id = None if self.personal else message.server.id
         self.is_vtm = self.server_id == C.vtm_server.id
         self.is_tst = self.server_id == C.tst_server.id
+        self.is_bot = self.author.bot
         self.message = message
         self.original = message.content or (('≤System≥ ' + message.system_content) if message.system_content else '')
         self.text = message.content.lower().replace('ё', 'е')
@@ -86,6 +87,9 @@ class Msg:
     def answer(self, text=None, emb=None):
         com.write_msg(self.channel, text, emb)
         #return 0
+
+    def answer_reaction(self, emoji_name, delay=0):
+        other.later_coro(delay, C.client.add_reaction(self.message, emj.e(emoji_name)))
 
     async def qanswer(self, text):
         for t in other.split_text(text):
