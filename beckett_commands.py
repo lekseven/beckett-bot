@@ -682,7 +682,7 @@ async def stars(msg: _Msg):
             post = 'теряет {old}'.format(old=', '.join([role.name for role in old_roles]))
 
         if post:
-            msg.answer('{m.mention} {post}.'.format(m=usr, post=post))
+            await msg.qanswer('{m.mention} {post}.'.format(m=usr, post=post))
 
 
 async def speak(msg: _Msg):

@@ -105,6 +105,7 @@ def prepare_const2():
     ev.upd_server()
 
     C.vtm_news_ch = other.get_channel(C.channels['vtm_news'])
+    C.vtm_avs_ch = other.get_channel(C.channels['vtm_avs'])
     C.other_news_ch = other.get_channel(C.channels['other_news'])
     C.vtm_links_ch = other.get_channel(C.channels['vtm_links'])
     C.other_links_ch = other.get_channel(C.channels['other_links'])

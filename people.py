@@ -399,11 +399,11 @@ async def check_now():
         if mem.id not in usrs:
             if Usr.check_new(mem):
                 if gone[mem.id].ban:
-                    await log.pr_news(f'New user {uname} from ban!')
+                    log.pr_news(f'New user {uname} from ban!')
                 else:
-                    await log.pr_news(f'New user {uname} from gone!')
+                    log.pr_news(f'New user {uname} from gone!')
             else:
-                await log.pr_news(f'New user {uname}!')
+                log.pr_news(f'New user {uname}!')
         elif usrs[mem.id].name != uname:
             usrs[mem.id].set(name=uname, status='upd')
 
@@ -426,22 +426,22 @@ async def check_now():
     for usr in usrs:
         if usr not in s_mems:
             usrs[usr].go()
-            await log.pr_news('User ' + usrs[usr].name + ' disappeared! [Ban: ' + str(gone[usr].ban) + ']')
+            log.pr_news('User ' + usrs[usr].name + ' disappeared! [Ban: ' + str(gone[usr].ban) + ']')
 
     for u_ban in bans:
         if u_ban.id not in gone:
             if Gn.check_new(u_ban):
-                await log.pr_news('New ban user ' + gone[u_ban.id].name + ' from users!')
+                log.pr_news('New ban user ' + gone[u_ban.id].name + ' from users!')
             else:
-                await log.pr_news('New ban user ' + gone[u_ban.id].name + ' from somewhere!')
+                log.pr_news('New ban user ' + gone[u_ban.id].name + ' from somewhere!')
         else:
             if gone[u_ban.id].toban(True):
-                await log.pr_news('New ban user ' + gone[u_ban.id].name + ' from gone!')
+                log.pr_news('New ban user ' + gone[u_ban.id].name + ' from gone!')
 
     for gn in gone:
         if gn not in bans_id:
             if gone[gn].toban(False):
-                await log.pr_news('User ' + gone[gn].name + ' not in ban now!')
+                log.pr_news('User ' + gone[gn].name + ' not in ban now!')
 
     log.I('+ finished check people')
 

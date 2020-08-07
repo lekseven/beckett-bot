@@ -63,6 +63,7 @@ prm_server = None  # type: discord.Server
 main_ch = None  # type: discord.Channel
 test_ch = None  # type: discord.Channel
 vtm_news_ch = None  # type: discord.Channel
+vtm_avs_ch = None  # type: discord.Channel
 other_news_ch = None  # type: discord.Channel
 vtm_links_ch = None  # type: discord.Channel
 other_links_ch = None  # type: discord.Channel
@@ -394,7 +395,9 @@ usual_servers = {servers[key] for key in ('vtm', 'test', 'Teahouse')}
 channels = {
     'flood': '398645007944384513',
     'f_wood': '461140194532524042',
-    'rules': '519253006726987780',    #'419207215472181268',
+    'rules': '731862424608702486',
+    'roles': '731842125985218571',
+    'welcome': '731842072297865226',
     'ask': '398728556424986624',
     '4-sop': '398728854534881280',
     'bookshelf': '459295179837407242',
@@ -428,6 +431,7 @@ channels = {
     # test channels
     'beckett': '459193166185234444',
     'vtm_news': '453172109460635658',
+    'vtm_avs': '741131751014793218',
     'vtm_links': '461424461950877698',
     'vtm_links_archive': '498828812130189353',
     'vtm_links_info_logs': '512939377219993601',
@@ -450,7 +454,7 @@ beckett_names = {'беккет', 'бэккет', 'бекетт', 'бэкетт',
 silent_channels = {}
 not_log_channels = {channels['not_log'], channels['not_log_test_only']}
 ignore_channels = {
-    channels['vtm_news'], channels['vtm_links'], channels['other_news'], channels['other_links'],
+    channels['vtm_news'], channels['vtm_avs'], channels['vtm_links'], channels['other_news'], channels['other_links'],
                    channels['vtm_links_archive'], channels['vtm_links_info_logs'], channels['beckett_ignore'],
                 }
 test_channels = {channels['test_mode_only'], channels['not_log_test_only']}
@@ -459,12 +463,30 @@ punct2space = str.maketrans(string.punctuation + '«»🏻🏼🏽🏾🏿', ' '
 
 # WARNING: Clans keys here must be the same to dataKeys (Clans) in data
 roles = {
+    # Ranks
     'Prince': '398223824514056202',
     'Sheriff': '398243225116213310',
     'Scourge': '420621473036632064',
     'Seneschal': '398244393003384843',
-    'Harpy': '419657934293827593',
+    'Harpy': '528672423185481733',
+    'Harpy2': '419657934293827593',
     'Primogens': '417776802535047178',
+    'Inconnu': '724955999944835115', # Primogens 2.0
+    'Regent': '448829797221793803',
+    'Priest': '451687545412124672',
+    'Ductus': '451687735355375626',
+    'Sabbat Bishop': '510161976211537930',
+    'True Black Hand': '616618542057521223', # buster
+    'Mortal': '606177312349880350', # default server role
+    'protege': '607242591464849418',
+    'DJ': '524567160207573002',
+    'New World Order': '420327469371883520',
+    # Sects
+    'Camarilla': '731639543584915467',
+    'Sabbat': '422166674528272384',
+    'Anarch': '423408828097363978',
+    'Independent': '731640133320704000',
+    # Clans
     'Malkavian': '398972693480996886',
     'Toreador': '398974249659924480',
     'Brujah': '398974429012426762',
@@ -481,43 +503,49 @@ roles = {
     'Pander': '415642642597019658',
     'Cappadocian': '421278030372012043',
     'Lasombra Antitribu': '420599142218465292',
+    'Old Clan Tzimisce': '688863374117044245',
+    # other
     'Котичек': '510161887342624798',
     'Namaru': '420621473036632064',
-    'New World Order': '420327469371883520',
-    'Sabbat': '422166674528272384',
-    'Anarch': '423408828097363978',
-    'Regent': '448829797221793803',
+
     'Silence': '449666656143409162',
-    'Priest': '451687545412124672',
-    'Ductus': '451687735355375626',
     'не шабашит': '518874073099665419',
-    'DJ': '524567160207573002',
     'Крыска': '557273085384851457',
     'star1': '587605268372652054',
     'star2': '587605472383729665',
     'star3': '587605550926397440',
-    'food': '606177312349880350',
-    'protege': '607242591464849418',
-    'jihad': '701397322269196358',
+    #---
+    'Risus': '701397322269196358',
+    'Risus-info': '731945839399927938',
+    'офигенный мастер': '720365088430751804',
+    'Storyteller': '731971789458243604',
+    'Player': '731971930864746618',
+    'trpg': '731972359518421024',
+    'Games': '731972466288754801',
+    'Stuff': '731972694261760032',
     # test Server
     'Gargoyle': '453169623576084480',
     # 'Ghoul': '453130638631895072',
 }
 
 role_by_id = {value: key for (key, value) in roles.items()}
-
 clan_names = {
     'Malkavian', 'Toreador', 'Brujah', 'Ventrue', 'Nosferatu', 'Gangrel', 'Tremere',
     'Ravnos', 'Followers of Set', 'Assamite', 'Giovanni',
     'Tzimisce', 'Lasombra', 'Pander',
-    'Cappadocian', 'Lasombra Antitribu',
+    'Cappadocian', 'Lasombra Antitribu', 'Old Clan Tzimisce',
     # 'Котичек', 'Namaru',
     # 'Gargoyle', 'Ghoul'  # test Server
 }
 clan_ids = {roles[name] for name in clan_names}
-sect_ids = {roles['Sabbat'], roles['Anarch']}
+sect_ids = {roles['Sabbat'], roles['Anarch'], roles['Camarilla'], roles['Independent']}
 clan_and_sect_ids = clan_ids.union(sect_ids)
 other_roles = set(roles[i] for i in ('DJ', 'star1', 'star2', 'star3', 'Silence', 'не шабашит'))
+roles_not_for_mortals = {
+    roles['Prince'], roles['Sheriff'], roles['Scourge'], roles['Seneschal'], roles['Primogens'], roles['Inconnu'],
+    roles['Regent'], roles['Priest'], roles['Ductus'], roles['Sabbat Bishop'], roles['New World Order'],
+    roles['protege'], roles['Mortal'],
+}
 #clan_roles = set(roles[i] for i in clan_names)
 sabbat_clans = {'Tzimisce', 'Lasombra', 'Pander'}
 clan_channels = {

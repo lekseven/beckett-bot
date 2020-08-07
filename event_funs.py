@@ -147,14 +147,6 @@ async def on_voice_state_update_o(server, before, after):
     elif v_new:
         log.I('<voice> {0} connects to #{1}.'.format(after, v_new))
 
-    if server.id == C.servers['Tilia']:
-        if v_new and len(v_new.voice_members) == 1:
-            user = after
-            ch = v_new
-            if user and ch:
-                log.D('<voice other> Event to @here')
-                await other.type2sent(other.get_channel('Tilia_main'), com.voice_event(user, ch))
-
 
 async def on_member_join_u(member):
     uid = member.id
@@ -168,11 +160,11 @@ async def on_member_join_u(member):
 
     if people.Usr.check_new(member):
         not_embrace.add(uid)
-        await log.pr_news('{0} ({0.mention}) comeback!'.format(member))
+        log.pr_news('{0} ({0.mention}) comeback!'.format(member))
         await C.client.send_message(C.main_ch, com.comeback_msg(uid, people.time_out(uid), people.clan(uid)))
     else:
-        await log.pr_news('{0} ({0.mention}) new!'.format(member))
-        await C.client.send_message(C.main_ch, com.welcome_msg(uid))
+        log.pr_news('{0} ({0.mention}) new!'.format(member))
+        #await C.client.send_message(C.main_ch, com.welcome_msg(uid))
 
 
 async def on_member_join_o(server, member):
@@ -185,7 +177,7 @@ async def on_member_remove_u(member):
     # it's triggers on 'go away', kick and ban
     if not other.find(await C.client.get_bans(C.prm_server), id=member.id):
         people.Gn.check_new(member)
-        await log.pr_news('{0} ({0.mention}) go away!'.format(member))
+        log.pr_news('{0} ({0.mention}) go away!'.format(member))
         await C.client.send_message(C.main_ch, com.bye_msg(member.id, member.display_name))
 
 
@@ -212,13 +204,13 @@ async def on_member_update_u(before: C.Types.Member, after: C.Types.Member):
     if before.game != after.game:
         smth_happend = True
         if before.game and after.game:
-            log.I(f'<on_member_update> {a_n} go play from {before.game.name} to {after.game.name}.')
+            log.D(f'<on_member_update> {a_n} go play from {before.game.name} to {after.game.name}.')
         elif before.game:
-            log.I(f'<on_member_update> {a_n} stop play {before.game.name}.')
+            log.D(f'<on_member_update> {a_n} stop play {before.game.name}.')
         elif after.game:
-            log.I(f'<on_member_update> {a_n} start play {after.game.name}.')
+            log.D(f'<on_member_update> {a_n} start play {after.game.name}.')
         else:
-            log.I(f'<on_member_update> {{???}} {a_n} - game change, but there are no games...')
+            log.D(f'<on_member_update> {{???}} {a_n} - game change, but there are no games...')
 
         if after.id == C.users['Natali']:
             if before.game and C.prm_server.me.game.name == before.game.name:
@@ -244,11 +236,11 @@ async def on_member_update_u(before: C.Types.Member, after: C.Types.Member):
         b_url, a_url = urls
 
         if before.avatar_url and after.avatar_url:
-            await log.pr_news(f'<on_member_update> {a_n} change avatar from \n{a_url} \nto\n{b_url}')
+            await log.pr_avs(f'<on_member_update> {a_n} change avatar from \n{a_url} \nto\n{b_url}')
         elif before.avatar_url:
-            await log.pr_news(f'<on_member_update> {a_n} delete avatar: \n{b_url}')
+            await log.pr_avs(f'<on_member_update> {a_n} delete avatar: \n{b_url}')
         elif after.avatar_url:
-            await log.pr_news(f'<on_member_update> {a_n} set avatar: \n{a_url}')
+            await log.pr_avs(f'<on_member_update> {a_n} set avatar: \n{a_url}')
         else:
             log.I(f'<on_member_update> {{???}} {a_n} - avatar change, but there are no avatar_urls...')
 
@@ -263,24 +255,24 @@ async def on_member_update_u(before: C.Types.Member, after: C.Types.Member):
         old_roles = [('@&' + r.name) for r in before.roles if r not in after.roles]
         new_roles = [('@&' + r.name) for r in after.roles if r not in before.roles]
         if old_roles:
-            log.I(f'<on_member_update> {a_n} lost role(s): {", ".join(old_roles)}.')
+            log.pr_news(f'<on_member_update> {a_n} lost role(s): {", ".join(old_roles)}.')
         if new_roles:
-            log.I(f'<on_member_update> {a_n} get role(s): {", ".join(new_roles)}.')
+            log.pr_news(f'<on_member_update> {a_n} get role(s): {", ".join(new_roles)}.')
             new_role_ids = {r.id for r in after.roles if r not in before.roles}
             new_clan_roles = C.clan_ids.intersection(new_role_ids)
-            if (after.id not in not_embrace and
-                    len(set(r.id for r in before.roles).difference(C.other_roles)) == 1 and new_clan_roles):
+            has_clan_before = other.has_roles(before, C.clan_ids)
+            if after.id not in not_embrace and new_clan_roles and not has_clan_before:
                 clan_id = other.choice(new_clan_roles)
                 clan_name = C.role_by_id[clan_id]
-                log.jI(f'<on_member_update> {a_n} get new clan role "{clan_name}" => call do_embrace.')
-                sir_id = manager.just_embrace_say(after, clan_name=clan_name)
-                if sir_id:
-                    if clan_id in C.clan_channels:
-                        clan_ch = C.clan_channels[clan_id]
-                        phr = com.get_t(all_keys=('clan_welcome', clan_ch), user=f'<@{after.id}>', sir=f'<@{sir_id}>')
-                        com.write_msg(clan_ch, phr)
+                log.pr_news(f'<on_member_update> {a_n} get new clan role "{clan_name}" => call do_embrace.')
+                manager.just_embrace_say(after, clan_name=clan_name)
+                # if sir_id:
+                #     if clan_id in C.clan_channels:
+                #         clan_ch = C.clan_channels[clan_id]
+                #         phr = com.get_t(all_keys=('clan_welcome', clan_ch), user=f'<@{after.id}>', sir=f'<@{sir_id}>')
+                #         com.write_msg(clan_ch, phr)
 
-            elif len(before.roles) > 1 and C.roles['Pander'] in new_clan_roles:
+            elif has_clan_before and C.roles['Pander'] in new_clan_roles:
                 log.jI(f'<on_member_update> {a_n} go to Pander => delete other clan roles if it\'s exist.')
                 del_clans_id = C.clan_ids.difference({C.roles['Pander']})
                 rem_roles = {r for r in after.roles if r.id in del_clans_id}
@@ -290,9 +282,16 @@ async def on_member_update_u(before: C.Types.Member, after: C.Types.Member):
                     phr = com.get_t('to_Pander', user=f'<@{after.id}>',
                                     old_clans=str_rem_r, pander=f"<@&{C.roles['Pander']}>")
                     com.write_msg(C.main_ch, phr)
-            elif C.roles['food'] in new_role_ids:
-                rem_roles = {r for r in after.roles if r.id in C.clan_and_sect_ids}
-                other.rem_roles(after, rem_roles, 'on_member_update_u[2]')
+            elif C.roles['Mortal'] in new_role_ids:
+                if has_clan_before:
+                    # go to food
+                    rem_roles = {r for r in after.roles if r.id != C.roles['Mortal']}
+                    other.rem_roles(after, rem_roles, 'go to Mortal(food)')
+                    log.pr_news(f'<on_member_update> {a_n} go to food')
+                else:
+                    # new user
+                    await C.client.send_message(C.main_ch, com.welcome_msg(before.id))
+                    log.pr_news(f'<on_member_update> {a_n} welcome')
 
             if C.roles['Sabbat'] in new_role_ids:
                 clan_ch = C.clan_channels[C.roles['Sabbat']]
@@ -341,7 +340,7 @@ async def on_member_update_o(server: C.Types.Server, before: C.Types.Member, aft
 
     if before.status != after.status or not smth_happend:
         if C.is_test and before.status == after.status and str(after.status) != 'offline':
-            await log.pr_news(f'{{TEST}} <on_status_update> {other.uname(after)} change online to online!')
+            log.pr_news(f'{{TEST}} <on_status_update> {other.uname(after)} change online to online!')
         # people.online_change(after.id, after.status, force=before.status == after.status)
     '''
     pass
@@ -349,7 +348,7 @@ async def on_member_update_o(server: C.Types.Server, before: C.Types.Member, aft
 
 async def on_member_ban_u(member):
     await people.on_ban(member)
-    await log.pr_news('Ban {0} ({0.mention})!'.format(member))
+    log.pr_news('Ban {0} ({0.mention})!'.format(member))
     await C.client.send_message(C.main_ch, com.ban_msg(member.id, member.display_name))
 
 
@@ -363,7 +362,7 @@ async def on_member_ban_o(server, member):
 async def on_member_unban_u(server, user):
     people.on_unban(user)
     await C.client.send_message(C.main_ch, com.unban_msg(user.id))
-    await log.pr_news('Unban {0} ({0.mention})!'.format(user))
+    log.pr_news('Unban {0} ({0.mention})!'.format(user))
 
 
 # noinspection PyUnusedLocal
@@ -377,7 +376,7 @@ async def on_server_emojis_update_u(before, after):
     # before, after - list of server emojis
     if la < 1 and lb < 1:
         return
-    await log.pr_news('on_server_emojis_update!')
+    log.pr_news('on_server_emojis_update!')
     emj.save_em()
 
 
@@ -392,7 +391,7 @@ async def on_server_emojis_update_o(server, before, after):
 
 async def on_server_role_create_u(role):
     upd_server()
-    await log.pr_news('New Role: ' + role.name + ' {@&' + role.id + '}!')
+    log.pr_news('New Role: ' + role.name + ' {@&' + role.id + '}!')
 
 
 async def on_server_role_create_o(server, role):
@@ -402,7 +401,7 @@ async def on_server_role_create_o(server, role):
 
 async def on_server_role_delete_u(role):
     upd_server()
-    await log.pr_news('Delete Role: ' + role.name + '!')
+    log.pr_news('Delete Role: ' + role.name + '!')
 
 
 async def on_server_role_delete_o(server, role):
@@ -417,7 +416,7 @@ async def on_server_role_update_u(before, after):
     names = (before.name + '/' + after.name + ' {@&' + after.id + '}'
         if before.name != '@everyone' else '`@everyone`')
 
-    await log.pr_news('Update Role: ' + names + '!')
+    log.pr_news('Update Role: ' + names + '!')
 
 
 async def on_server_role_update_o(server, before, after):
@@ -731,11 +730,10 @@ def _check_once_in_day():
             t_off = usr.offtime()
             if t_off > check_t:
                 m = other.find_member(C.vtm_server, uid)
-                if not other.has_roles(m, C.roles['protege']) and \
-                        not other.has_roles(m, C.roles['food']) and not m.bot:
-                    other.add_roles(m, C.roles['food'], '_check_once_in_day',
-                                    by_id=True, server_roles=C.vtm_server.roles)
-                    log.I("{} go to food!".format(m))
+                if not other.has_roles(m, C.roles_not_for_mortals) and not m.bot and len(m.roles) > 1:
+                    other.add_roles(m, C.roles['Mortal'], '_check_once_in_day',
+                        by_id=True, server_roles=C.vtm_server.roles)
+                    log.I("{} go to Mortal (food)!".format(m))
     else:
         log.I("It's test mode, pass _check_once_in_day")
 

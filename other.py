@@ -12,10 +12,6 @@ import log
 import manager
 import local_memory as ram
 
-# for weather
-
-#import local_memory as ram
-
 
 def comfortable_help(docs):
     help = {}
@@ -581,7 +577,7 @@ def rand(a:int=None, b:int=None):
 
 
 def uname(memb:C.Types.Member):
-    return str(memb) + ('(' + memb.display_name + ')' if memb.name != memb.display_name else '')
+    return str(memb) + (f' ({memb.display_name})' if memb.name != memb.display_name else '') + f' [{memb.id}]'
 
 
 def deepcopy(o):

@@ -353,9 +353,14 @@ async def on_reaction(reaction, kind, user):
     return True
 
 
-async def pr_news(text):
+def pr_news(text):
     time_tpprint('Ev', ' ', text)
-    await C.client.send_message(C.vtm_news_ch, content='<Ev> ' + text)
+    other.later_coro(0, C.client.send_message(C.vtm_news_ch, content='<Ev> ' + text))
+
+
+async def pr_avs(text):
+    time_tpprint('Ev', ' ', text)
+    await C.client.send_message(C.vtm_avs_ch, content='<Ev> ' + text)
 
 
 async def pr_other_news(server, text):

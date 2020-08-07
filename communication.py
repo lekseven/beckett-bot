@@ -377,6 +377,12 @@ def hi(uid):
 
 
 def welcome_msg(uid):
+    return '{hi}\n{welcome}\n{finish}'.format(
+        hi=hi(uid), welcome=get_t('new_welcome'),finish=get_t('welcome_finish')
+    )
+
+
+def welcome_msg_old(uid):
     return '{hi}\n{glad_to_see} {glad_ans} {because} {pause_reason} - {pause_wait} {rules_and_ask}\n{finish}'.format(
         hi=hi(uid), glad_to_see=get_t('glad_to_see'), glad_ans=get_t('glad_ans'), because=get_t('because'),
         pause_reason=get_t('pause_reason'), pause_wait=get_t('pause_wait'),
