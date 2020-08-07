@@ -57,7 +57,11 @@ class Msg:
         self.words = set(self.args).difference({'', ' '})
 
     def prepare2(self, fun=''):
-        text = self.text.replace(fun, '')
+        text = self.text.replace(fun, '') #type: str
+        # remove quotation
+        lines = text.split('\n')
+        text = '\n'.join(l for l in lines if not l.startswith('>'))
+
         em_text = emj.em_set.intersection(text)
         for em in em_text:
             text = text.replace(em, ' ' + em + ' ')

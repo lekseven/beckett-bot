@@ -331,7 +331,7 @@ def _beckett_m_type(msg)->str:
             return 'question'
     elif msg.words.intersection({'скучал', 'скучала', 'скучаль'}):
         return 'boring'
-    elif ('мимими' in msg.text) or len(msg.original.split()) < 4:
+    elif ('мимими' in msg.text) or len(msg.words) < 4:
         return 'no-response'
     return ''
 
