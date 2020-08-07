@@ -194,12 +194,12 @@ async def on_member_update_u(before: C.Types.Member, after: C.Types.Member):
         return
 
     smth_happend = False
-    a_n = other.uname(after)
+    a_n = other.uname(after) + f' [{after.id}]'
 
     if before.display_name != after.display_name or before.name != after.name:
         smth_happend = True
         b_n = other.uname(before)
-        log.I(f'<on_member_update> {b_n} change nickname to {a_n}.')
+        log.pr_news(f'<on_member_update> {b_n} change nickname to {a_n}.')
 
     if before.game != after.game:
         smth_happend = True

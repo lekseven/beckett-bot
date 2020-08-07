@@ -577,7 +577,7 @@ def rand(a:int=None, b:int=None):
 
 
 def uname(memb:C.Types.Member):
-    return str(memb) + (f' ({memb.display_name})' if memb.name != memb.display_name else '') + f' [{memb.id}]'
+    return str(memb) + (f'({memb.display_name})' if memb.name != memb.display_name else '')
 
 
 def deepcopy(o):
