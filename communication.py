@@ -93,7 +93,7 @@ def make_d2u():
         add_phr = {}
         if isinstance(obj, str):
             add_phr = {'text': obj}
-        elif isinstance(obj, list) or isinstance(obj, set) or isinstance(obj, tuple):
+        elif other.is_iterable(obj):
             for phr in obj:
                 _make_resp(phr, add_keys)
         elif isinstance(obj, dict) and 'text' not in obj:

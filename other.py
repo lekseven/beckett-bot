@@ -5,6 +5,7 @@ import random
 import copy
 from io import BytesIO as io_BytesIO
 from ast import literal_eval as ast__literal_eval
+from collections.abc import Iterable
 from discord.utils import get as find
 
 import constants as C
@@ -394,6 +395,10 @@ def is_int(num):
     return True
 
 
+def is_iterable(obj):
+    return isinstance(obj, Iterable)
+
+
 def floor(num):
     i_num = int(num)
     return i_num if i_num == num else i_num + 1
@@ -636,8 +641,8 @@ def has_roles(member, role_ids, has_all=False):
     if not role_ids:
         return True
 
-    if not isinstance(role_ids, list):
-        role_ids = [role_ids]
+    if not is_iterable(role_ids):
+        role_ids = (role_ids,)
 
     count = 0
     for r in member.roles: # type: C.Types.Role
@@ -664,15 +669,16 @@ def change_roles(callback, member, roles, error_msg='add_roles', delay=0, by_id=
     if not roles:
         return
 
-    if isinstance(roles, set):
-        roles = list(roles)
-    elif not isinstance(roles, list):
-        roles = [roles]
+    if not isinstance(roles, list):
+        if is_iterable(roles):
+            roles = list(roles)
+        else:
+            roles = [roles]
 
     if by_id:
         roles = get_roles(roles, server_roles)
-    log.D('Try {t} to @{m.display_name} roles ({r}).'.format(
-        m=member, t=callback.__name__, r=', '.join([r.name for r in roles])))
+    log.D('Try {t} to @{m.display_name} roles ({r}) // {msg}'.format(
+        m=member, t=callback.__name__, r=', '.join([r.name for r in roles]), msg=error_msg))
     later_coro(delay, callback(member, roles, error_msg))
 
 

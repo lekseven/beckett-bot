@@ -285,7 +285,7 @@ async def on_member_update_u(before: C.Types.Member, after: C.Types.Member):
             elif C.roles['Mortal'] in new_role_ids:
                 if has_clan_before:
                     # go to food
-                    rem_roles = {r for r in after.roles if r.id != C.roles['Mortal']}
+                    rem_roles = {r for r in after.roles if r.id not in C.mortal_can_have_roles}
                     other.rem_roles(after, rem_roles, 'go to Mortal(food)')
                     log.pr_news(f'<on_member_update> {a_n} go to food')
                 else:

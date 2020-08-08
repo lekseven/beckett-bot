@@ -542,11 +542,11 @@ clan_ids = {roles[name] for name in clan_names}
 sect_ids = {roles['Sabbat'], roles['Anarch'], roles['Camarilla'], roles['Independent']}
 clan_and_sect_ids = clan_ids.union(sect_ids)
 other_roles = set(roles[i] for i in ('DJ', 'star1', 'star2', 'star3', 'Silence', 'не шабашит'))
-roles_not_for_mortals = {
-    roles['Prince'], roles['Sheriff'], roles['Scourge'], roles['Seneschal'], roles['Primogens'], roles['Inconnu'],
-    roles['Regent'], roles['Priest'], roles['Ductus'], roles['Sabbat Bishop'], roles['New World Order'],
-    roles['protege'], roles['Mortal'],
-}
+roles_not_for_mortals = set(roles[i] for i in
+    ('Prince', 'Sheriff', 'Scourge', 'Seneschal', 'Primogens', 'Inconnu', 'Regent', 'Priest', 'Ductus',
+     'Sabbat Bishop', 'New World Order', 'protege', 'Mortal',)
+)
+mortal_can_have_roles = set(roles[i] for i in ('star1', 'star2', 'star3', 'Silence', 'Mortal'))
 #clan_roles = set(roles[i] for i in clan_names)
 sabbat_clans = {'Tzimisce', 'Lasombra', 'Pander'}
 clan_channels = {
