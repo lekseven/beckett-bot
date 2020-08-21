@@ -31,6 +31,9 @@ class Msg(manager.Msg):
                 free.add('dominate')
             cmds.intersection_update(free)
 
+        if self.personal:
+            cmds.update(cmd.personal_cmds)
+
         return cmds
 
 
@@ -74,7 +77,7 @@ async def reaction(message, edit=False):
 
     # delete double messages for last 60 sec
     if (
-        not msg.super and
+        not msg.super and not msg.personal and
         not (msg.text.startswith('!r') or msg.text.startswith('!shuffle')) and
         not edit and
         not (msg.message.attachments or msg.message.embeds)

@@ -142,6 +142,7 @@ ems_id = {
     '731632055498178632': 's_clownfish',
     '731891038305648721': 'Logo_Caitiff',
     '731891287946428536': 'Logo_Pander',
+    '745002221321584740': 'Logo_Cappadocian',
     # test
     '532673320785674317': 'sgushchenka',
     '453173916517662720': 'z_GDAbyudG2',

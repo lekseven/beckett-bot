@@ -17,6 +17,7 @@ import communication as com
 
 _Msg = manager.Msg
 roll_cmds = {'roll', 'rollw', 'rollv', 'r', 'rw', 'rv', 'shuffle', 'shufflen', 'choise'}
+personal_cmds = {'go_malk', 'go_leet'}
 free_cmds = {'help', 'ignore', }
 free_cmds.update(roll_cmds)
 admin_cmds = {
@@ -42,7 +43,7 @@ cmd_groups = {
     'purge': {'purge', 'purge_aft', 'purge_ere', 'purge_bet', 'delete'},
     'roll': roll_cmds,
     'extra': {},
-    'primogenat': {'kick', 'silence', 'unsilence', 'stars', 'speak'},
+    'primogenat': primogenat_cmds.difference({'help',}),
     'sir': {'sir_turn', 'sir_turn_add', 'sir_turn_rem', 'sir_not', 'sir_not_add', 'sir_not_rem',},
     # === === ===
     'admin': {'add_role', 'ban', 'clear_clans', 'kick_f', 'pin', 'rem_role', 'unban', 'unpin',},
@@ -51,6 +52,7 @@ cmd_groups = {
     'voice': {'connect', 'disconnect', 'haha'},
     'log': {'log_channel', 'read', 'send_log', 'info', 'info_channels'},
     'super': {'debug', 'get_online', 'get_online_all', 'silence_f'},
+    'personal': personal_cmds,
 }
 _cmd_in_group = {cmd_name:gr_name for gr_name, gr_set in cmd_groups.items() if gr_set for cmd_name in gr_set}
 _groups_help = {
@@ -72,7 +74,7 @@ _groups_help = {
     'voice': 'функции войса',
     'log': 'всё связанное с логами',
     'super': 'остальные весёлые функции',
-
+    'personal': 'функции доступные только в личке',
 }
 extra_admin_help = (
 '''```css
@@ -151,6 +153,7 @@ async def help(msg: _Msg):
     # 'admin': _admin_cmds,
     fltr = {'free': free_cmds, 'super': only_super,
            'primogenat': primogenat_cmds, 'primogen': primogenat_cmds,
+           'personal': personal_cmds,
            'r': {'r', 'rw', 'rv'}, }
     texts = []
     docs = []
@@ -479,6 +482,44 @@ async def rv(msg: _Msg):
         await msg.qanswer(other.comfortable_help([str(rv.__doc__)]))
         return
 
+# endregion
+
+
+# region Personal
+async def go_malk(msg: _Msg):
+    """\
+    !go_malk chance text: сделать текст малкавианским с шансом chance (1-100%)
+    """
+    if len(msg.args) < 3:
+        await msg.qanswer(other.comfortable_help([str(go_malk.__doc__)]))
+        return
+
+    prob = msg.args[1].replace('%', '')
+    if not other.is_int(prob):
+        await msg.qanswer(other.comfortable_help([str(go_malk.__doc__)]))
+        return
+
+    prob = max(min(100, int(prob)), 1)/100
+    text = msg.original[len('!go_malk ' + msg.args[1]):].strip()
+    await msg.qanswer(com.text2malk(text, prob))
+
+
+async def go_leet(msg: _Msg):
+    """\
+    !go_leet chance text: перевести текст в leet с шансом chance (1-100%)
+    """
+    if len(msg.args) < 3:
+        await msg.qanswer(other.comfortable_help([str(go_leet.__doc__)]))
+        return
+
+    prob = msg.args[1].replace('%', '')
+    if not other.is_int(prob):
+        await msg.qanswer(other.comfortable_help([str(go_leet.__doc__)]))
+        return
+
+    prob = max(min(100, int(prob)), 1)/100
+    text = msg.original[len('!go_leet ' + msg.args[1]):].strip()
+    await msg.qanswer(com.text2leet(text, prob))
 # endregion
 
 
