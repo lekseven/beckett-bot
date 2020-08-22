@@ -93,15 +93,16 @@ def make_d2u():
         add_phr = {}
         if isinstance(obj, str):
             add_phr = {'text': obj}
-        elif other.is_iterable(obj):
+        elif isinstance(obj, dict):
+            if 'text' in obj:
+                add_phr = obj
+                add_phr['text'] = str(add_phr['text'])
+            else:
+                for key in obj:
+                    _make_resp(obj[key], add_keys.union({key}))
+        elif other.is_iterable(obj): # isinstance(obj, list) or isinstance(obj, set) or isinstance(obj, tuple):
             for phr in obj:
                 _make_resp(phr, add_keys)
-        elif isinstance(obj, dict) and 'text' not in obj:
-            for key in obj:
-                _make_resp(obj[key], add_keys.union({key}))
-        elif isinstance(obj, dict) and 'text' in obj:
-            add_phr = obj
-            add_phr['text'] = str(add_phr['text'])
         else:
             log.jW('<make_d2u.make_resp> Fail phrase in response data: ', obj)
 
