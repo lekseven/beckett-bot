@@ -438,10 +438,11 @@ async def check_now():
             if gone[u_ban.id].toban(True):
                 log.pr_news('New ban user ' + gone[u_ban.id].name + ' from gone!')
 
-    for gn in gone:
-        if gn not in bans_id:
-            if gone[gn].toban(False):
-                log.pr_news('User ' + gone[gn].name + ' not in ban now!')
+    if bans_id:
+        for gn in gone:
+            if gn not in bans_id:
+                if gone[gn].toban(False):
+                    log.pr_news('User ' + gone[gn].name + ' not in ban now!')
 
     log.I('+ finished check people')
 
@@ -693,9 +694,13 @@ def clear():
 async def get_bans():
     log.I('- get bans')
     global bans, bans_id
-    bans = await C.client.get_bans(C.vtm_server)
-    bans_id = set(ban.id for ban in bans)
-    log.I('+ get bans done')
+    try:
+        bans = await C.client.get_bans(C.vtm_server)
+        bans_id = set(ban.id for ban in bans)
+        log.I('+ get bans done')
+    except Exception as e:
+        bans_id = set()
+        log.jW("- can't get bans")
 
 
 async def get(check=True):
