@@ -238,10 +238,10 @@ class Gn:
         m = memb or other.find_member(C.vtm_server, self.id)
         if m:
             nm = other.uname(m)
-            if self.role != '0':
-                role = other.find(C.vtm_server.roles, id=self.role)
-                if role:
-                    other.add_roles(m, role, 'comeback', 5)
+            # if self.role != '0':
+            #     role = other.find(C.vtm_server.roles, id=self.role)
+            #     if role:
+            #         other.add_roles(m, role, 'comeback', 5)
         self.status = 'del'
         usr = Usr(self.id, name=nm, karma=self.karma, status='add', last_m=other.get_sec_total())
         if res:
