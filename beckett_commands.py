@@ -707,8 +707,11 @@ async def stars(msg: _Msg):
     new_roles = other.get_roles(user_get_stars.difference(user_has_stars), C.vtm_server.roles)
     old_roles = other.get_roles(user_has_stars.difference(user_get_stars), C.vtm_server.roles)
 
-    other.add_roles(usr, new_roles, 'add-stars')
-    other.rem_roles(usr, old_roles, 'rem-stars', 2) # discord bug, need delay
+    done = await other.a_add_roles(usr, new_roles, 'add-stars')
+    if not done:
+        await msg.qanswer('У меня лапки :feet:')
+        return False
+    await other.a_rem_roles(usr, old_roles, 'rem-stars')
 
     # await C.client.add_reaction(msg.message, emj.e('ok_hand'))
     msg.answer_reaction('ok_hand')
@@ -1683,7 +1686,10 @@ async def add_role(msg: _Msg):
         await msg.qanswer("Can't find any roles!")
         return
 
-    other.add_roles(usr, new_roles)
+    done = await other.a_add_roles(usr, new_roles)
+    if not done:
+        await msg.qanswer('У меня лапки :feet:')
+        return False
     await msg.qanswer(":ok_hand:")
 
 
@@ -1717,7 +1723,10 @@ async def rem_role(msg: _Msg):
         await msg.qanswer("Can't find any roles!")
         return
 
-    other.rem_roles(usr, old_roles, 'cmd.rem_role')
+    done = await other.a_rem_roles(usr, old_roles, 'cmd.rem_role')
+    if not done:
+        await msg.qanswer('У меня лапки :feet:')
+        return False
     await msg.qanswer(":ok_hand:")
 
 
@@ -1731,7 +1740,10 @@ async def clear_clans(msg: _Msg):
 
     user = other.find_member(C.vtm_server, msg.original[len('!clear_clans '):])
     if user:
-        other.rem_roles(user, C.clan_and_sect_ids, 'clear_clans', by_id=True, server_roles=C.vtm_server.roles)
+        done = await other.a_rem_roles(user, C.clan_and_sect_ids, 'clear_clans', by_id=True, server_roles=C.vtm_server.roles)
+        if not done:
+            await msg.qanswer('У меня лапки :feet:')
+            return False
         await msg.qanswer(":ok_hand:")
 
     else:

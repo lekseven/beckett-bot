@@ -654,7 +654,7 @@ def has_roles(member, role_ids, has_all=False):
     return count == len(role_ids)
 
 
-def change_roles(callback, member, roles, error_msg='add_roles', delay=0, by_id=False, server_roles=None):
+def change_roles(callback, member, roles, error_msg='', delay=0, by_id=False, server_roles=None):
     """
 
     :param callback:
@@ -675,6 +675,9 @@ def change_roles(callback, member, roles, error_msg='add_roles', delay=0, by_id=
         else:
             roles = [roles]
 
+    if not error_msg:
+        error_msg = callback
+
     if by_id:
         roles = get_roles(roles, server_roles)
     log.D('Try {t} to @{m.display_name} roles ({r}) // {msg}'.format(
@@ -682,7 +685,45 @@ def change_roles(callback, member, roles, error_msg='add_roles', delay=0, by_id=
     later_coro(delay, callback(member, roles, error_msg))
 
 
-def add_roles(member, roles, error_msg='rem_roles', delay=0, by_id=False, server_roles=None):
+async def a_change_roles(callback, member, roles, error_msg='', by_id=False, server_roles=None):
+    """
+
+        :param callback:
+        :param member:
+        :param roles:
+        :param error_msg:
+        :param by_id:
+        :param server_roles:
+        :return:
+        """
+    if not roles:
+        return
+
+    if not isinstance(roles, list):
+        if is_iterable(roles):
+            roles = list(roles)
+        else:
+            roles = [roles]
+
+    if not error_msg:
+        error_msg = callback
+
+    if by_id:
+        roles = get_roles(roles, server_roles)
+    log.D('Try {t} to @{m.display_name} roles ({r}) // {msg}'.format(
+        m=member, t=callback.__name__, r=', '.join([r.name for r in roles]), msg=error_msg))
+    return await callback(member, roles, error_msg)
+
+
+async def a_add_roles(member, roles, error_msg='add_roles', by_id=False, server_roles=None):
+    return await a_change_roles(_add_roles_coro, member, roles, error_msg, by_id, server_roles)
+
+
+async def a_rem_roles(member, roles, error_msg='rem_roles', by_id=False, server_roles=None):
+    return await a_change_roles(_rem_roles_coro, member, roles, error_msg, by_id, server_roles)
+
+
+def add_roles(member, roles, error_msg='add_roles', delay=0, by_id=False, server_roles=None):
     change_roles(_add_roles_coro, member, roles, error_msg, delay, by_id, server_roles)
 
 
@@ -694,20 +735,24 @@ async def _add_roles_coro(member, roles, error_msg='add_roles'):
     log.D('Try add roles ({r}) to @{m.display_name}.'.format(m=member, r=', '.join([r.name for r in roles])))
     try:
         await C.client.add_roles(member, *roles)
+        return True
     except C.Exceptions.Forbidden:
         log.jW("[{}] Bot can't change roles.".format(error_msg))
     except Exception as e:
         pr_error(e, error_msg, 'Error in changing roles')
+    return False
 
 
 async def _rem_roles_coro(member, roles, error_msg='rem_roles'):
     log.D('Try rem roles ({r}) to @{m.display_name}.'.format(m=member, r=', '.join([r.name for r in roles])))
     try:
         await C.client.remove_roles(member, *roles)
+        return True
     except C.Exceptions.Forbidden:
         log.jW("[{}] Bot can't change roles.".format(error_msg))
     except Exception as e:
         pr_error(e, error_msg, 'Error in changing roles')
+    return False
 
 
 def user_list(users_id):
