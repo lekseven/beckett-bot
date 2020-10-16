@@ -46,6 +46,7 @@ date_events[9][25] = C.users['AyrinSiverna']
 date_events[10][1] = C.users['Rayne']
 date_events[10][3] = C.users['skullinred']
 date_events[10][10] = C.users['Buffy']
+date_events[10][16] = C.users['verasolar']
 date_events[10][23] = C.users['vampiresnvino']
 date_events[10][24] = (C.users['Red Queen'], C.users['Matt the Shadow'])
 date_events[10][31] = C.events['Halloween']
