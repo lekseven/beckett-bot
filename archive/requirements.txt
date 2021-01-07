@@ -3,7 +3,7 @@ discord.py==0.16.12
 discord.py[voice]==0.16.12
 psycopg2_binary==2.7.4
 requests==2.18.4
-lxml==4.2.2
+lxml==4.6.2
 dropbox==8.8.1
 PyNaCl==1.2.1
 youtube_dl==2018.6.25
