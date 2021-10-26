@@ -49,6 +49,7 @@ date_events[10][10] = C.users['Buffy']
 date_events[10][16] = C.users['verasolar']
 date_events[10][23] = C.users['vampiresnvino']
 date_events[10][24] = (C.users['Red Queen'], C.users['Matt the Shadow'])
+date_events[10][26] = C.users['Мария Грасс']
 date_events[10][31] = C.events['Halloween']
 # November
 # December
