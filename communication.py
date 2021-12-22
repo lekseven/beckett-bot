@@ -121,7 +121,7 @@ def make_d2u():
     saved_args = ('data_used', 'good_time', 'resp_keys', 'resp_values', 'resp_data')
     l_args = locals()
     time_upd = other.t2s(frm="%d/%m/%y %H:%M:%S")
-    with open('d/data_to_use.py', "w") as file:
+    with open('d/data_to_use.py', "w", -1, 'utf-8') as file:
         print('"""\nThis document was created from data_to_process.py by command !data_process'
               f'\nDon\'t edit it by yourself.\nCreated: {time_upd}.\n"""\n\n', file=file)
         print(*(f'{name} = {repr(l_args[name])}' for name in saved_args), file=file, sep='\n\n')

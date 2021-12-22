@@ -27,8 +27,6 @@ class Msg(manager.Msg):
             cmds.intersection_update(cmd.admin_cmds)
         elif not self.admin:
             free = cmd.free_cmds
-            if {self.auid}.intersection({C.users['Creol'], C.users['Tony']}):
-                free.add('dominate')
             cmds.intersection_update(free)
 
         if self.personal:

@@ -864,7 +864,7 @@ async def dominate(msg: _Msg):
     if len(msg.args) < 2:
         await msg.qanswer(other.comfortable_help([str(dominate.__doc__)]))
         return
-    if not msg.admin and msg.auid != C.users['Creol']:
+    if not msg.admin:
         msg.answer(r'Нет у вас доминирования ¯\_(ツ)_/¯')
         return
 
@@ -2133,7 +2133,7 @@ async def tst_2(msg: _Msg):
     if len(msg.args) < 2:
         await msg.qanswer(other.comfortable_help([str(dominate.__doc__)]))
         return
-    if not msg.admin and msg.auid != C.users['Creol']:
+    if not msg.admin:
         msg.answer(r'Нет у вас доминирования ¯\_(ツ)_/¯')
         return
 

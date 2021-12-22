@@ -605,7 +605,7 @@ def _timer_check_games():
 
 
 def _timer_check_silence_in_chat():
-    if ram.last_vtm_msg and ((other.get_sec_total() - ram.last_vtm_msg) > 18000): # 5 hours
+    if ram.last_vtm_msg and ((other.get_sec_total() - ram.last_vtm_msg) > 25200): # 7 hours
         log.I('<timer_quarter_h> silence event!')
         phr = com.get_t('silence',)
         com.write_msg(C.main_ch, phr)
