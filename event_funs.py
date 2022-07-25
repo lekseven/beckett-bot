@@ -548,7 +548,7 @@ async def load():
     load_mem()
     await people.get() # check=(not C.is_test)
     _check_day_ev()
-    await _load_messages()
+    #await _load_messages()
 
 
 def save():
@@ -772,6 +772,9 @@ def _check_day_ev(now=None, on_midnight=False):
 
 
 async def _load_messages():
+    """
+    @deprecated
+    """
     # Load messages in the cache
     log.I('Start load messages from channels')
     load_channels = other.get_channels((C.channels['sabbat-charsheets'],), True)
