@@ -13,8 +13,6 @@ import log
 
 data_msgs = {}
 data_typings = {}
-last_msgs = {} # {uid: [(msg, date)]} # it's for deleting doubles
-
 
 class Msg(manager.Msg):
     def get_commands(self):
@@ -72,31 +70,6 @@ async def reaction(message, edit=False):
             await msg.delete('forbidden links')
             msg.answer(com.get_t('threats', name=msg.auid))
             return
-
-    # delete double messages for last 60 sec
-    if (
-        not msg.super and not msg.personal and
-        not (msg.text.startswith('!r') or msg.text.startswith('!shuffle')) and
-        not edit and
-        not (msg.message.attachments or msg.message.embeds)
-    ):
-        txt_now = (msg.original +
-                   ''.join([str(att.get('url', other.rand())) for att in msg.message.attachments]) +
-                   ''.join([str(emb.get('url', other.rand())) for emb in msg.message.embeds]))
-        get_sec_now = other.get_sec_total()
-        new_last_msgs = []
-        user_last_msgs = last_msgs.get(msg.auid, [])
-        for txt, date in user_last_msgs:
-            if (get_sec_now - date) < 60:
-                new_last_msgs.append((txt, date))
-                if txt == txt_now:
-                    await msg.delete('double messages')
-                    return
-
-        new_last_msgs.append((txt_now, get_sec_now))
-        last_msgs[msg.auid] = new_last_msgs
-        # log.D(f'last_msgs["{msg.author.name}"]: {len(last_msgs[msg.auid])}.')
-        # log.D(f'txt_now: {txt_now}.')
 
     if not msg.is_bot:
         # if edit msg with "good_time" or command - do nothing
